@@ -1,0 +1,154 @@
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@900,800,700,500,400,300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Lilita+One&family=Space+Grotesk:wght@300..700&family=Cinzel:wght@400..900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Satoshi", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Satoshi", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom class for headings to follow selected typography option dynamically */
+.font-headings {
+  font-family: var(--font-heading, "Satoshi"), "Satoshi", "Inter", sans-serif !important;
+}
+
+/* Base configuration for dynamic multi-themed variables */
+:root {
+  --color-primario: #FC462F;
+  --color-secundario: #FFE0E0;
+  --color-terciario: #FCDA3A;
+}
+
+/* Custom CSS class definitions based on dynamic layout variables */
+.bg-primario {
+  background-color: var(--color-primario) !important;
+}
+.text-primario {
+  color: var(--color-primario) !important;
+}
+.border-primario {
+  border-color: var(--color-primario) !important;
+}
+
+/* Custom Contrast & Typography Overrides for Amarillo Cítrico Theme */
+.theme-amarillo .bg-primario,
+.theme-amarillo .bg-primario * {
+  color: #2D2828 !important;
+  border-color: rgba(45, 40, 40, 0.15);
+}
+
+.theme-amarillo .bg-primario svg {
+  color: #2D2828 !important;
+  stroke: #2D2828 !important;
+}
+
+.theme-amarillo .bg-primario .text-white,
+.theme-amarillo .bg-primario .text-white\/95,
+.theme-amarillo .bg-primario .text-white\/90,
+.theme-amarillo .bg-primario .text-white\/85,
+.theme-amarillo .bg-primario .text-white\/80,
+.theme-amarillo .bg-primario .text-white\/70,
+.theme-amarillo .bg-primario .text-white\/60,
+.theme-amarillo .bg-primario .text-white\/50 {
+  color: #2D2828 !important;
+}
+
+.theme-amarillo .bg-primario .text-white\/80,
+.theme-amarillo .bg-primario .text-white\/70,
+.theme-amarillo .bg-primario .text-white\/60 {
+  color: rgba(45, 40, 40, 0.75) !important;
+}
+
+.theme-amarillo .bg-primario .text-white\/50 {
+  color: rgba(45, 40, 40, 0.55) !important;
+}
+
+.theme-amarillo .bg-primario .border-white\/10 {
+  border-color: rgba(45, 40, 40, 0.15) !important;
+}
+
+.theme-amarillo .bg-primario .border-white\/20 {
+  border-color: rgba(45, 40, 40, 0.25) !important;
+}
+
+/* Highlighted elements on light backgrounds that would lack contrast in raw yellow */
+.theme-amarillo .text-primario {
+  color: #2D2828 !important;
+}
+
+.theme-amarillo .border-primario {
+  border-color: #2D2828 !important;
+}
+
+/* Custom header cart button adjustment under Yellow Theme for high contrast */
+.theme-amarillo #btn-header-cart {
+  background-color: #2D2828 !important;
+}
+.theme-amarillo #btn-header-cart svg {
+  color: var(--color-primario) !important;
+  stroke: var(--color-primario) !important;
+}
+
+/* Search input focus outline adjustment under Yellow Theme */
+.theme-amarillo #search-input:focus {
+  --tw-ring-color: #2D2828 !important;
+}
+
+.bg-secundario {
+  background-color: var(--color-secundario) !important;
+}
+.text-secundario {
+  color: var(--color-secundario) !important;
+}
+.border-secundario {
+  border-color: var(--color-secundario) !important;
+}
+
+.bg-tertiary-custom {
+  background-color: var(--color-terciario) !important;
+}
+
+/* Custom CSS utilities for checkered retro italian look */
+.bg-checkered {
+  background-image: repeating-conic-gradient(var(--color-primario) 0% 25%, #ffffff 0% 50%);
+  background-size: 24px 24px;
+}
+
+.bg-checkered-sm {
+  background-image: repeating-conic-gradient(var(--color-primario) 0% 25%, #ffffff 0% 50%);
+  background-size: 16px 16px;
+}
+
+.bg-checkered-beige {
+  background-image: repeating-conic-gradient(var(--color-primario) 0% 25%, #faf6f0 0% 50%);
+  background-size: 20px 20px;
+}
+
+/* Base override for beautiful smooth scrolling and cozy beige background */
+body {
+  background-color: #faf6f0;
+  color: #1a1a1a;
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Custom scrollbars for category selectors */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Shine scanning animation for the promotional banner */
+@keyframes shine {
+  0% { left: -100%; }
+  50% { left: 100%; }
+  100% { left: 100%; }
+}
+.animate-shine {
+  position: relative;
+  animation: shine 4.5s infinite linear;
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Boulette - Pizzería Napolitana",
+  "description": "Menú digital interactivo para Boulette, pizzería de masa madre de estilo napolitano. Realiza pedidos directamente por WhatsApp.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
