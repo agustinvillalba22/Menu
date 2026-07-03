@@ -1,23 +1,29 @@
 import uuid
 
-from fastapi import Depends, HTTPException, Path
+from fastapi import Depends, HTTPException, Path, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.restaurant import RestaurantRole, UserRestaurantRole
 from app.models.user import User
 from app.services.auth import decode_token
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    request: Request,
+    header_token: str | None = Depends(oauth2_scheme),
     session: AsyncSession = Depends(get_db),
 ) -> User:
+    # Precedence: httpOnly cookie first, Authorization header as fallback.
+    token = request.cookies.get(settings.AUTH_COOKIE_NAME) or header_token
+    if token is None:
+        raise HTTPException(status_code=401, detail="not_authenticated")
     try:
         user_id_str = decode_token(token)
         user_id = uuid.UUID(user_id_str)
