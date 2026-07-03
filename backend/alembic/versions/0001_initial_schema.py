@@ -107,8 +107,7 @@ def upgrade() -> None:
         "item_tags",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("item_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("tag", sa.String(), nullable=False),
-        sa.Column("icon_url", sa.String(), nullable=True),
+        sa.Column("name", sa.String(), nullable=False),
         sa.ForeignKeyConstraint(["item_id"], ["items.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
