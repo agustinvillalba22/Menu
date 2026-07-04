@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.menu import Menu
 from app.models.restaurant import Restaurant, RestaurantRole, UserRestaurantRole
+from app.models.style import MenuStyle
 from app.models.user import User
 from app.schemas.restaurant import RestaurantCreate, RestaurantUpdate
 
@@ -68,6 +69,7 @@ async def create_restaurant(
                 )
             )
             session.add(Menu(name=_DEFAULT_MENU_NAME, restaurant_id=restaurant.id))
+            session.add(MenuStyle(restaurant_id=restaurant.id))
 
             await session.commit()
         except IntegrityError:

@@ -71,3 +71,40 @@ export function apiPost<T>(path: string, body?: unknown): Promise<T> {
     body: body === undefined ? undefined : JSON.stringify(body),
   })
 }
+
+export function apiPatch<T>(path: string, body?: unknown): Promise<T> {
+  return apiFetch<T>(path, {
+    method: 'PATCH',
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+}
+
+export function apiDelete<T>(path: string): Promise<T> {
+  return apiFetch<T>(path, { method: 'DELETE' })
+}
+
+/**
+ * Multipart upload. Does NOT go through apiFetch: that forces
+ * `Content-Type: application/json`, which would break the multipart boundary
+ * the browser generates. Reuses ApiError/extractDetail for error handling.
+ */
+export async function apiUpload<T>(path: string, formData: FormData): Promise<T> {
+  const res = await fetch(`${import.meta.env.VITE_API_URL}${path}`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  })
+
+  if (!res.ok) {
+    throw new ApiError(res.status, await extractDetail(res))
+  }
+
+  if (res.status === 204) {
+    return undefined as T
+  }
+  const text = await res.text()
+  if (text === '') {
+    return undefined as T
+  }
+  return JSON.parse(text) as T
+}

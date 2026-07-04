@@ -5,7 +5,11 @@ import App from './App'
 import { useAuth } from './hooks/useAuth'
 import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
-import DashboardPage from './pages/dashboard/DashboardPage'
+import DashboardLayout from './pages/dashboard/DashboardLayout'
+import OverviewPage from './pages/dashboard/OverviewPage'
+import AppearancePage from './pages/dashboard/AppearancePage'
+import MenuEditorPage from './pages/dashboard/MenuEditorPage'
+import PublicMenuPage from './pages/public/PublicMenuPage'
 
 function PrivateRoute({ children }: { children: ReactNode }): React.JSX.Element {
   const { loading, isAuthenticated } = useAuth()
@@ -29,10 +33,15 @@ export default function AppRouter(): React.JSX.Element {
           path="/dashboard"
           element={
             <PrivateRoute>
-              <DashboardPage />
+              <DashboardLayout />
             </PrivateRoute>
           }
-        />
+        >
+          <Route index element={<OverviewPage />} />
+          <Route path="menu" element={<MenuEditorPage />} />
+          <Route path="appearance" element={<AppearancePage />} />
+        </Route>
+        <Route path="/menu/:qrToken" element={<PublicMenuPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
