@@ -153,9 +153,19 @@ async def test_ca02_unknown_token_404(client: AsyncClient):
 # ---------------------------------------------------------------------------
 
 
-async def test_ca03_no_style_is_null(client: AsyncClient):
+async def test_ca03_no_style_is_null(client: AsyncClient, db_session: AsyncSession):
     headers = await as_user(client)
     restaurant = await make_restaurant(client, headers)
+    style = (
+        await db_session.execute(
+            select(MenuStyle).where(
+                MenuStyle.restaurant_id == uuid.UUID(restaurant["id"])
+            )
+        )
+    ).scalar_one()
+    await db_session.delete(style)
+    await db_session.commit()
+
     res = await client.get(f"/menu/{restaurant['qr_token']}")
     assert res.status_code == 200
     assert res.json()["style"] is None
@@ -171,14 +181,14 @@ async def test_ca04_style_populated(client: AsyncClient, db_session: AsyncSessio
     restaurant = await make_restaurant(client, headers)
     rid, qr = restaurant["id"], restaurant["qr_token"]
 
-    db_session.add(
-        MenuStyle(
-            restaurant_id=uuid.UUID(rid),
-            font_family=FontFamily.playfair_display,
-            primary_color="#112233",
-            secondary_color="#445566",
+    style = (
+        await db_session.execute(
+            select(MenuStyle).where(MenuStyle.restaurant_id == uuid.UUID(rid))
         )
-    )
+    ).scalar_one()
+    style.font_family = FontFamily.playfair_display
+    style.primary_color = "#112233"
+    style.secondary_color = "#445566"
     await db_session.commit()
 
     res = await client.get(f"/menu/{qr}")

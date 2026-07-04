@@ -18,5 +18,16 @@ export default defineConfig(() => {
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },
+    test: {
+      environment: 'jsdom',
+      globals: true,
+      setupFiles: ['./src/__tests__/setup.ts'],
+      css: false,
+      // Deterministic base URL for apiFetch (`${VITE_API_URL}${path}`) so tests
+      // can assert the exact URL passed to the mocked fetch.
+      env: {
+        VITE_API_URL: 'http://api.test',
+      },
+    },
   };
 });
