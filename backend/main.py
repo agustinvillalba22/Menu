@@ -6,6 +6,7 @@ from app.routers.auth import router as auth_router
 from app.routers.category import router as category_router
 from app.routers.health import router as health_router
 from app.routers.item import router as item_router
+from app.routers.order import router as order_router
 from app.routers.public_menu import router as public_menu_router
 from app.routers.restaurant import router as restaurant_router
 from app.routers.style import router as style_router
@@ -29,3 +30,6 @@ app.include_router(subcategory_router, prefix="/restaurants", tags=["subcategori
 app.include_router(item_router, prefix="/restaurants", tags=["items"])
 app.include_router(style_router, prefix="/restaurants", tags=["style"])
 app.include_router(public_menu_router, tags=["public"])
+# order_router owns full paths (public /menu/... and authenticated
+# /restaurants/... routes), so it is registered without a shared prefix.
+app.include_router(order_router, tags=["orders"])

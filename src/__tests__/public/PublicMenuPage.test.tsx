@@ -14,7 +14,7 @@ beforeEach(() => {
 })
 
 const menu: PublicMenuResponse = {
-  restaurant: { name: 'Boulette', slug: 'boulette' },
+  restaurant: { name: 'Boulette', slug: 'boulette', orders_enabled: false },
   style: { font_family: 'Playfair Display', primary_color: '#112233', secondary_color: '#445566' },
   categories: [
     {
@@ -31,7 +31,9 @@ const menu: PublicMenuResponse = {
               name: 'Margherita',
               description: 'Tomate y mozzarella',
               price: '12.50',
+              image_url: null,
               tags: [{ id: 't1', name: 'Vegetariana' }],
+              modifiers: [],
             },
           ],
         },

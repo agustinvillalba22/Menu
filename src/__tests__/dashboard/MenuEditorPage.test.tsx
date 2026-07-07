@@ -13,6 +13,7 @@ const restaurant: Restaurant = {
   name: 'Boulette',
   slug: 'boulette',
   qr_token: 'qr-abc',
+  orders_enabled: false,
   role: 'owner',
 }
 

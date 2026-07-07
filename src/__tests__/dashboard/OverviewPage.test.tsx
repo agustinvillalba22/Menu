@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import OverviewPage from '../../pages/dashboard/OverviewPage'
 import type { Restaurant } from '../../lib/types'
-import { jsonResponse } from '../helpers'
+import { jsonResponse, readCall } from '../helpers'
 
 global.fetch = vi.fn()
 beforeEach(() => vi.clearAllMocks())
@@ -14,6 +14,7 @@ const restaurant: Restaurant = {
   name: 'Boulette',
   slug: 'boulette',
   qr_token: 'qr-abc',
+  orders_enabled: false,
   role: 'owner',
 }
 
@@ -87,5 +88,65 @@ describe('OverviewPage', () => {
     // Wait for the loading text to disappear, then the alert is shown.
     await waitForElementToBeRemoved(() => screen.queryByText(/cargando/i))
     expect(screen.getByRole('alert')).toHaveTextContent(/no se pudieron cargar/i)
+  })
+
+  // M11: owner toggles `orders_enabled` from the overview.
+  it('toggles orders_enabled and PATCHes the restaurant with the new value', async () => {
+    let enabled = false
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const method = (init?.method ?? 'GET').toUpperCase()
+      if (method === 'PATCH') {
+        enabled = true
+        return jsonResponse({ ...restaurant, orders_enabled: true })
+      }
+      // GET /restaurants reflects the current toggle state.
+      return jsonResponse([{ ...restaurant, orders_enabled: enabled }])
+    })
+
+    renderPage()
+
+    const toggle = await screen.findByRole('switch', { name: /recepción de pedidos/i })
+    expect(toggle).toHaveAttribute('aria-checked', 'false')
+
+    await userEvent.click(toggle)
+
+    // Success feedback + the switch now reads as on.
+    expect(await screen.findByRole('status')).toHaveTextContent(/preferencia de pedidos guardada/i)
+    expect(screen.getByRole('switch', { name: /recepción de pedidos/i })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
+
+    // The PATCH carried the restaurant name plus the new orders_enabled flag.
+    const patchCall = vi.mocked(fetch).mock.calls
+      .map((c) => readCall(c as [unknown, unknown]))
+      .find((c) => c.method === 'PATCH')
+    expect(patchCall).toBeDefined()
+    expect(patchCall!.url).toBe('http://api.test/restaurants/r1')
+    expect(JSON.parse(patchCall!.body as string)).toEqual({
+      name: 'Boulette',
+      orders_enabled: true,
+    })
+  })
+
+  it('shows an error when saving the orders preference fails', async () => {
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const method = (init?.method ?? 'GET').toUpperCase()
+      if (method === 'PATCH') {
+        return jsonResponse({ detail: 'boom' }, 500)
+      }
+      return jsonResponse([restaurant])
+    })
+
+    renderPage()
+
+    const toggle = await screen.findByRole('switch', { name: /recepción de pedidos/i })
+    await userEvent.click(toggle)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/no se pudo guardar la preferencia/i)
+    expect(screen.getByRole('switch', { name: /recepción de pedidos/i })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    )
   })
 })
