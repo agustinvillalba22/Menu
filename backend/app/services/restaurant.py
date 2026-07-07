@@ -126,9 +126,19 @@ async def get_user_role(
 async def update_restaurant(
     restaurant_id: uuid.UUID, data: RestaurantUpdate, session: AsyncSession
 ) -> Restaurant:
-    """Update a restaurant's name. The slug is intentionally left unchanged."""
+    """Update a restaurant's name and/or orders_enabled flag.
+
+    The slug is intentionally left unchanged. Only fields explicitly present in
+    the request body are applied (exclude_unset), so a PATCH omitting
+    orders_enabled leaves it untouched.
+    """
     restaurant = await get_restaurant(restaurant_id, session)
-    restaurant.name = data.name
+    fields = data.model_dump(exclude_unset=True)
+    if "name" in fields:
+        restaurant.name = fields["name"]
+    # orders_enabled is optional; an explicit null is treated as "no change".
+    if fields.get("orders_enabled") is not None:
+        restaurant.orders_enabled = fields["orders_enabled"]
     await session.commit()
     await session.refresh(restaurant)
     return restaurant

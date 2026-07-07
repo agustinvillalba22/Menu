@@ -18,6 +18,8 @@ import app.models.user       # noqa: F401
 import app.models.restaurant  # noqa: F401
 import app.models.menu        # noqa: F401
 import app.models.item        # noqa: F401
+import app.models.item_modifier  # noqa: F401
+import app.models.order       # noqa: F401
 import app.models.style       # noqa: F401
 
 from app.models.base import Base

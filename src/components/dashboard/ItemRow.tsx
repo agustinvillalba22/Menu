@@ -3,6 +3,7 @@ import { updateItem, deleteItem } from '../../lib/menu'
 import { ApiError } from '../../lib/api'
 import type { Item, ItemUpdate, Tag } from '../../lib/types'
 import ItemTags from './ItemTags'
+import ItemModifiers from './ItemModifiers'
 
 interface ItemRowProps {
   restaurantId: string
@@ -170,6 +171,12 @@ export default function ItemRow({
         itemId={current.id}
         tags={current.tags}
         onTagsChange={handleTagsChange}
+      />
+
+      <ItemModifiers
+        restaurantId={restaurantId}
+        subcategoryId={subcategoryId}
+        itemId={current.id}
       />
 
       {error && (

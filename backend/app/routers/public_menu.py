@@ -7,6 +7,7 @@ from app.models.menu import Category, Subcategory
 from app.models.restaurant import Restaurant
 from app.schemas.public_menu import (
     PublicCategoryRead,
+    PublicItemModifierRead,
     PublicItemRead,
     PublicMenuResponse,
     PublicRestaurantRead,
@@ -20,12 +21,23 @@ router = APIRouter()
 
 
 def _build_item(item: Item) -> PublicItemRead:
+    modifiers = sorted(item.modifiers, key=lambda m: m.name)
     return PublicItemRead(
         id=item.id,
         name=item.name,
         description=item.description,
         price=item.price,
+        image_url=item.image_url,
         tags=[PublicTagRead(id=t.id, name=t.name) for t in item.tags],
+        modifiers=[
+            PublicItemModifierRead(
+                id=m.id,
+                name=m.name,
+                price_delta=m.price_delta,
+                type=m.type,
+            )
+            for m in modifiers
+        ],
     )
 
 

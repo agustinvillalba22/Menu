@@ -26,6 +26,7 @@ def _to_read(restaurant: Restaurant, role: RestaurantRole) -> RestaurantRead:
         name=restaurant.name,
         slug=restaurant.slug,
         qr_token=restaurant.qr_token,
+        orders_enabled=restaurant.orders_enabled,
         role=role,
     )
 

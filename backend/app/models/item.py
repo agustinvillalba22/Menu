@@ -39,6 +39,11 @@ class Item(Base):
         back_populates="item",
         cascade="all, delete-orphan",
     )
+    modifiers: Mapped[list["app.models.item_modifier.ItemModifier"]] = relationship(  # type: ignore[name-defined]
+        "ItemModifier",
+        back_populates="item",
+        cascade="all, delete-orphan",
+    )
 
 
 class ItemTag(Base):

@@ -11,6 +11,9 @@ import type {
   ItemUpdate,
   Tag,
   TagCreate,
+  Modifier,
+  ModifierCreate,
+  ModifierUpdate,
   ImportResult,
 } from './types'
 
@@ -134,6 +137,55 @@ export function removeTag(
 ): Promise<void> {
   return apiDelete<void>(
     `/restaurants/${restaurantId}/subcategories/${subcategoryId}/items/${itemId}/tags/${tagId}`,
+  )
+}
+
+// --- Modifiers (M11) -------------------------------------------------------
+// Nested under an item, same URL shape as tags.
+
+export function listModifiers(
+  restaurantId: string,
+  subcategoryId: string,
+  itemId: string,
+): Promise<Modifier[]> {
+  return apiGet<Modifier[]>(
+    `/restaurants/${restaurantId}/subcategories/${subcategoryId}/items/${itemId}/modifiers`,
+  )
+}
+
+export function addModifier(
+  restaurantId: string,
+  subcategoryId: string,
+  itemId: string,
+  data: ModifierCreate,
+): Promise<Modifier> {
+  return apiPost<Modifier>(
+    `/restaurants/${restaurantId}/subcategories/${subcategoryId}/items/${itemId}/modifiers`,
+    data,
+  )
+}
+
+export function updateModifier(
+  restaurantId: string,
+  subcategoryId: string,
+  itemId: string,
+  modifierId: string,
+  data: ModifierUpdate,
+): Promise<Modifier> {
+  return apiPatch<Modifier>(
+    `/restaurants/${restaurantId}/subcategories/${subcategoryId}/items/${itemId}/modifiers/${modifierId}`,
+    data,
+  )
+}
+
+export function removeModifier(
+  restaurantId: string,
+  subcategoryId: string,
+  itemId: string,
+  modifierId: string,
+): Promise<void> {
+  return apiDelete<void>(
+    `/restaurants/${restaurantId}/subcategories/${subcategoryId}/items/${itemId}/modifiers/${modifierId}`,
   )
 }
 

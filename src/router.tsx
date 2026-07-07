@@ -9,6 +9,7 @@ import DashboardLayout from './pages/dashboard/DashboardLayout'
 import OverviewPage from './pages/dashboard/OverviewPage'
 import AppearancePage from './pages/dashboard/AppearancePage'
 import MenuEditorPage from './pages/dashboard/MenuEditorPage'
+import OrdersPage from './pages/dashboard/OrdersPage'
 import PublicMenuPage from './pages/public/PublicMenuPage'
 
 function PrivateRoute({ children }: { children: ReactNode }): React.JSX.Element {
@@ -39,6 +40,7 @@ export default function AppRouter(): React.JSX.Element {
         >
           <Route index element={<OverviewPage />} />
           <Route path="menu" element={<MenuEditorPage />} />
+          <Route path="orders" element={<OrdersPage />} />
           <Route path="appearance" element={<AppearancePage />} />
         </Route>
         <Route path="/menu/:qrToken" element={<PublicMenuPage />} />

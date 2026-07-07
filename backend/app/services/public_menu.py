@@ -28,7 +28,10 @@ async def get_public_menu(qr_token: str, session: AsyncSession) -> Restaurant:
             .selectinload(Menu.categories)
             .selectinload(Category.subcategories)
             .selectinload(Subcategory.items)
-            .selectinload(Item.tags),
+            .options(
+                selectinload(Item.tags),
+                selectinload(Item.modifiers),
+            ),
         )
     )
     restaurant = result.scalar_one_or_none()

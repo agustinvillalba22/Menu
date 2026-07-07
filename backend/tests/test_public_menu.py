@@ -121,7 +121,11 @@ async def test_ca01_full_menu_tree(client: AsyncClient):
     assert res.status_code == 200
     body = res.json()
 
-    assert body["restaurant"] == {"name": "Bodegón", "slug": restaurant["slug"]}
+    assert body["restaurant"] == {
+        "name": "Bodegón",
+        "slug": restaurant["slug"],
+        "orders_enabled": False,
+    }
     assert len(body["categories"]) == 1
     cat = body["categories"][0]
     assert cat["name"] == "Comidas"
