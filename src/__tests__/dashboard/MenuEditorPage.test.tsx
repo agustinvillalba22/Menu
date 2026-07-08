@@ -94,45 +94,19 @@ describe('MenuEditorPage', () => {
     expect(deletes[0].url).toBe('http://api.test/restaurants/r1/categories/c1')
   })
 
-  // M12.1 CA-05 / RF-05: a successful CSV import re-fetches the category tree
-  // so a newly-imported category shows up without a manual page reload.
-  it('refreshes the category tree after a successful CSV import', async () => {
-    const postres: Category = { id: 'c2', name: 'Postres', type: 'food' }
-    let categoriesCallCount = 0
-
-    vi.mocked(fetch).mockImplementation(async (input, init) => {
-      const url = String(input)
-      const method = (init?.method ?? 'GET').toUpperCase()
-      // Check the most specific paths first — the categories/import URLs also
-      // contain "/restaurants/<id>/...", so that check must come last.
-      if (url.includes('/items/import') && method === 'POST') {
-        return jsonResponse({ imported: 1, errors: [] })
-      }
-      if (url.endsWith('/categories') && method === 'GET') {
-        categoriesCallCount += 1
-        // First load: only "Entradas". After the CSV import refresh: also "Postres".
-        return jsonResponse(categoriesCallCount === 1 ? [entradas] : [entradas, postres])
-      }
-      if (url.endsWith('/restaurants') && method === 'GET') {
-        return jsonResponse([restaurant])
-      }
-      throw new Error(`No mock route for ${method} ${url}`)
-    })
+  // CA-06 / RF-01: the owner no longer has access to CSV import (M13.1 moves
+  // it to superadmin-only), so this page must not render any file input.
+  it('does not render a CSV import form', async () => {
+    routeFetch([
+      { method: 'GET', match: '/categories', response: jsonResponse([entradas]) },
+      { method: 'GET', match: '/restaurants', response: jsonResponse([restaurant]) },
+    ])
 
     render(<MenuEditorPage />)
 
-    expect(await screen.findByText('Entradas')).toBeInTheDocument()
-    expect(screen.queryByText('Postres')).not.toBeInTheDocument()
-
-    await userEvent.upload(
-      screen.getByLabelText(/archivo csv/i),
-      new File(['name,price\nFlan,3.00'], 'menu.csv', { type: 'text/csv' }),
-    )
-    await userEvent.click(screen.getByRole('button', { name: /importar/i }))
-
-    // The tree re-fetches and now shows the category created by the import.
-    expect(await screen.findByText('Postres')).toBeInTheDocument()
-    expect(callsMatching('/categories', 'GET')).toHaveLength(2)
+    await screen.findByText('Entradas')
+    expect(screen.queryByLabelText(/archivo csv/i)).not.toBeInTheDocument()
+    expect(document.querySelector('input[type="file"]')).not.toBeInTheDocument()
   })
 
   // CA-12: no restaurant → informative message and NO GET .../categories.

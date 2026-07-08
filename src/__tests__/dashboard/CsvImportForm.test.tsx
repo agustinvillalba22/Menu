@@ -118,4 +118,50 @@ describe('CsvImportForm', () => {
     await screen.findByRole('status')
     expect(onImported).not.toHaveBeenCalled()
   })
+
+  // RF-08/CA-07: the "create missing categories" checkbox starts unchecked.
+  it('renders the create-missing-categories checkbox unchecked by default', () => {
+    render(<CsvImportForm restaurantId="r1" />)
+
+    const checkbox = screen.getByRole('checkbox', {
+      name: /crear categorías\/subcategorías que no existan/i,
+    })
+    expect(checkbox).not.toBeChecked()
+  })
+
+  // RNF-01/CA-07: submitting without touching the checkbox produces the same
+  // request as before this spec — no create_missing key in the FormData.
+  it('does not include create_missing in the request when the checkbox is left unchecked', async () => {
+    routeFetch([
+      { method: 'POST', match: '/import', response: jsonResponse({ imported: 3, errors: [] }) },
+    ])
+
+    render(<CsvImportForm restaurantId="r1" />)
+
+    await userEvent.upload(screen.getByLabelText(/archivo csv/i), csvFile())
+    await userEvent.click(screen.getByRole('button', { name: /importar/i }))
+
+    await screen.findByRole('status')
+    const { init } = importCall()
+    expect((init.body as FormData).has('create_missing')).toBe(false)
+  })
+
+  // RF-08/RF-09: checking the box and submitting sends create_missing="true".
+  it('includes create_missing="true" in the request when the checkbox is checked', async () => {
+    routeFetch([
+      { method: 'POST', match: '/import', response: jsonResponse({ imported: 3, errors: [] }) },
+    ])
+
+    render(<CsvImportForm restaurantId="r1" />)
+
+    await userEvent.upload(screen.getByLabelText(/archivo csv/i), csvFile())
+    await userEvent.click(
+      screen.getByRole('checkbox', { name: /crear categorías\/subcategorías que no existan/i }),
+    )
+    await userEvent.click(screen.getByRole('button', { name: /importar/i }))
+
+    await screen.findByRole('status')
+    const { init } = importCall()
+    expect((init.body as FormData).get('create_missing')).toBe('true')
+  })
 })

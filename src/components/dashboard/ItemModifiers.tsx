@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import type { FormEvent } from 'react'
-import { listModifiers, addModifier, updateModifier, removeModifier } from '../../lib/menu'
+import { addModifier, updateModifier, removeModifier } from '../../lib/menu'
 import { ApiError } from '../../lib/api'
 import type { Modifier, ModifierType, ModifierUpdate } from '../../lib/types'
 
@@ -8,6 +8,8 @@ interface ItemModifiersProps {
   restaurantId: string
   subcategoryId: string
   itemId: string
+  modifiers: Modifier[]
+  onModifiersChange: (modifiers: Modifier[]) => void
 }
 
 const TYPE_LABEL: Record<ModifierType, string> = {
@@ -27,9 +29,9 @@ export default function ItemModifiers({
   restaurantId,
   subcategoryId,
   itemId,
+  modifiers,
+  onModifiersChange,
 }: ItemModifiersProps): React.JSX.Element {
-  const [modifiers, setModifiers] = useState<Modifier[]>([])
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const [name, setName] = useState('')
@@ -41,26 +43,6 @@ export default function ItemModifiers({
   const [editName, setEditName] = useState('')
   const [editPriceDelta, setEditPriceDelta] = useState('')
   const [editType, setEditType] = useState<ModifierType>('extra')
-
-  useEffect(() => {
-    let cancelled = false
-    async function load(): Promise<void> {
-      setLoading(true)
-      setError(null)
-      try {
-        const list = await listModifiers(restaurantId, subcategoryId, itemId)
-        if (!cancelled) setModifiers(list)
-      } catch {
-        if (!cancelled) setError('No se pudieron cargar los modificadores.')
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-    void load()
-    return () => {
-      cancelled = true
-    }
-  }, [restaurantId, subcategoryId, itemId])
 
   async function handleAdd(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault()
@@ -74,7 +56,7 @@ export default function ItemModifiers({
         price_delta: priceDelta.trim() === '' ? '0' : priceDelta.trim(),
         type,
       })
-      setModifiers((prev) => [...prev, created])
+      onModifiersChange([...modifiers, created])
       setName('')
       setPriceDelta('')
       setType('extra')
@@ -106,7 +88,7 @@ export default function ItemModifiers({
     setError(null)
     try {
       const updated = await updateModifier(restaurantId, subcategoryId, itemId, modifier.id, patch)
-      setModifiers((prev) => prev.map((m) => (m.id === updated.id ? updated : m)))
+      onModifiersChange(modifiers.map((m) => (m.id === updated.id ? updated : m)))
       setEditingId(null)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo guardar el modificador.')
@@ -120,7 +102,7 @@ export default function ItemModifiers({
     setError(null)
     try {
       await removeModifier(restaurantId, subcategoryId, itemId, modifierId)
-      setModifiers((prev) => prev.filter((m) => m.id !== modifierId))
+      onModifiersChange(modifiers.filter((m) => m.id !== modifierId))
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo eliminar el modificador.')
     } finally {
@@ -134,11 +116,7 @@ export default function ItemModifiers({
         Modificadores
       </p>
 
-      {loading && <p className="text-xs text-gray-500">Cargando modificadores…</p>}
-
-      {!loading && modifiers.length === 0 && (
-        <p className="text-xs text-gray-500">Sin modificadores.</p>
-      )}
+      {modifiers.length === 0 && <p className="text-xs text-gray-500">Sin modificadores.</p>}
 
       <ul className="space-y-1">
         {modifiers.map((modifier) =>

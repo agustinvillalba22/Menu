@@ -27,7 +27,7 @@ from app.models.item import Item, ItemTag
 from app.services.import_csv import MAX_FILE_BYTES, MAX_ROWS
 from tests.test_import_csv import (
     HEADER,
-    as_user,
+    as_superadmin,
     count_items,
     make_restaurant,
     post_csv,
@@ -47,7 +47,7 @@ async def test_duplicate_tags_in_row_dedupe_no_500(
     (M12.2): dedup is case-insensitive, so ``Vegano`` no longer stays distinct
     from ``vegano`` — this is an intentional fix, not a regression. The first
     seen casing ("vegano") is the one persisted."""
-    headers = await as_user(client)
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -69,7 +69,7 @@ async def test_duplicate_tags_with_whitespace_dedupe(
     client: AsyncClient, db_session: AsyncSession
 ):
     """Whitespace-padded dupes (`` vegano ;vegano``) also collapse to one tag."""
-    headers = await as_user(client)
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -94,7 +94,7 @@ async def test_file_over_max_bytes_returns_413(
 ):
     """A payload of MAX_FILE_BYTES + 1 bytes is rejected with 413 end-to-end;
     nothing is imported."""
-    headers = await as_user(client)
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -119,7 +119,7 @@ async def test_name_too_long_fails_row_others_imported(
     client: AsyncClient, db_session: AsyncSession
 ):
     """name > 120 chars → ``name_too_long`` on that row only; valid rows import."""
-    headers = await as_user(client)
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -144,7 +144,7 @@ async def test_name_at_limit_120_imports(
     client: AsyncClient, db_session: AsyncSession
 ):
     """Boundary: exactly 120 chars is accepted (mirrors ItemCreate max_length)."""
-    headers = await as_user(client)
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -161,7 +161,7 @@ async def test_description_too_long_fails_row(
     client: AsyncClient, db_session: AsyncSession
 ):
     """description > 1000 chars → ``description_too_long``; item not created."""
-    headers = await as_user(client)
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -186,7 +186,7 @@ async def test_tag_too_long_fails_row(
     client: AsyncClient, db_session: AsyncSession
 ):
     """Any tag > 50 chars → ``tag_too_long``; the whole row fails, no item/tag."""
-    headers = await as_user(client)
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -214,7 +214,7 @@ async def test_tag_at_limit_50_imports(
     client: AsyncClient, db_session: AsyncSession
 ):
     """Boundary: a tag of exactly 50 chars is accepted (mirrors TagCreate)."""
-    headers = await as_user(client)
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -243,7 +243,7 @@ async def test_over_max_rows_returns_413_early(
     The content is intentionally trivial (rows point at a non-existent category)
     to prove the row-count guard fires *before* category resolution / DB work.
     """
-    headers = await as_user(client)
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -264,7 +264,7 @@ async def test_case_insensitive_variant_tags_dedupe_to_one(
 ):
     """M12.2 CA-02: a row with ``tags="vegano;Vegano"`` (no exact duplicate,
     just a casing variant) creates a single ItemTag, not two."""
-    headers = await as_user(client)
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -284,7 +284,7 @@ async def test_exactly_max_rows_is_accepted(
     client: AsyncClient, db_session: AsyncSession
 ):
     """Boundary: exactly MAX_ROWS data rows is NOT rejected (guard is strict >)."""
-    headers = await as_user(client)
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import ItemModifiers from '../../components/dashboard/ItemModifiers'
 import type { Modifier } from '../../lib/types'
@@ -16,8 +16,19 @@ const existing: Modifier = {
   type: 'extra',
 }
 
-function renderComponent() {
-  return render(<ItemModifiers restaurantId="r1" subcategoryId="s1" itemId="i1" />)
+function renderComponent(modifiers: Modifier[] = [], onModifiersChange = vi.fn()) {
+  return {
+    onModifiersChange,
+    ...render(
+      <ItemModifiers
+        restaurantId="r1"
+        subcategoryId="s1"
+        itemId="i1"
+        modifiers={modifiers}
+        onModifiersChange={onModifiersChange}
+      />,
+    ),
+  }
 }
 
 function callsMatching(fragment: string, method?: string) {
@@ -28,34 +39,43 @@ function callsMatching(fragment: string, method?: string) {
 }
 
 describe('ItemModifiers', () => {
-  it('lists the existing modifiers', async () => {
-    routeFetch([{ method: 'GET', match: '/modifiers', response: jsonResponse([existing]) }])
+  it('lists the modifiers passed via props (no fetch on its own)', () => {
+    renderComponent([existing])
 
-    renderComponent()
-
-    expect(await screen.findByText('Extra queso')).toBeInTheDocument()
+    expect(screen.getByText('Extra queso')).toBeInTheDocument()
     expect(screen.getByText(/Extra, \+ \$1\.50/)).toBeInTheDocument()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
-  it('creates a modifier and shows it', async () => {
+  it('shows "sin modificadores" when the list prop is empty', () => {
+    renderComponent([])
+
+    expect(screen.getByText(/sin modificadores/i)).toBeInTheDocument()
+  })
+
+  it('creates a modifier, calls onModifiersChange with the appended item, and does not call listModifiers', async () => {
     routeFetch([
       {
         method: 'POST',
         match: '/modifiers',
-        response: jsonResponse({ id: 'm2', item_id: 'i1', name: 'Sin cebolla', price_delta: '-0.50', type: 'removal' }, 201),
+        response: jsonResponse(
+          { id: 'm2', item_id: 'i1', name: 'Sin cebolla', price_delta: '-0.50', type: 'removal' },
+          201,
+        ),
       },
-      { method: 'GET', match: '/modifiers', response: jsonResponse([]) },
     ])
 
-    renderComponent()
-    // Wait for the initial (empty) load to settle.
-    expect(await screen.findByText(/sin modificadores/i)).toBeInTheDocument()
+    const { onModifiersChange } = renderComponent([])
 
     await userEvent.type(screen.getByLabelText(/nombre del nuevo modificador/i), 'Sin cebolla')
     await userEvent.type(screen.getByLabelText(/precio del nuevo modificador/i), '-0.50')
     await userEvent.click(screen.getByRole('button', { name: /agregar/i }))
 
-    expect(await screen.findByText('Sin cebolla')).toBeInTheDocument()
+    await screen.findByRole('button', { name: /agregar/i })
+    expect(screen.getByLabelText(/nombre del nuevo modificador/i)).toHaveValue('')
+    expect(onModifiersChange).toHaveBeenCalledWith([
+      { id: 'm2', item_id: 'i1', name: 'Sin cebolla', price_delta: '-0.50', type: 'removal' },
+    ])
 
     const posts = callsMatching('/modifiers', 'POST')
     expect(posts).toHaveLength(1)
@@ -65,20 +85,19 @@ describe('ItemModifiers', () => {
       price_delta: '-0.50',
       type: 'extra',
     })
+    expect(callsMatching('/modifiers', 'GET')).toHaveLength(0)
   })
 
-  it('edits a modifier via PATCH', async () => {
+  it('edits a modifier via PATCH and calls onModifiersChange with the updated array', async () => {
     routeFetch([
       {
         method: 'PATCH',
         match: '/modifiers/',
         response: jsonResponse({ ...existing, name: 'Extra muzza' }),
       },
-      { method: 'GET', match: '/modifiers', response: jsonResponse([existing]) },
     ])
 
-    renderComponent()
-    await screen.findByText('Extra queso')
+    const { onModifiersChange } = renderComponent([existing])
 
     await userEvent.click(screen.getByRole('button', { name: 'Editar' }))
     const nameInput = screen.getByLabelText(/nombre del modificador/i)
@@ -86,7 +105,7 @@ describe('ItemModifiers', () => {
     await userEvent.type(nameInput, 'Extra muzza')
     await userEvent.click(screen.getByRole('button', { name: 'Guardar' }))
 
-    expect(await screen.findByText('Extra muzza')).toBeInTheDocument()
+    expect(onModifiersChange).toHaveBeenCalledWith([{ ...existing, name: 'Extra muzza' }])
 
     const patches = callsMatching('/modifiers/', 'PATCH')
     expect(patches).toHaveLength(1)
@@ -94,33 +113,37 @@ describe('ItemModifiers', () => {
       'http://api.test/restaurants/r1/subcategories/s1/items/i1/modifiers/m1',
     )
     expect(JSON.parse(patches[0].body as string)).toEqual({ name: 'Extra muzza' })
+    expect(callsMatching('/modifiers', 'GET')).toHaveLength(0)
   })
 
-  it('deletes a modifier via DELETE', async () => {
-    routeFetch([
-      { method: 'DELETE', match: '/modifiers/', response: jsonResponse(undefined, 204) },
-      { method: 'GET', match: '/modifiers', response: jsonResponse([existing]) },
-    ])
+  it('deletes a modifier via DELETE and calls onModifiersChange with the filtered array', async () => {
+    routeFetch([{ method: 'DELETE', match: '/modifiers/', response: jsonResponse(undefined, 204) }])
 
-    renderComponent()
-    await screen.findByText('Extra queso')
+    const { onModifiersChange } = renderComponent([existing])
 
     await userEvent.click(screen.getByRole('button', { name: /eliminar modificador extra queso/i }))
 
-    await waitFor(() => expect(screen.queryByText('Extra queso')).not.toBeInTheDocument())
+    expect(onModifiersChange).toHaveBeenCalledWith([])
 
     const deletes = callsMatching('/modifiers/', 'DELETE')
     expect(deletes).toHaveLength(1)
     expect(deletes[0].url).toBe(
       'http://api.test/restaurants/r1/subcategories/s1/items/i1/modifiers/m1',
     )
+    expect(callsMatching('/modifiers', 'GET')).toHaveLength(0)
   })
 
-  it('shows an error alert when loading modifiers fails', async () => {
-    routeFetch([{ method: 'GET', match: '/modifiers', response: jsonResponse({ detail: 'boom' }, 500) }])
+  it('shows an error alert when adding a modifier fails, without touching the parent list', async () => {
+    routeFetch([{ method: 'POST', match: '/modifiers', response: jsonResponse({ detail: 'boom' }, 500) }])
 
-    renderComponent()
+    const { onModifiersChange } = renderComponent([])
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/no se pudieron cargar los modificadores/i)
+    await userEvent.type(screen.getByLabelText(/nombre del nuevo modificador/i), 'Sin cebolla')
+    await userEvent.click(screen.getByRole('button', { name: /agregar/i }))
+
+    // ApiError propagates the server-provided detail as the message (existing
+    // behavior of handleAdd's error handling, unrelated to this refactor).
+    expect(await screen.findByRole('alert')).toHaveTextContent(/boom/i)
+    expect(onModifiersChange).not.toHaveBeenCalled()
   })
 })

@@ -191,8 +191,17 @@ export function removeModifier(
 
 // --- CSV import ------------------------------------------------------------
 
-export function importItemsCsv(restaurantId: string, file: File): Promise<ImportResult> {
+export function importItemsCsv(
+  restaurantId: string,
+  file: File,
+  createMissing?: boolean,
+): Promise<ImportResult> {
   const formData = new FormData()
   formData.append('file', file)
+  // Only append when true: keeps the request byte-identical to before this
+  // flag existed when the caller doesn't opt in (RNF-01/CA-07).
+  if (createMissing) {
+    formData.append('create_missing', 'true')
+  }
   return apiUpload<ImportResult>(`/restaurants/${restaurantId}/items/import`, formData)
 }

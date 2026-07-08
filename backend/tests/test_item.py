@@ -499,6 +499,55 @@ async def test_item_tag_unique_constraint_enforced(
 
 
 # ---------------------------------------------------------------------------
+# M12.3: índice único case-insensitive (item_id, lower(name)) a nivel DB
+# ---------------------------------------------------------------------------
+
+
+async def test_item_tags_table_created_with_ci_index_on_sqlite(
+    db_session: AsyncSession,
+):
+    """CA-01: Base.metadata.create_all (SQLite in-memory, como en conftest)
+    crea la tabla item_tags sin error con el nuevo índice de expresión
+    uq_item_tag_ci. La creación exitosa de `db_session` (que depende de
+    test_engine -> create_all) ya es la prueba: si el índice no fuera válido
+    en SQLite, el fixture fallaría antes de llegar a este assert.
+    """
+    result = await db_session.execute(
+        select(func.count()).select_from(ItemTag)
+    )
+    assert result.scalar_one() == 0
+
+
+async def test_item_tag_unique_constraint_case_insensitive_enforced(
+    client: AsyncClient, db_session: AsyncSession
+):
+    """CA-02: dos ItemTag del mismo item_id que difieren solo en mayúsculas/
+    minúsculas ("vegano" / "Vegano") violan la constraint única a nivel DB.
+    Insert directo vía db_session, bypaseando add_tag, para probar la
+    constraint de DB en sí (uq_item_tag_ci sobre (item_id, lower(name))),
+    no la lógica de servicio (ya cubierta en M12.2).
+    """
+    from sqlalchemy.exc import IntegrityError
+
+    headers = await as_user(client)
+    rid = await make_restaurant(client, headers)
+    sid = await make_subcategory(client, headers, rid)
+    item_id = uuid.UUID((await make_item(client, headers, rid, sid)).json()["id"])
+
+    db_session.add(ItemTag(name="vegano", item_id=item_id))
+    await db_session.commit()
+
+    db_session.add(ItemTag(name="Vegano", item_id=item_id))
+    try:
+        await db_session.commit()
+        raised = False
+    except IntegrityError:
+        raised = True
+        await db_session.rollback()
+    assert raised, "se esperaba IntegrityError por uq_item_tag_ci (case-insensitive)"
+
+
+# ---------------------------------------------------------------------------
 # Extra: DELETE ítem → 204
 # ---------------------------------------------------------------------------
 

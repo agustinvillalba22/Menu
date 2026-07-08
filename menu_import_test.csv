@@ -1,0 +1,13 @@
+category,subcategory,name,description,price,tags
+Pizzas,Clasicas,Fugazzeta,Cebolla y muzzarella,4200,Vegetariano
+Pizzas,Clasicas,Rucula y jamon crudo,Pizza con rucula fresca y jamon crudo,4800,
+Pizzas,Clasicas,Cuatro Quesos,Mix de quesos,4500,Vegetariano
+Pizzas,Clasicas,Vegana Especial,Sin productos de origen animal,4600,Vegano;Sin lácteos
+Pizzas,Clasicas,Celiaca Especial,Masa sin gluten,5200,Sin TACC;Vegetariano
+Pizzas,Clasicas,Diabla Picante,Con aji picante,4700,Picante
+Pizzas,Clasicas,Prueba Dedupe Tags,Para probar dedupe de tags con mayusculas,4000,vegano;Vegano;VEGANO
+Pizzas,Clasicas,,Sin nombre asignado,3000,
+Pizzas,Clasicas,Precio Invalido,Precio con formato incorrecto,abc,
+Bebidas,SinAlcohol,Limonada Casera,Limonada de limon natural,1800,Vegano
+Pizzas,Especiales,Especial De La Casa,Subcategoria que no existe,5000,
+Pizzas,Clasicas,Tag Demasiado Largo,Prueba de limite de longitud de tag,4000,Tag-Demasiado-Largo-Para-El-Limite-De-Cincuenta-Caracteres-Permitidos

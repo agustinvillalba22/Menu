@@ -40,6 +40,11 @@ class Restaurant(Base):
         nullable=False,
         default=False,
     )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+    )
 
     # relationships
     menus: Mapped[list["app.models.menu.Menu"]] = relationship(  # type: ignore[name-defined]

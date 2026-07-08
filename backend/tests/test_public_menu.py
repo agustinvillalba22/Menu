@@ -270,6 +270,33 @@ async def test_ca07_anonymous_request(client: AsyncClient):
 
 
 # ---------------------------------------------------------------------------
+# M13.1 CA-04: restaurant desactivado -> 404 idéntico a token inválido
+# ---------------------------------------------------------------------------
+
+
+async def test_inactive_restaurant_returns_404_same_as_unknown_token(
+    client: AsyncClient, db_session: AsyncSession
+):
+    headers = await as_user(client)
+    restaurant = await make_restaurant(client, headers)
+    qr = restaurant["qr_token"]
+
+    db_restaurant = (
+        await db_session.execute(
+            select(Restaurant).where(Restaurant.id == uuid.UUID(restaurant["id"]))
+        )
+    ).scalar_one()
+    db_restaurant.is_active = False
+    await db_session.commit()
+
+    res = await client.get(f"/menu/{qr}")
+    assert res.status_code == 404
+    # Same detail as an unknown token — does not leak that the restaurant
+    # exists but was deactivated.
+    assert res.json() == {"detail": "menu_not_found"}
+
+
+# ---------------------------------------------------------------------------
 # Sanity — qr_token really resolves the right restaurant
 # ---------------------------------------------------------------------------
 

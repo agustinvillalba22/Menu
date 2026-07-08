@@ -1,10 +1,19 @@
 import uuid
 
-from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Response,
+    UploadFile,
+    status,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.dependencies.auth import require_role
+from app.dependencies.auth import require_role, require_superadmin
 from app.models.restaurant import RestaurantRole
 from app.models.user import User
 from app.schemas.item import (
@@ -62,13 +71,17 @@ async def create(
 async def import_csv(
     restaurant_id: uuid.UUID,
     file: UploadFile = File(...),
-    _: User = Depends(require_role(RestaurantRole.editor)),
+    create_missing: bool = Form(False),
+    # M13.1 (RF-07): CSV import is restricted to superadmins only — the
+    # owner/editor role in `restaurant_id` no longer grants access, and a
+    # superadmin can import into ANY restaurant regardless of role there.
+    _: User = Depends(require_superadmin),
     session: AsyncSession = Depends(get_db),
 ) -> ImportResult:
     content = await file.read(MAX_FILE_BYTES + 1)
     if len(content) > MAX_FILE_BYTES:
         raise HTTPException(status_code=413, detail="file_too_large")
-    return await import_items_csv(restaurant_id, content, session)
+    return await import_items_csv(restaurant_id, content, session, create_missing)
 
 
 @router.get(_PREFIX, response_model=list[ItemRead], status_code=200)

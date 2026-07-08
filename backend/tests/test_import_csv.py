@@ -15,6 +15,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.item import Item, ItemTag
+from app.models.user import User
 
 
 # ---------------------------------------------------------------------------
@@ -35,6 +36,33 @@ async def as_user(
     token = res.json()["access_token"]
     client.cookies.clear()
     return {"Authorization": f"Bearer {token}"}
+
+
+async def as_superadmin(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    email: str = "owner@example.com",
+    password: str = "password123",
+    full_name: str = "Owner User",
+) -> dict:
+    """Like ``as_user``, but also promotes the registered user to
+    ``is_superadmin=True`` directly in DB.
+
+    M13.1 (RF-07): ``POST /restaurants/{id}/items/import`` now requires
+    ``is_superadmin=True`` regardless of the caller's role in the restaurant.
+    The same account keeps its ``owner`` role (from ``make_restaurant``), so it
+    can both set up the menu via ``require_role`` endpoints AND call import via
+    ``require_superadmin`` — a superadmin does not need any role at all (that
+    is covered separately), but there is nothing preventing a superadmin from
+    also owning a restaurant.
+    """
+    headers = await as_user(client, email=email, password=password, full_name=full_name)
+    user = (
+        await db_session.execute(select(User).where(User.email == email))
+    ).scalar_one()
+    user.is_superadmin = True
+    await db_session.commit()
+    return headers
 
 
 async def make_restaurant(
@@ -99,7 +127,7 @@ HEADER = "category,subcategory,name,description,price,tags\n"
 async def test_import_three_valid_rows(
     client: AsyncClient, db_session: AsyncSession
 ):
-    headers = await as_user(client)
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -122,7 +150,7 @@ async def test_import_three_valid_rows(
 async def test_invalid_price_row_fails_others_created(
     client: AsyncClient, db_session: AsyncSession
 ):
-    headers = await as_user(client)
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -153,7 +181,7 @@ async def test_invalid_price_row_fails_others_created(
 async def test_missing_subcategory(
     client: AsyncClient, db_session: AsyncSession
 ):
-    headers = await as_user(client)
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -169,7 +197,7 @@ async def test_missing_subcategory(
 
 
 async def test_missing_category(client: AsyncClient, db_session: AsyncSession):
-    headers = await as_user(client)
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -188,7 +216,7 @@ async def test_missing_category(client: AsyncClient, db_session: AsyncSession):
 async def test_import_is_additive_no_dedupe(
     client: AsyncClient, db_session: AsyncSession
 ):
-    headers = await as_user(client)
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -206,7 +234,7 @@ async def test_import_is_additive_no_dedupe(
 
 
 async def test_tags_parsed(client: AsyncClient, db_session: AsyncSession):
-    headers = await as_user(client)
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -223,7 +251,7 @@ async def test_tags_parsed(client: AsyncClient, db_session: AsyncSession):
 async def test_empty_tags_no_tags(
     client: AsyncClient, db_session: AsyncSession
 ):
-    headers = await as_user(client)
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -240,8 +268,10 @@ async def test_empty_tags_no_tags(
 # ---------------------------------------------------------------------------
 
 
-async def test_missing_required_columns_422(client: AsyncClient):
-    headers = await as_user(client)
+async def test_missing_required_columns_422(
+    client: AsyncClient, db_session: AsyncSession
+):
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -269,12 +299,57 @@ async def test_other_restaurant_editor_403(client: AsyncClient):
 
 
 # ---------------------------------------------------------------------------
+# M13.1 CA-02: owner/editor (sin is_superadmin) → 403 not_superadmin.
+# Antes de M13.1, un editor SÍ podía llamar a este endpoint (RF-07 lo cambia).
+# ---------------------------------------------------------------------------
+
+
+async def test_owner_without_superadmin_gets_403_not_superadmin(
+    client: AsyncClient,
+):
+    """M13.1 RF-07 (CA-02): el owner de su propio restaurant ya no alcanza —
+    ahora se requiere is_superadmin=True sin importar el rol."""
+    owner = await as_user(client, email="owner@example.com")
+    rid = await make_restaurant(client, owner)
+    await seed_menu(client, owner, rid)
+
+    csv_text = HEADER + "Platos,Pastas,Ravioles,,1200,\n"
+    res = await post_csv(client, rid, owner, csv_text)
+    assert res.status_code == 403
+    assert res.json()["detail"] == "not_superadmin"
+
+
+# ---------------------------------------------------------------------------
+# M13.1 CA-03: un superadmin sin ningún rol asignado en el restaurant SÍ
+# puede importar.
+# ---------------------------------------------------------------------------
+
+
+async def test_superadmin_without_any_role_can_import(
+    client: AsyncClient, db_session: AsyncSession
+):
+    owner = await as_user(client, email="owner@example.com")
+    rid = await make_restaurant(client, owner)
+    await seed_menu(client, owner, rid)
+
+    # Superadmin registrado aparte — nunca tuvo owner/editor role en `rid`.
+    superadmin = await as_superadmin(client, db_session, email="super@example.com")
+
+    csv_text = HEADER + "Platos,Pastas,Ravioles,,1200,\n"
+    res = await post_csv(client, rid, superadmin, csv_text)
+    assert res.status_code == 200
+    assert res.json() == {"imported": 1, "errors": []}
+
+
+# ---------------------------------------------------------------------------
 # CA-08: row es 1-based sobre las filas de datos
 # ---------------------------------------------------------------------------
 
 
-async def test_row_is_one_based_over_data_rows(client: AsyncClient):
-    headers = await as_user(client)
+async def test_row_is_one_based_over_data_rows(
+    client: AsyncClient, db_session: AsyncSession
+):
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -289,8 +364,8 @@ async def test_row_is_one_based_over_data_rows(client: AsyncClient):
     assert errors[0]["reason"] == "invalid_price"
 
 
-async def test_missing_name_reason(client: AsyncClient):
-    headers = await as_user(client)
+async def test_missing_name_reason(client: AsyncClient, db_session: AsyncSession):
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -309,7 +384,7 @@ async def test_missing_name_reason(client: AsyncClient):
 async def test_case_insensitive_and_trimmed_matching(
     client: AsyncClient, db_session: AsyncSession
 ):
-    headers = await as_user(client)
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)  # "Platos" / "Pastas"
 
@@ -325,8 +400,8 @@ async def test_case_insensitive_and_trimmed_matching(
 # ---------------------------------------------------------------------------
 
 
-async def test_missing_file_field_422(client: AsyncClient):
-    headers = await as_user(client)
+async def test_missing_file_field_422(client: AsyncClient, db_session: AsyncSession):
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -344,7 +419,7 @@ async def test_missing_file_field_422(client: AsyncClient):
 async def test_header_reordered_case_insensitive(
     client: AsyncClient, db_session: AsyncSession
 ):
-    headers = await as_user(client)
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 
@@ -364,8 +439,8 @@ async def test_header_reordered_case_insensitive(
 # ---------------------------------------------------------------------------
 
 
-async def test_non_utf8_bytes_422(client: AsyncClient):
-    headers = await as_user(client)
+async def test_non_utf8_bytes_422(client: AsyncClient, db_session: AsyncSession):
+    headers = await as_superadmin(client, db_session)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
 

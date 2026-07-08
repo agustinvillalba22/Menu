@@ -17,7 +17,10 @@ async def get_public_menu(qr_token: str, session: AsyncSession) -> Restaurant:
     subcategories -> items -> tags. Alphabetical ordering is applied by the
     caller when building the response.
 
-    Raises 404 ``menu_not_found`` if no restaurant owns the token.
+    Raises 404 ``menu_not_found`` if no restaurant owns the token, or if the
+    restaurant exists but is inactive (``is_active=False``) — M13.1 (RF-05)
+    treats both cases identically so an inactive restaurant is not
+    distinguishable from an unknown token.
     """
     result = await session.execute(
         select(Restaurant)
@@ -35,6 +38,6 @@ async def get_public_menu(qr_token: str, session: AsyncSession) -> Restaurant:
         )
     )
     restaurant = result.scalar_one_or_none()
-    if restaurant is None:
+    if restaurant is None or not restaurant.is_active:
         raise HTTPException(status_code=404, detail="menu_not_found")
     return restaurant
