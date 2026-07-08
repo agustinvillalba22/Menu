@@ -1,7 +1,7 @@
 import uuid
 from decimal import Decimal
 
-from sqlalchemy import ForeignKey, Numeric, String, UniqueConstraint
+from sqlalchemy import ForeignKey, Index, Numeric, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -48,9 +48,6 @@ class Item(Base):
 
 class ItemTag(Base):
     __tablename__ = "item_tags"
-    __table_args__ = (
-        UniqueConstraint("item_id", "name", name="uq_item_tag"),
-    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -62,6 +59,16 @@ class ItemTag(Base):
         UUID(as_uuid=True),
         ForeignKey("items.id", ondelete="CASCADE"),
         nullable=False,
+    )
+
+    # M12.3: case-insensitive unique index — "vegano" and "Vegano" cannot
+    # coexist as tags of the same item at the DB level (replaces the
+    # exact-match uq_item_tag constraint from 0002_item_tag_unique.py).
+    # func.lower() expression indexes are supported by both SQLite and
+    # PostgreSQL, so Base.metadata.create_all (SQLite in-memory, tests)
+    # and the real Postgres migration (0006) stay consistent.
+    __table_args__ = (
+        Index("uq_item_tag_ci", "item_id", func.lower(name), unique=True),
     )
 
     # relationships

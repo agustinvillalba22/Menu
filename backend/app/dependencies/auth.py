@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.models.restaurant import RestaurantRole, UserRestaurantRole
+from app.models.restaurant import Restaurant, RestaurantRole, UserRestaurantRole
 from app.models.user import User
 from app.services.auth import decode_token
 
@@ -46,7 +46,18 @@ _ROLE_HIERARCHY: dict[RestaurantRole, int] = {
 
 
 def require_role(role: RestaurantRole):
-    """Factory that returns a FastAPI dependency enforcing a minimum role."""
+    """Factory that returns a FastAPI dependency enforcing a minimum role.
+
+    M13.1 (RF-02): after validating the caller's role, also checks
+    ``Restaurant.is_active`` — an inactive restaurant rejects owner/editor
+    access with 403 ``restaurant_inactive``, even for a caller who otherwise
+    holds a sufficient role. This is the single choke point that blocks every
+    dashboard endpoint (categories, subcategories, items, tags, modifiers,
+    orders, styles) for an inactive restaurant without touching each router.
+    A superadmin never goes through this dependency (it uses
+    ``require_superadmin`` instead), so no exemption is needed here — see
+    RNF-01.
+    """
 
     async def _dependency(
         restaurant_id: uuid.UUID = Path(...),
@@ -64,6 +75,27 @@ def require_role(role: RestaurantRole):
             raise HTTPException(status_code=403, detail="no_role")
         if _ROLE_HIERARCHY[assignment.role] < _ROLE_HIERARCHY[role]:
             raise HTTPException(status_code=403, detail="insufficient_role")
+
+        restaurant_result = await session.execute(
+            select(Restaurant.is_active).where(Restaurant.id == restaurant_id)
+        )
+        is_active = restaurant_result.scalar_one_or_none()
+        if is_active is False:
+            raise HTTPException(status_code=403, detail="restaurant_inactive")
         return current_user
 
     return _dependency
+
+
+async def require_superadmin(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """Dependency enforcing ``current_user.is_superadmin`` (RF-01).
+
+    Unlike ``require_role``, this has no notion of a specific restaurant —
+    it grants global admin access, which is precisely what lets a superadmin
+    operate on an inactive restaurant via ``/admin/*`` (RNF-01).
+    """
+    if not current_user.is_superadmin:
+        raise HTTPException(status_code=403, detail="not_superadmin")
+    return current_user

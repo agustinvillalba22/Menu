@@ -287,6 +287,73 @@ async def test_two_symbols_only_names_get_distinct_slugs(client: AsyncClient):
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# M13.1 CA-05: restaurant inactivo → 403 restaurant_inactive vía require_role,
+# incluso para el owner con sesión válida y rol suficiente.
+# ---------------------------------------------------------------------------
+
+
+async def test_inactive_restaurant_blocks_owner_via_require_role(
+    client: AsyncClient, db_session: AsyncSession
+):
+    owner_headers = await as_user(client, email="owner@example.com")
+    created = await client.post(
+        "/restaurants", json={"name": "My Bar"}, headers=owner_headers
+    )
+    restaurant_id = uuid.UUID(created.json()["id"])
+
+    restaurant = (
+        await db_session.execute(
+            select(Restaurant).where(Restaurant.id == restaurant_id)
+        )
+    ).scalar_one()
+    restaurant.is_active = False
+    await db_session.commit()
+
+    res = await client.get(f"/restaurants/{restaurant_id}", headers=owner_headers)
+    assert res.status_code == 403
+    assert res.json()["detail"] == "restaurant_inactive"
+
+
+async def test_inactive_restaurant_blocks_patch_too(
+    client: AsyncClient, db_session: AsyncSession
+):
+    owner_headers = await as_user(client, email="owner@example.com")
+    created = await client.post(
+        "/restaurants", json={"name": "My Bar"}, headers=owner_headers
+    )
+    restaurant_id = uuid.UUID(created.json()["id"])
+
+    restaurant = (
+        await db_session.execute(
+            select(Restaurant).where(Restaurant.id == restaurant_id)
+        )
+    ).scalar_one()
+    restaurant.is_active = False
+    await db_session.commit()
+
+    res = await client.patch(
+        f"/restaurants/{restaurant_id}",
+        json={"name": "New Name"},
+        headers=owner_headers,
+    )
+    assert res.status_code == 403
+    assert res.json()["detail"] == "restaurant_inactive"
+
+
+async def test_active_restaurant_unaffected_by_is_active_check(client: AsyncClient):
+    """Sanity: un restaurant activo (default) sigue funcionando sin cambios —
+    RF-02 no debe romper el flujo normal (RNF implícito de no-regresión)."""
+    owner_headers = await as_user(client, email="owner@example.com")
+    created = await client.post(
+        "/restaurants", json={"name": "My Bar"}, headers=owner_headers
+    )
+    restaurant_id = created.json()["id"]
+
+    res = await client.get(f"/restaurants/{restaurant_id}", headers=owner_headers)
+    assert res.status_code == 200
+
+
 async def test_slug_conflict_retries_then_409(client: AsyncClient, monkeypatch):
     """Fuerza IntegrityError en cada intento anulando el chequeo previo en Python.
 

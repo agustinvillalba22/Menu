@@ -21,6 +21,14 @@ const item: Item = {
   ],
 }
 
+const existingModifier = {
+  id: 'm1',
+  item_id: 'i1',
+  name: 'Extra queso',
+  price_delta: '1.50',
+  type: 'extra' as const,
+}
+
 function callsMatching(fragment: string, method?: string) {
   return vi
     .mocked(fetch)
@@ -106,6 +114,71 @@ describe('ItemRow', () => {
     await userEvent.click(modifiersToggle)
     expect(modifiersToggle).toHaveAttribute('aria-expanded', 'true')
     expect(await screen.findByText('Extra queso')).toBeInTheDocument()
+  })
+
+  // CA-01 / RF-06: listModifiers is called exactly once, no matter how many
+  // times the toggle is expanded/collapsed.
+  it('calls listModifiers exactly once even when the toggle is expanded/collapsed 3 times', async () => {
+    routeFetch([
+      { method: 'GET', match: '/modifiers', response: jsonResponse([existingModifier]) },
+    ])
+
+    renderRow()
+
+    const modifiersToggle = await screen.findByRole('button', { name: /modificadores \(1\)/i })
+
+    await userEvent.click(modifiersToggle) // expand
+    await userEvent.click(modifiersToggle) // collapse
+    await userEvent.click(modifiersToggle) // expand
+    await userEvent.click(modifiersToggle) // collapse
+    await userEvent.click(modifiersToggle) // expand
+
+    expect(callsMatching('/modifiers', 'GET')).toHaveLength(1)
+  })
+
+  // CA-02: expanding after the initial fetch resolved shows the list immediately,
+  // with no additional loading state or network call.
+  it('shows the list immediately when expanding after the initial fetch already resolved', async () => {
+    routeFetch([
+      { method: 'GET', match: '/modifiers', response: jsonResponse([existingModifier]) },
+    ])
+
+    renderRow()
+
+    const modifiersToggle = await screen.findByRole('button', { name: /modificadores \(1\)/i })
+    // Wait for the initial fetch to resolve (count reflects loaded data).
+    await screen.findByRole('button', { name: /modificadores \(1\)/i })
+
+    await userEvent.click(modifiersToggle)
+
+    expect(screen.queryByText(/cargando modificadores/i)).not.toBeInTheDocument()
+    expect(await screen.findByText('Extra queso')).toBeInTheDocument()
+    expect(callsMatching('/modifiers', 'GET')).toHaveLength(1)
+  })
+
+  // CA-05: if the toggle is expanded before the initial fetch resolves, a
+  // loading message is shown instead of the modifiers list.
+  it('shows "Cargando modificadores…" when expanded before the initial fetch resolves', async () => {
+    let resolveFetch: (value: Response) => void = () => {}
+    vi.mocked(fetch).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve
+        }),
+    )
+
+    renderRow()
+
+    const modifiersToggle = await screen.findByRole('button', { name: /modificadores \(0\)/i })
+    await userEvent.click(modifiersToggle)
+
+    expect(screen.getByText(/cargando modificadores/i)).toBeInTheDocument()
+    expect(screen.queryByText('Extra queso')).not.toBeInTheDocument()
+
+    resolveFetch(jsonResponse([existingModifier]))
+
+    expect(await screen.findByText('Extra queso')).toBeInTheDocument()
+    expect(screen.queryByText(/cargando modificadores/i)).not.toBeInTheDocument()
   })
 
   // CA-04: an item with no tags/modifiers still shows "(0)", the toggle isn't hidden.

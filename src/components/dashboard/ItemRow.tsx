@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { updateItem, deleteItem, listModifiers } from '../../lib/menu'
 import { ApiError } from '../../lib/api'
-import type { Item, ItemUpdate, Tag } from '../../lib/types'
+import type { Item, ItemUpdate, Modifier, Tag } from '../../lib/types'
 import ItemTags from './ItemTags'
 import ItemModifiers from './ItemModifiers'
 import RowActions from './RowActions'
@@ -28,20 +28,22 @@ export default function ItemRow({
   const [error, setError] = useState<string | null>(null)
 
   // Tags/modifiers are collapsed by default (RF-03) — the tag count comes
-  // from the item itself, but the modifier count needs its own lightweight
-  // fetch since ItemModifiers only knows its list once it mounts.
+  // from the item itself. ItemRow is the single source of truth for the
+  // modifiers list: it fetches once on mount and passes the list down to
+  // ItemModifiers as a controlled prop (M12.4) instead of letting
+  // ItemModifiers fetch it again itself.
   const [tagsExpanded, setTagsExpanded] = useState(false)
   const [modifiersExpanded, setModifiersExpanded] = useState(false)
-  const [modifiersCount, setModifiersCount] = useState<number | null>(null)
+  const [modifiers, setModifiers] = useState<Modifier[] | null>(null)
 
   useEffect(() => {
     let cancelled = false
     listModifiers(restaurantId, subcategoryId, current.id)
       .then((list) => {
-        if (!cancelled) setModifiersCount(list.length)
+        if (!cancelled) setModifiers(list)
       })
       .catch(() => {
-        if (!cancelled) setModifiersCount(0)
+        if (!cancelled) setModifiers([])
       })
     return () => {
       cancelled = true
@@ -187,7 +189,7 @@ export default function ItemRow({
           aria-expanded={modifiersExpanded}
           className="text-xs text-gray-500 hover:text-gray-900"
         >
-          Modificadores ({modifiersCount ?? 0}) {modifiersExpanded ? '▾' : '▸'}
+          Modificadores ({modifiers?.length ?? 0}) {modifiersExpanded ? '▾' : '▸'}
         </button>
       </div>
 
@@ -201,12 +203,19 @@ export default function ItemRow({
         />
       )}
 
-      {modifiersExpanded && (
+      {modifiersExpanded && modifiers !== null && (
         <ItemModifiers
           restaurantId={restaurantId}
           subcategoryId={subcategoryId}
           itemId={current.id}
+          modifiers={modifiers}
+          onModifiersChange={setModifiers}
         />
+      )}
+      {modifiersExpanded && modifiers === null && (
+        <p className="mt-3 border-t border-gray-100 pt-2 text-xs text-gray-500">
+          Cargando modificadores…
+        </p>
       )}
 
       {error && (

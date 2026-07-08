@@ -16,6 +16,7 @@ export default function CsvImportForm({
   onImported,
 }: CsvImportFormProps): React.JSX.Element {
   const [file, setFile] = useState<File | null>(null)
+  const [createMissing, setCreateMissing] = useState(false)
   const [importing, setImporting] = useState(false)
   const [result, setResult] = useState<ImportResult | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -28,7 +29,7 @@ export default function CsvImportForm({
     setError(null)
     setResult(null)
     try {
-      const res = await importItemsCsv(restaurantId, file)
+      const res = await importItemsCsv(restaurantId, file, createMissing)
       setResult(res)
       setFile(null)
       if (inputRef.current) inputRef.current.value = ''
@@ -60,6 +61,18 @@ export default function CsvImportForm({
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className="text-sm text-gray-700"
           />
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            id="csv-create-missing"
+            type="checkbox"
+            checked={createMissing}
+            onChange={(e) => setCreateMissing(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300"
+          />
+          <label htmlFor="csv-create-missing" className="text-sm text-gray-700">
+            Crear categorías/subcategorías que no existan
+          </label>
         </div>
         <button
           type="submit"
