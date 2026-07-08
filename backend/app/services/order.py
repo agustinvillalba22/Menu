@@ -86,7 +86,11 @@ def _build_line(item: Item, line: OrderItemCreate) -> OrderItem:
     modifiers_total: Decimal = sum(
         (m.price_delta for m in chosen), start=Decimal("0")
     )
-    subtotal: Decimal = (unit_price + modifiers_total) * line.quantity
+    # M11.1 RF-01/RF-02: negative modifiers (type=removal) must not push the
+    # effective unit price below $0. Clamp before multiplying by quantity so
+    # a high quantity cannot hide a would-be-negative unit price.
+    effective_unit_price = max(unit_price + modifiers_total, Decimal("0"))
+    subtotal: Decimal = effective_unit_price * line.quantity
     _check_amount(subtotal)
 
     return OrderItem(

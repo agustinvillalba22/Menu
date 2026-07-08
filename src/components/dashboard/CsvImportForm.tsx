@@ -6,9 +6,15 @@ import type { ImportResult } from '../../lib/types'
 
 interface CsvImportFormProps {
   restaurantId: string
+  /** Called after a successful import that created at least one row, so the
+   *  caller can refresh the already-rendered category tree (RF-05). */
+  onImported?: (result: ImportResult) => void
 }
 
-export default function CsvImportForm({ restaurantId }: CsvImportFormProps): React.JSX.Element {
+export default function CsvImportForm({
+  restaurantId,
+  onImported,
+}: CsvImportFormProps): React.JSX.Element {
   const [file, setFile] = useState<File | null>(null)
   const [importing, setImporting] = useState(false)
   const [result, setResult] = useState<ImportResult | null>(null)
@@ -26,6 +32,7 @@ export default function CsvImportForm({ restaurantId }: CsvImportFormProps): Rea
       setResult(res)
       setFile(null)
       if (inputRef.current) inputRef.current.value = ''
+      if (res.imported > 0) onImported?.(res)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo importar el archivo.')
     } finally {

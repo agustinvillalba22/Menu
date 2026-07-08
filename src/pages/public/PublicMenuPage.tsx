@@ -127,46 +127,49 @@ export default function PublicMenuPage(): React.JSX.Element {
 
   return (
     <div style={themeStyle(style)} className="min-h-screen bg-[#faf6f0] font-sans text-gray-900">
-      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col border-x border-gray-200 bg-white pb-24">
+      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col border-x border-gray-200 bg-white pb-24 lg:max-w-6xl lg:border-x-0">
         {/* Header */}
-        <header className="rounded-b-[40px] bg-primario p-6 pb-8 text-white shadow-md">
-          <div className="mb-6 flex items-center justify-between">
-            <h1 className="font-headings text-3xl font-bold uppercase leading-none tracking-tight text-white">
-              {restaurant.name}
-            </h1>
-            {orderingEnabled && (
-              <button
-                type="button"
-                id="btn-header-cart"
-                aria-label="Ver carrito"
-                onClick={() => setCartOpen(true)}
-                className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-md transition-all active:scale-95"
-              >
-                <ShoppingBag className="h-5 w-5 stroke-[2.5] text-primario" />
-                {cart.count > 0 && (
-                  <span
-                    data-testid="cart-count-badge"
-                    className="pointer-events-none absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[9px] font-black text-white ring-2 ring-white"
-                  >
-                    {cart.count}
-                  </span>
-                )}
-              </button>
-            )}
-          </div>
+        <header className="rounded-b-[40px] bg-primario p-6 pb-8 text-white shadow-md lg:rounded-b-none lg:px-10 lg:py-6">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:gap-10">
+            <div className="flex items-center justify-between lg:contents">
+              <h1 className="font-headings text-3xl font-bold uppercase leading-none tracking-tight text-white lg:order-1 lg:shrink-0">
+                {restaurant.name}
+              </h1>
 
-          <div className="relative w-full">
-            <input
-              id="search-input"
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar producto"
-              aria-label="Buscar producto"
-              className="block w-full rounded-full border border-transparent bg-white py-3 pl-5 pr-12 text-sm text-gray-800 placeholder-gray-400 shadow-md focus:outline-none focus:ring-2 focus:ring-amber-400"
-            />
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4.5">
-              <Search className="h-5 w-5 stroke-[2.5] text-gray-400" />
+              {orderingEnabled && (
+                <button
+                  type="button"
+                  id="btn-header-cart"
+                  aria-label="Ver carrito"
+                  onClick={() => setCartOpen(true)}
+                  className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white shadow-md transition-all active:scale-95 lg:order-3"
+                >
+                  <ShoppingBag className="h-5 w-5 stroke-[2.5] text-primario" />
+                  {cart.count > 0 && (
+                    <span
+                      data-testid="cart-count-badge"
+                      className="pointer-events-none absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[9px] font-black text-white ring-2 ring-white"
+                    >
+                      {cart.count}
+                    </span>
+                  )}
+                </button>
+              )}
+            </div>
+
+            <div className="relative w-full lg:order-2 lg:max-w-md">
+              <input
+                id="search-input"
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar producto"
+                aria-label="Buscar producto"
+                className="block w-full rounded-full border border-transparent bg-white py-3 pl-5 pr-12 text-sm text-gray-800 placeholder-gray-400 shadow-md focus:outline-none focus:ring-2 focus:ring-amber-400"
+              />
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4.5">
+                <Search className="h-5 w-5 stroke-[2.5] text-gray-400" />
+              </div>
             </div>
           </div>
         </header>
@@ -174,7 +177,7 @@ export default function PublicMenuPage(): React.JSX.Element {
         {/* Category filter */}
         <nav
           aria-label="Categorías"
-          className="sticky top-0 z-20 border-b border-gray-200/40 bg-[#fcf8f5]/90 px-4 py-3 backdrop-blur-md"
+          className="sticky top-0 z-20 border-b border-gray-200/40 bg-[#fcf8f5]/90 px-4 py-3 backdrop-blur-md lg:px-10"
         >
           <div className="no-scrollbar flex gap-2 overflow-x-auto">
             <FilterChip
@@ -195,7 +198,7 @@ export default function PublicMenuPage(): React.JSX.Element {
         </nav>
 
         {/* Menu body */}
-        <main className="flex-1 space-y-8 px-4 py-6">
+        <main className="flex-1 space-y-8 px-4 py-6 lg:px-10">
           {categories.length === 0 && (
             <p className="text-sm text-gray-600">Este menú todavía no tiene productos.</p>
           )}
@@ -216,7 +219,7 @@ export default function PublicMenuPage(): React.JSX.Element {
               {category.subcategories.map((sub) => (
                 <div key={sub.id} className="space-y-3">
                   <h3 className="text-sm font-medium text-gray-500">{sub.name}</h3>
-                  <div className="grid grid-cols-1 gap-4">
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
                     {sub.items.map((item) => (
                       <React.Fragment key={item.id}>
                         <PublicProductCard

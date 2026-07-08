@@ -109,15 +109,19 @@ def _parse_tags(raw: str | None) -> list[str]:
     Deduping here (CRIT-01) prevents a row like ``vegano;vegano`` from building
     two ItemTag rows that would violate ``uq_item_tag`` and abort the whole
     single-commit import.
+
+    Dedup is case-insensitive and trimmed (M12.2, RF-02), matching the same
+    "already exists" criterion as ``add_tag``: ``vegano;Vegano`` collapses to
+    a single tag, keeping the casing of the first occurrence seen.
     """
     if not raw:
         return []
-    seen: dict[str, None] = {}
+    seen: dict[str, str] = {}
     for t in raw.split(_TAG_SEPARATOR):
         t = t.strip()
         if t:
-            seen.setdefault(t, None)
-    return list(seen)
+            seen.setdefault(_normalize(t), t)
+    return list(seen.values())
 
 
 def _build_tags(raw: str | None) -> tuple[list[ItemTag] | None, str | None]:

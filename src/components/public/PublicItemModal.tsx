@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { X, Plus, Minus, ShoppingBag, ImageOff } from 'lucide-react'
 import type { PublicItem, PublicModifier } from '../../lib/types'
-import { badgeEmoji } from './badges'
+import { badgeInfo } from './badges'
 
 interface PublicItemModalProps {
   item: PublicItem | null
@@ -116,13 +116,15 @@ export default function PublicItemModal({
               {item.tags.length > 0 && (
                 <ul className="flex flex-wrap gap-1.5 pt-2">
                   {item.tags.map((tag) => {
-                    const emoji = badgeEmoji(tag)
+                    const badge = badgeInfo(tag)
                     return (
                       <li
                         key={tag.id}
-                        className="inline-flex items-center gap-0.5 rounded-full bg-secundario px-2 py-0.5 text-[11px] font-bold text-gray-700"
+                        className={`inline-flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-[11px] font-bold ${
+                          badge ? badge.colorClass : 'border-transparent bg-secundario text-gray-700'
+                        }`}
                       >
-                        {emoji && <span aria-hidden="true">{emoji}</span>}
+                        {badge && <span aria-hidden="true">{badge.emoji}</span>}
                         <span>{tag.name}</span>
                       </li>
                     )

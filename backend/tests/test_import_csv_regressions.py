@@ -5,8 +5,8 @@ These cover the four defects flagged by the reviewer (2 critical + 2 minor)
 that had NO coverage in ``test_import_csv.py``:
 
 - CRIT-01: duplicate tags in a single row (``vegano;vegano``) must NOT break
-  ``UniqueConstraint(item_id, name)`` — ``_parse_tags`` dedupes (case-sensitive)
-  before building ItemTag rows.
+  ``UniqueConstraint(item_id, name)`` — ``_parse_tags`` dedupes (case-insensitive
+  and trimmed, M12.2) before building ItemTag rows.
 - CRIT-02: the router reads with ``file.read(MAX_FILE_BYTES + 1)`` and rejects
   with 413 before buffering the whole file.
 - MINOR-1: the importer applies the same length limits as the CRUD layer
@@ -43,8 +43,10 @@ from tests.test_import_csv import (
 async def test_duplicate_tags_in_row_dedupe_no_500(
     client: AsyncClient, db_session: AsyncSession
 ):
-    """``vegano;vegano;Vegano`` imports fine; exact dupes collapse, but the
-    dedupe is case-sensitive so ``Vegano`` stays distinct from ``vegano``."""
+    """``vegano;vegano;Vegano`` imports fine and collapses to a single tag
+    (M12.2): dedup is case-insensitive, so ``Vegano`` no longer stays distinct
+    from ``vegano`` — this is an intentional fix, not a regression. The first
+    seen casing ("vegano") is the one persisted."""
     headers = await as_user(client)
     rid = await make_restaurant(client, headers)
     await seed_menu(client, headers, rid)
@@ -59,8 +61,8 @@ async def test_duplicate_tags_in_row_dedupe_no_500(
     tag_names = (
         await db_session.execute(select(ItemTag.name))
     ).scalars().all()
-    # Exact duplicate "vegano" collapsed to one; "Vegano" kept (case-sensitive).
-    assert sorted(tag_names) == ["Vegano", "vegano"]
+    # Case-insensitive dedup (M12.2, CA-02): only one ItemTag survives.
+    assert tag_names == ["vegano"]
 
 
 async def test_duplicate_tags_with_whitespace_dedupe(
@@ -255,6 +257,27 @@ async def test_over_max_rows_returns_413_early(
     assert res.status_code == 413
     assert res.json()["detail"] == "file_too_large"
     assert await count_items(db_session) == 0
+
+
+async def test_case_insensitive_variant_tags_dedupe_to_one(
+    client: AsyncClient, db_session: AsyncSession
+):
+    """M12.2 CA-02: a row with ``tags="vegano;Vegano"`` (no exact duplicate,
+    just a casing variant) creates a single ItemTag, not two."""
+    headers = await as_user(client)
+    rid = await make_restaurant(client, headers)
+    await seed_menu(client, headers, rid)
+
+    csv_text = HEADER + "Platos,Pastas,Ravioles,,1200,vegano;Vegano\n"
+    res = await post_csv(client, rid, headers, csv_text)
+
+    assert res.status_code == 200
+    assert res.json() == {"imported": 1, "errors": []}
+
+    tag_count = (
+        await db_session.execute(select(func.count()).select_from(ItemTag))
+    ).scalar_one()
+    assert tag_count == 1
 
 
 async def test_exactly_max_rows_is_accepted(

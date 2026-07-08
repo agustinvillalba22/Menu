@@ -850,3 +850,170 @@ async def test_deleted_item_leaves_order_history_intact(
     assert order_item.item_id is None
     assert order_item.name_snapshot == "Ravioles"
     assert str(order_item.unit_price_snapshot) == "10.00"
+
+
+# ---------------------------------------------------------------------------
+# M11.1 — piso de precio $0 en línea de orden (CA-01 a CA-05)
+# ---------------------------------------------------------------------------
+
+
+async def test_create_order_negative_effective_price_clamped_to_zero(
+    client: AsyncClient,
+):
+    """CA-01: item $100 + modificador removal -150.00, quantity=1 -> subtotal "0.00"."""
+    headers = await as_user(client)
+    restaurant = await make_restaurant(client, headers)
+    rid, qr = restaurant["id"], restaurant["qr_token"]
+    sid = await make_subcategory(client, headers, rid)
+    iid = await make_item(client, headers, rid, sid, price="100.00")
+    mid = await make_modifier(
+        client, headers, rid, sid, iid, price_delta="-150.00", type_="removal"
+    )
+    await enable_orders(client, headers, rid)
+
+    client.cookies.clear()
+    res = await client.post(
+        f"/menu/{qr}/orders",
+        json={
+            "customer_name": "Ana",
+            "order_type": "mesa",
+            "items": [{"item_id": iid, "quantity": 1, "modifier_ids": [mid]}],
+        },
+    )
+    assert res.status_code == 201, res.text
+    body = res.json()
+    assert body["items"][0]["subtotal"] == "0.00"
+    assert body["total"] == "0.00"
+
+
+async def test_create_order_negative_effective_price_clamp_is_per_unit(
+    client: AsyncClient,
+):
+    """CA-02: mismo caso que CA-01 pero quantity=3 -> subtotal sigue "0.00",
+    no "-150.00" — el clamp ocurre antes de multiplicar por cantidad."""
+    headers = await as_user(client)
+    restaurant = await make_restaurant(client, headers)
+    rid, qr = restaurant["id"], restaurant["qr_token"]
+    sid = await make_subcategory(client, headers, rid)
+    iid = await make_item(client, headers, rid, sid, price="100.00")
+    mid = await make_modifier(
+        client, headers, rid, sid, iid, price_delta="-150.00", type_="removal"
+    )
+    await enable_orders(client, headers, rid)
+
+    client.cookies.clear()
+    res = await client.post(
+        f"/menu/{qr}/orders",
+        json={
+            "customer_name": "Ana",
+            "order_type": "mesa",
+            "items": [{"item_id": iid, "quantity": 3, "modifier_ids": [mid]}],
+        },
+    )
+    assert res.status_code == 201, res.text
+    body = res.json()
+    assert body["items"][0]["subtotal"] == "0.00"
+    assert body["total"] == "0.00"
+
+
+async def test_create_order_non_negative_effective_price_not_clamped(
+    client: AsyncClient,
+):
+    """CA-03: item $100 con modificadores que suman -30.00 -> el resultado
+    (70.00) es >= 0, no se clampea; subtotal = 70.00 * quantity."""
+    headers = await as_user(client)
+    restaurant = await make_restaurant(client, headers)
+    rid, qr = restaurant["id"], restaurant["qr_token"]
+    sid = await make_subcategory(client, headers, rid)
+    iid = await make_item(client, headers, rid, sid, price="100.00")
+    mid = await make_modifier(
+        client, headers, rid, sid, iid, price_delta="-30.00", type_="removal"
+    )
+    await enable_orders(client, headers, rid)
+
+    client.cookies.clear()
+    res = await client.post(
+        f"/menu/{qr}/orders",
+        json={
+            "customer_name": "Ana",
+            "order_type": "mesa",
+            "items": [{"item_id": iid, "quantity": 2, "modifier_ids": [mid]}],
+        },
+    )
+    assert res.status_code == 201, res.text
+    body = res.json()
+    assert body["items"][0]["subtotal"] == "140.00"
+    assert body["total"] == "140.00"
+
+
+async def test_create_order_total_reflects_clamped_subtotals_per_line(
+    client: AsyncClient,
+):
+    """CA-04: el total de la orden es la suma de subtotales ya clampeados
+    individualmente — una línea clampeada a 0 no arrastra su déficit a otra
+    línea con precio positivo."""
+    headers = await as_user(client)
+    restaurant = await make_restaurant(client, headers)
+    rid, qr = restaurant["id"], restaurant["qr_token"]
+    sid = await make_subcategory(client, headers, rid)
+    iid_clamped = await make_item(
+        client, headers, rid, sid, name="Clamped", price="100.00"
+    )
+    mid = await make_modifier(
+        client, headers, rid, sid, iid_clamped, price_delta="-150.00", type_="removal"
+    )
+    iid_normal = await make_item(
+        client, headers, rid, sid, name="Normal", price="20.00"
+    )
+    await enable_orders(client, headers, rid)
+
+    client.cookies.clear()
+    res = await client.post(
+        f"/menu/{qr}/orders",
+        json={
+            "customer_name": "Ana",
+            "order_type": "mesa",
+            "items": [
+                {"item_id": iid_clamped, "quantity": 1, "modifier_ids": [mid]},
+                {"item_id": iid_normal, "quantity": 1, "modifier_ids": []},
+            ],
+        },
+    )
+    assert res.status_code == 201, res.text
+    body = res.json()
+    subtotals = {item["item_id"]: item["subtotal"] for item in body["items"]}
+    assert subtotals[iid_clamped] == "0.00"
+    assert subtotals[iid_normal] == "20.00"
+    # Total = 0.00 + 20.00, no -130.00 (que sería si el clamp no fuera por línea).
+    assert body["total"] == "20.00"
+
+
+async def test_create_order_modifier_price_snapshot_not_clamped(
+    client: AsyncClient,
+):
+    """CA-05: OrderItemModifier.price_snapshot guarda el price_delta real
+    (-150.00), no un valor clampeado, aunque el efecto combinado se clampeó."""
+    headers = await as_user(client)
+    restaurant = await make_restaurant(client, headers)
+    rid, qr = restaurant["id"], restaurant["qr_token"]
+    sid = await make_subcategory(client, headers, rid)
+    iid = await make_item(client, headers, rid, sid, price="100.00")
+    mid = await make_modifier(
+        client, headers, rid, sid, iid, price_delta="-150.00", type_="removal"
+    )
+    await enable_orders(client, headers, rid)
+
+    client.cookies.clear()
+    res = await client.post(
+        f"/menu/{qr}/orders",
+        json={
+            "customer_name": "Ana",
+            "order_type": "mesa",
+            "items": [{"item_id": iid, "quantity": 1, "modifier_ids": [mid]}],
+        },
+    )
+    assert res.status_code == 201, res.text
+    body = res.json()
+    assert body["items"][0]["subtotal"] == "0.00"
+    assert body["items"][0]["modifiers"][0]["price_snapshot"] == "-150.00"
+    assert body["items"][0]["unit_price_snapshot"] == "100.00"

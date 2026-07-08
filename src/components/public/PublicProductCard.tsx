@@ -1,7 +1,7 @@
 import React from 'react'
 import { Plus, ImageOff } from 'lucide-react'
 import type { PublicItem } from '../../lib/types'
-import { badgeEmoji } from './badges'
+import { badgeInfo } from './badges'
 
 interface PublicProductCardProps {
   item: PublicItem
@@ -50,15 +50,17 @@ export default function PublicProductCard({
           {item.tags.length > 0 && (
             <ul className="flex flex-wrap items-center gap-1">
               {item.tags.map((tag) => {
-                const emoji = badgeEmoji(tag)
+                const badge = badgeInfo(tag)
                 return (
                   <li
                     key={tag.id}
-                    className="inline-flex items-center gap-0.5 rounded-full border border-gray-200 bg-gray-50 px-1.5 py-0.5 text-[9px] font-black text-gray-600"
+                    className={`inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[9px] font-black ${
+                      badge ? badge.colorClass : 'border-gray-200 bg-gray-50 text-gray-600'
+                    }`}
                   >
-                    {emoji && (
+                    {badge && (
                       <span aria-hidden="true" className="leading-none">
-                        {emoji}
+                        {badge.emoji}
                       </span>
                     )}
                     <span>{tag.name}</span>
