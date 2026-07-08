@@ -83,4 +83,60 @@ describe('ItemTags', () => {
     expect(deletes).toHaveLength(1)
     expect(deletes[0].url).toBe('http://api.test/restaurants/r1/subcategories/s1/items/i1/tags/t1')
   })
+
+  // CA-03: with no tags, all 5 curated chips render inactive; clicking
+  // "Vegano" adds the tag (exact canonical name) and the chip flips active.
+  it('shows the 5 curated chips inactive and activates one on click', async () => {
+    routeFetch([
+      { method: 'POST', match: '/tags', response: jsonResponse({ id: 't1', name: 'Vegano' }) },
+    ])
+
+    render(<Harness initialTags={[]} />)
+
+    for (const name of ['Sin TACC', 'Sin lácteos', 'Vegetariano', 'Vegano', 'Picante']) {
+      expect(screen.getByRole('button', { name: new RegExp(name, 'i') })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      )
+    }
+
+    await userEvent.click(screen.getByRole('button', { name: 'Vegano' }))
+
+    const posts = callsMatching('/tags', 'POST')
+    expect(posts).toHaveLength(1)
+    expect(JSON.parse(posts[0].body as string)).toEqual({ name: 'Vegano' })
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Vegano' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      ),
+    )
+  })
+
+  // CA-04: with "Vegano" already active (case-insensitive match against
+  // current.tags), clicking again removes it via the delete flow.
+  it('deactivates an already-active curated chip on second click', async () => {
+    routeFetch([
+      { method: 'DELETE', match: '/tags', response: jsonResponse(undefined, 204) },
+    ])
+
+    render(<Harness initialTags={[{ id: 't1', name: 'vegano' }]} />)
+
+    const chip = screen.getByRole('button', { name: 'Vegano' })
+    expect(chip).toHaveAttribute('aria-pressed', 'true')
+
+    await userEvent.click(chip)
+
+    const deletes = callsMatching('/tags', 'DELETE')
+    expect(deletes).toHaveLength(1)
+    expect(deletes[0].url).toBe('http://api.test/restaurants/r1/subcategories/s1/items/i1/tags/t1')
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Vegano' })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      ),
+    )
+  })
 })

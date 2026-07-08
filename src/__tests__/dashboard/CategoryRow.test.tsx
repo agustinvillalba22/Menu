@@ -71,4 +71,39 @@ describe('CategoryRow', () => {
 
     expect(callsMatching('/subcategories', 'GET')).toHaveLength(1)
   })
+
+  // CA-01 / CA-03: deleting a category requires inline confirmation that
+  // mentions the cascade, and only DELETEs after the user confirms.
+  it('shows a cascade delete confirmation and only DELETEs after confirming', async () => {
+    routeFetch([{ method: 'DELETE', match: '/categories', response: jsonResponse(undefined, 204) }])
+    const onDeleted = vi.fn()
+    render(
+      <ul>
+        <CategoryRow restaurantId="r1" category={category} onDeleted={onDeleted} />
+      </ul>,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: /^borrar$/i }))
+
+    expect(callsMatching('/categories', 'DELETE')).toHaveLength(0)
+    expect(onDeleted).not.toHaveBeenCalled()
+    expect(screen.getByText(/se borrará también todo lo que contiene/i)).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /sí, borrar/i }))
+
+    expect(callsMatching('/categories', 'DELETE')).toHaveLength(1)
+    expect(onDeleted).toHaveBeenCalledWith('c1')
+  })
+
+  // CA-02: cancelling the confirmation never calls DELETE.
+  it('cancelling the delete confirmation does not call DELETE', async () => {
+    const onDeleted = vi.fn()
+    renderRow()
+
+    await userEvent.click(screen.getByRole('button', { name: /^borrar$/i }))
+    await userEvent.click(screen.getByRole('button', { name: /cancelar/i }))
+
+    expect(callsMatching('/categories', 'DELETE')).toHaveLength(0)
+    expect(screen.getByText('Entradas')).toBeInTheDocument()
+  })
 })

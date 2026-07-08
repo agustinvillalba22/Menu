@@ -14,6 +14,9 @@ export default function MenuEditorPage(): React.JSX.Element {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
+  // Bumped on every post-import refresh so CategoryRow instances remount and
+  // drop their cached (possibly stale) subcategory/item state — RF-05/CA-05.
+  const [treeVersion, setTreeVersion] = useState(0)
 
   const [newName, setNewName] = useState('')
   const [newType, setNewType] = useState<CategoryType>('food')
@@ -42,6 +45,21 @@ export default function MenuEditorPage(): React.JSX.Element {
       cancelled = true
     }
   }, [restaurantId])
+
+  async function handleImported(): Promise<void> {
+    if (restaurantId === null) return
+    setLoading(true)
+    setLoadError(null)
+    try {
+      const list = await listCategories(restaurantId)
+      setCategories(list)
+      setTreeVersion((v) => v + 1)
+    } catch {
+      setLoadError('No se pudieron recargar las categorías.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   async function handleCreate(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault()
@@ -142,7 +160,7 @@ export default function MenuEditorPage(): React.JSX.Element {
           {categories.length > 0 && (
             <ul className="space-y-3">
               {categories.map((category) => (
-                <React.Fragment key={category.id}>
+                <React.Fragment key={`${category.id}-${treeVersion}`}>
                   <CategoryRow
                     restaurantId={restaurant.id}
                     category={category}
@@ -157,7 +175,7 @@ export default function MenuEditorPage(): React.JSX.Element {
         </div>
       </div>
 
-      <CsvImportForm restaurantId={restaurant.id} />
+      <CsvImportForm restaurantId={restaurant.id} onImported={handleImported} />
     </div>
   )
 }

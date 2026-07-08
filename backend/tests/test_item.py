@@ -328,6 +328,79 @@ async def test_duplicate_tag_is_idempotent(
 
 
 # ---------------------------------------------------------------------------
+# M12.2 — CA-01: unicidad de tags case-insensitive y trimmed
+# ---------------------------------------------------------------------------
+
+
+async def test_add_tag_case_insensitive_variant_is_idempotent(
+    client: AsyncClient, db_session: AsyncSession
+):
+    """Agregar 'Vegano' cuando ya existe 'vegano' en el mismo ítem devuelve
+    200 (no 201) con el tag existente, sin crear un segundo registro."""
+    headers = await as_user(client)
+    rid = await make_restaurant(client, headers)
+    sid = await make_subcategory(client, headers, rid)
+    item_id = (await make_item(client, headers, rid, sid)).json()["id"]
+
+    first = await client.post(
+        f"/restaurants/{rid}/subcategories/{sid}/items/{item_id}/tags",
+        json={"name": "vegano"},
+        headers=headers,
+    )
+    assert first.status_code == 201
+
+    second = await client.post(
+        f"/restaurants/{rid}/subcategories/{sid}/items/{item_id}/tags",
+        json={"name": "Vegano"},
+        headers=headers,
+    )
+    assert second.status_code == 200
+    assert second.json()["id"] == first.json()["id"]
+
+    count = (
+        await db_session.execute(
+            select(func.count())
+            .select_from(ItemTag)
+            .where(ItemTag.item_id == uuid.UUID(item_id))
+        )
+    ).scalar_one()
+    assert count == 1
+
+
+async def test_add_tag_case_insensitive_trimmed_variant_is_idempotent(
+    client: AsyncClient, db_session: AsyncSession
+):
+    """La comparación también ignora espacios: '  Vegano  ' matchea 'vegano'."""
+    headers = await as_user(client)
+    rid = await make_restaurant(client, headers)
+    sid = await make_subcategory(client, headers, rid)
+    item_id = (await make_item(client, headers, rid, sid)).json()["id"]
+
+    first = await client.post(
+        f"/restaurants/{rid}/subcategories/{sid}/items/{item_id}/tags",
+        json={"name": "vegano"},
+        headers=headers,
+    )
+    assert first.status_code == 201
+
+    second = await client.post(
+        f"/restaurants/{rid}/subcategories/{sid}/items/{item_id}/tags",
+        json={"name": "  Vegano  "},
+        headers=headers,
+    )
+    assert second.status_code == 200
+
+    count = (
+        await db_session.execute(
+            select(func.count())
+            .select_from(ItemTag)
+            .where(ItemTag.item_id == uuid.UUID(item_id))
+        )
+    ).scalar_one()
+    assert count == 1
+
+
+# ---------------------------------------------------------------------------
 # Extra: PATCH parcial persiste
 # ---------------------------------------------------------------------------
 

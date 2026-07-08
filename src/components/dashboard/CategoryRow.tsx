@@ -120,8 +120,9 @@ export default function CategoryRow({
         onCancelEdit={() => setEditing(false)}
         onDelete={handleDelete}
         busy={busy}
-        padding="px-4 py-3"
+        padding="pt-3 pr-4 pb-3 pl-4"
         nameClassName="text-sm font-semibold text-gray-900"
+        deleteConfirmMessage="Se borrará también todo lo que contiene (subcategorías e ítems). ¿Confirmar?"
       />
 
       {error && (

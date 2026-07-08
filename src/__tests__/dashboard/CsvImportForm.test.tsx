@@ -84,4 +84,38 @@ describe('CsvImportForm', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/file_too_large/i)
   })
+
+  // RF-05: onImported fires after a successful import that created rows, so
+  // MenuEditorPage can refresh the already-rendered tree.
+  it('calls onImported when the import creates at least one row', async () => {
+    routeFetch([
+      { method: 'POST', match: '/import', response: jsonResponse({ imported: 2, errors: [] }) },
+    ])
+    const onImported = vi.fn()
+
+    render(<CsvImportForm restaurantId="r1" onImported={onImported} />)
+
+    await userEvent.upload(screen.getByLabelText(/archivo csv/i), csvFile())
+    await userEvent.click(screen.getByRole('button', { name: /importar/i }))
+
+    await screen.findByRole('status')
+    expect(onImported).toHaveBeenCalledTimes(1)
+    expect(onImported).toHaveBeenCalledWith({ imported: 2, errors: [] })
+  })
+
+  // RF-05: no rows created → nothing to refresh, onImported is not called.
+  it('does not call onImported when the import creates no rows', async () => {
+    routeFetch([
+      { method: 'POST', match: '/import', response: jsonResponse({ imported: 0, errors: [] }) },
+    ])
+    const onImported = vi.fn()
+
+    render(<CsvImportForm restaurantId="r1" onImported={onImported} />)
+
+    await userEvent.upload(screen.getByLabelText(/archivo csv/i), csvFile())
+    await userEvent.click(screen.getByRole('button', { name: /importar/i }))
+
+    await screen.findByRole('status')
+    expect(onImported).not.toHaveBeenCalled()
+  })
 })

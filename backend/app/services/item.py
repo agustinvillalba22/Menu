@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -143,11 +143,18 @@ async def add_tag(
     session: AsyncSession,
 ) -> tuple[ItemTag, bool]:
     """Add a tag to an Item. Idempotent per (item_id, name) — returns the
-    existing tag with created=False if one already exists (PA-01)."""
+    existing tag with created=False if one already exists (PA-01).
+
+    "Already exists" is matched case-insensitively and trimmed (M12.2, RF-01):
+    adding "Vegano" when the item already has "vegano" is a no-op that
+    returns the existing tag, not a new one.
+    """
     await _get_item(restaurant_id, subcategory_id, item_id, session)
+    normalized = name.strip().lower()
     existing = await session.execute(
         select(ItemTag).where(
-            ItemTag.item_id == item_id, ItemTag.name == name
+            ItemTag.item_id == item_id,
+            func.lower(ItemTag.name) == normalized,
         )
     )
     tag = existing.scalar_one_or_none()
@@ -158,13 +165,14 @@ async def add_tag(
     try:
         await session.commit()
     except IntegrityError:
-        # Race safety net: another request inserted the same (item_id, name)
+        # Race safety net: another request inserted a matching (item_id, name)
         # between our SELECT and INSERT and won on the uq_item_tag constraint.
         # Roll back and return the now-existing tag as created=False (PA-01).
         await session.rollback()
         existing = await session.execute(
             select(ItemTag).where(
-                ItemTag.item_id == item_id, ItemTag.name == name
+                ItemTag.item_id == item_id,
+                func.lower(ItemTag.name) == normalized,
             )
         )
         return existing.scalar_one(), False

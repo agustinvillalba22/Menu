@@ -2,7 +2,12 @@ import React, { useState } from 'react'
 import type { FormEvent } from 'react'
 import { addTag, removeTag } from '../../lib/menu'
 import { ApiError } from '../../lib/api'
+import { badgeInfo } from '../public/badges'
 import type { Tag } from '../../lib/types'
+
+/** Curated set of dietary tags (M12.2). Canonical names — used verbatim when
+ *  adding a tag so the backend stores exactly one of these five spellings. */
+const CURATED_TAGS = ['Sin TACC', 'Sin lácteos', 'Vegetariano', 'Vegano', 'Picante'] as const
 
 interface ItemTagsProps {
   restaurantId: string
@@ -55,9 +60,54 @@ export default function ItemTags({
     }
   }
 
+  async function handleToggleCurated(tagName: string): Promise<void> {
+    const existing = tags.find((t) => t.name.trim().toLowerCase() === tagName.toLowerCase())
+    setBusy(true)
+    setError(null)
+    try {
+      if (existing) {
+        await removeTag(restaurantId, subcategoryId, itemId, existing.id)
+        onTagsChange(tags.filter((t) => t.id !== existing.id))
+      } else {
+        const tag = await addTag(restaurantId, subcategoryId, itemId, { name: tagName })
+        if (!tags.some((t) => t.id === tag.id)) {
+          onTagsChange([...tags, tag])
+        }
+      }
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo actualizar el tag.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="mt-2">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Tags dietéticos sugeridos">
+        {CURATED_TAGS.map((tagName) => {
+          const active = tags.some((t) => t.name.trim().toLowerCase() === tagName.toLowerCase())
+          const badge = badgeInfo({ id: tagName, name: tagName })
+          return (
+            <button
+              key={tagName}
+              type="button"
+              aria-pressed={active}
+              disabled={busy}
+              onClick={() => handleToggleCurated(tagName)}
+              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+                active
+                  ? 'border-gray-900 bg-gray-900 text-white'
+                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              {badge && <span aria-hidden="true">{badge.emoji}</span>}
+              {tagName}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center gap-2">
         {tags.map((tag) => (
           <span
             key={tag.id}

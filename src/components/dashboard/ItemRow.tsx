@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
-import { updateItem, deleteItem } from '../../lib/menu'
+import React, { useEffect, useState } from 'react'
+import { updateItem, deleteItem, listModifiers } from '../../lib/menu'
 import { ApiError } from '../../lib/api'
 import type { Item, ItemUpdate, Tag } from '../../lib/types'
 import ItemTags from './ItemTags'
 import ItemModifiers from './ItemModifiers'
+import RowActions from './RowActions'
 
 interface ItemRowProps {
   restaurantId: string
@@ -25,6 +26,27 @@ export default function ItemRow({
   const [price, setPrice] = useState(item.price)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Tags/modifiers are collapsed by default (RF-03) — the tag count comes
+  // from the item itself, but the modifier count needs its own lightweight
+  // fetch since ItemModifiers only knows its list once it mounts.
+  const [tagsExpanded, setTagsExpanded] = useState(false)
+  const [modifiersExpanded, setModifiersExpanded] = useState(false)
+  const [modifiersCount, setModifiersCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    listModifiers(restaurantId, subcategoryId, current.id)
+      .then((list) => {
+        if (!cancelled) setModifiersCount(list.length)
+      })
+      .catch(() => {
+        if (!cancelled) setModifiersCount(0)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [restaurantId, subcategoryId, current.id])
 
   function startEdit(): void {
     setName(current.name)
@@ -73,7 +95,7 @@ export default function ItemRow({
   }
 
   return (
-    <li className="rounded-md border border-gray-200 p-3">
+    <li className="pt-3 pr-3 pb-3 pl-12 rounded-md border border-gray-200">
       {editing ? (
         <div className="space-y-2">
           <div>
@@ -115,24 +137,15 @@ export default function ItemRow({
               className="w-32 rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-gray-900 focus:outline-none"
             />
           </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={busy}
-              className="rounded-md bg-gray-900 px-3 py-1 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-60"
-            >
-              Guardar
-            </button>
-            <button
-              type="button"
-              onClick={() => setEditing(false)}
-              disabled={busy}
-              className="rounded-md border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100"
-            >
-              Cancelar
-            </button>
-          </div>
+          <RowActions
+            editing
+            busy={busy}
+            onStartEdit={startEdit}
+            onSave={handleSave}
+            onCancelEdit={() => setEditing(false)}
+            onDelete={handleDelete}
+            deleteConfirmMessage="¿Confirmar borrado del ítem?"
+          />
         </div>
       ) : (
         <div className="flex items-start justify-between gap-3">
@@ -142,42 +155,59 @@ export default function ItemRow({
               <p className="text-xs text-gray-500">{current.description}</p>
             )}
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-3">
             <span className="text-sm font-medium text-gray-900">
               ${parseFloat(current.price).toFixed(2)}
             </span>
-            <button
-              type="button"
-              onClick={startEdit}
-              className="text-xs text-gray-500 hover:text-gray-900"
-            >
-              Editar
-            </button>
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={busy}
-              className="text-xs text-red-600 hover:text-red-800 disabled:opacity-50"
-            >
-              Borrar
-            </button>
+            <RowActions
+              editing={false}
+              busy={busy}
+              onStartEdit={startEdit}
+              onSave={handleSave}
+              onCancelEdit={() => setEditing(false)}
+              onDelete={handleDelete}
+              deleteConfirmMessage="¿Confirmar borrado del ítem?"
+            />
           </div>
         </div>
       )}
 
-      <ItemTags
-        restaurantId={restaurantId}
-        subcategoryId={subcategoryId}
-        itemId={current.id}
-        tags={current.tags}
-        onTagsChange={handleTagsChange}
-      />
+      <div className="mt-2 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setTagsExpanded((v) => !v)}
+          aria-expanded={tagsExpanded}
+          className="text-xs text-gray-500 hover:text-gray-900"
+        >
+          Tags ({current.tags.length}) {tagsExpanded ? '▾' : '▸'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setModifiersExpanded((v) => !v)}
+          aria-expanded={modifiersExpanded}
+          className="text-xs text-gray-500 hover:text-gray-900"
+        >
+          Modificadores ({modifiersCount ?? 0}) {modifiersExpanded ? '▾' : '▸'}
+        </button>
+      </div>
 
-      <ItemModifiers
-        restaurantId={restaurantId}
-        subcategoryId={subcategoryId}
-        itemId={current.id}
-      />
+      {tagsExpanded && (
+        <ItemTags
+          restaurantId={restaurantId}
+          subcategoryId={subcategoryId}
+          itemId={current.id}
+          tags={current.tags}
+          onTagsChange={handleTagsChange}
+        />
+      )}
+
+      {modifiersExpanded && (
+        <ItemModifiers
+          restaurantId={restaurantId}
+          subcategoryId={subcategoryId}
+          itemId={current.id}
+        />
+      )}
 
       {error && (
         <div role="alert" className="mt-1 text-xs text-red-700">

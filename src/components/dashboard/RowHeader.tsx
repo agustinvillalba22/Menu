@@ -1,4 +1,5 @@
 import React from 'react'
+import RowActions from './RowActions'
 
 interface RowHeaderProps {
   inputId: string
@@ -17,6 +18,8 @@ interface RowHeaderProps {
   busy: boolean
   padding: string
   nameClassName: string
+  /** Message shown while confirming delete — must mention cascade for category/subcategory. */
+  deleteConfirmMessage: string
 }
 
 /**
@@ -40,6 +43,7 @@ export default function RowHeader({
   busy,
   padding,
   nameClassName,
+  deleteConfirmMessage,
 }: RowHeaderProps): React.JSX.Element {
   return (
     <div className={`flex items-center justify-between gap-2 ${padding}`}>
@@ -70,45 +74,15 @@ export default function RowHeader({
         )}
         {badge}
       </div>
-      <div className="flex shrink-0 items-center gap-2">
-        {editing ? (
-          <>
-            <button
-              type="button"
-              onClick={onSaveName}
-              disabled={busy}
-              className="text-xs font-medium text-gray-900 hover:underline disabled:opacity-50"
-            >
-              Guardar
-            </button>
-            <button
-              type="button"
-              onClick={onCancelEdit}
-              className="text-xs text-gray-500 hover:text-gray-900"
-            >
-              Cancelar
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={onStartEdit}
-              className="text-xs text-gray-500 hover:text-gray-900"
-            >
-              Editar
-            </button>
-            <button
-              type="button"
-              onClick={onDelete}
-              disabled={busy}
-              className="text-xs text-red-600 hover:text-red-800 disabled:opacity-50"
-            >
-              Borrar
-            </button>
-          </>
-        )}
-      </div>
+      <RowActions
+        editing={editing}
+        busy={busy}
+        onStartEdit={onStartEdit}
+        onSave={onSaveName}
+        onCancelEdit={onCancelEdit}
+        onDelete={onDelete}
+        deleteConfirmMessage={deleteConfirmMessage}
+      />
     </div>
   )
 }
