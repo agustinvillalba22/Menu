@@ -4,6 +4,7 @@ import { ApiError } from '../../lib/api'
 import type { Item, ItemUpdate, Modifier, Tag } from '../../lib/types'
 import ItemTags from './ItemTags'
 import ItemModifiers from './ItemModifiers'
+import ItemImageUpload from './ItemImageUpload'
 import RowActions from './RowActions'
 
 interface ItemRowProps {
@@ -96,6 +97,10 @@ export default function ItemRow({
     setCurrent((prev) => ({ ...prev, tags }))
   }
 
+  function handleImageChange(imageUrl: string | null): void {
+    setCurrent((prev) => ({ ...prev, image_url: imageUrl }))
+  }
+
   return (
     <li className="pt-3 pr-3 pb-3 pl-12 rounded-md border border-gray-200">
       {editing ? (
@@ -173,6 +178,14 @@ export default function ItemRow({
           </div>
         </div>
       )}
+
+      <ItemImageUpload
+        restaurantId={restaurantId}
+        subcategoryId={subcategoryId}
+        itemId={current.id}
+        imageUrl={current.image_url}
+        onImageChange={handleImageChange}
+      />
 
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <button
