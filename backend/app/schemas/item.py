@@ -45,6 +45,21 @@ class TagCreate(BaseModel):
     name: str = Field(min_length=1, max_length=50)
 
 
+class ItemImageUploadRequest(BaseModel):
+    content_type: str
+    file_size: int = Field(gt=0)
+
+
+class ItemImageUploadResponse(BaseModel):
+    upload_url: str
+    object_key: str
+    expires_in: int
+
+
+class ItemImageConfirmRequest(BaseModel):
+    object_key: str = Field(min_length=1)
+
+
 class ImportRowError(BaseModel):
     row: int
     reason: str

@@ -124,8 +124,21 @@ async def delete_item(
     item_id: uuid.UUID,
     session: AsyncSession,
 ) -> None:
-    """Delete an Item (cascade removes its tags)."""
+    """Delete an Item (cascade removes its tags).
+
+    RF-08: if the item has an image, its R2 object is deleted first
+    (best-effort — a storage failure is logged but never blocks the DB delete,
+    so we don't leave an orphan row behind).
+    """
     item = await _get_item(restaurant_id, subcategory_id, item_id, session)
+    if item.image_url:
+        # Lazy import avoids a circular import (item_image imports _get_item).
+        from app.services.item_image import (
+            _delete_object_best_effort,
+            _object_key_from_url,
+        )
+
+        await _delete_object_best_effort(_object_key_from_url(item.image_url))
     await session.delete(item)
     await session.commit()
 

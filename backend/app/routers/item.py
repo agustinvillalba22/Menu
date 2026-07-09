@@ -19,6 +19,9 @@ from app.models.user import User
 from app.schemas.item import (
     ImportResult,
     ItemCreate,
+    ItemImageConfirmRequest,
+    ItemImageUploadRequest,
+    ItemImageUploadResponse,
     ItemRead,
     ItemUpdate,
     TagCreate,
@@ -38,6 +41,11 @@ from app.services.item import (
     list_items,
     remove_tag,
     update_item,
+)
+from app.services.item_image import (
+    confirm_upload,
+    create_upload_url,
+    delete_image,
 )
 from app.services.item_modifier import (
     create_modifier,
@@ -129,6 +137,57 @@ async def delete(
     session: AsyncSession = Depends(get_db),
 ) -> None:
     await delete_item(restaurant_id, subcategory_id, item_id, session)
+
+
+# ---------------------------------------------------------------------------
+# Image — sub-resource of an item (M4, R2-backed)
+# ---------------------------------------------------------------------------
+
+_IMAGE_PREFIX = _PREFIX + "/{item_id}/image"
+
+
+@router.post(
+    _IMAGE_PREFIX + "/upload-url",
+    response_model=ItemImageUploadResponse,
+    status_code=200,
+)
+async def create_image_upload_url(
+    restaurant_id: uuid.UUID,
+    subcategory_id: uuid.UUID,
+    item_id: uuid.UUID,
+    data: ItemImageUploadRequest,
+    _: User = Depends(require_role(RestaurantRole.editor)),
+    session: AsyncSession = Depends(get_db),
+) -> ItemImageUploadResponse:
+    return await create_upload_url(
+        restaurant_id, subcategory_id, item_id, data, session
+    )
+
+
+@router.post(_IMAGE_PREFIX + "/confirm", response_model=ItemRead, status_code=200)
+async def confirm_image_upload(
+    restaurant_id: uuid.UUID,
+    subcategory_id: uuid.UUID,
+    item_id: uuid.UUID,
+    data: ItemImageConfirmRequest,
+    _: User = Depends(require_role(RestaurantRole.editor)),
+    session: AsyncSession = Depends(get_db),
+) -> ItemRead:
+    item = await confirm_upload(
+        restaurant_id, subcategory_id, item_id, data, session
+    )
+    return ItemRead.model_validate(item)
+
+
+@router.delete(_IMAGE_PREFIX, status_code=204)
+async def delete_image_endpoint(
+    restaurant_id: uuid.UUID,
+    subcategory_id: uuid.UUID,
+    item_id: uuid.UUID,
+    _: User = Depends(require_role(RestaurantRole.editor)),
+    session: AsyncSession = Depends(get_db),
+) -> None:
+    await delete_image(restaurant_id, subcategory_id, item_id, session)
 
 
 # ---------------------------------------------------------------------------
