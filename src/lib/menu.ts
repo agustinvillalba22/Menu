@@ -15,6 +15,8 @@ import type {
   ModifierCreate,
   ModifierUpdate,
   ImportResult,
+  ItemImageUploadRequest,
+  ItemImageUploadResponse,
 } from './types'
 
 // --- Categories ------------------------------------------------------------
@@ -187,6 +189,64 @@ export function removeModifier(
   return apiDelete<void>(
     `/restaurants/${restaurantId}/subcategories/${subcategoryId}/items/${itemId}/modifiers/${modifierId}`,
   )
+}
+
+// --- Item image upload (M10) -----------------------------------------------
+// Presigned PUT + confirm flow (mirrors the M4 backend contract). The binary
+// never touches our API: we ask for a presigned URL, PUT the file straight to
+// R2, then confirm against the backend.
+
+export function getItemImageUploadUrl(
+  restaurantId: string,
+  subcategoryId: string,
+  itemId: string,
+  data: ItemImageUploadRequest,
+): Promise<ItemImageUploadResponse> {
+  return apiPost<ItemImageUploadResponse>(
+    `/restaurants/${restaurantId}/subcategories/${subcategoryId}/items/${itemId}/image/upload-url`,
+    data,
+  )
+}
+
+export function confirmItemImageUpload(
+  restaurantId: string,
+  subcategoryId: string,
+  itemId: string,
+  objectKey: string,
+): Promise<Item> {
+  return apiPost<Item>(
+    `/restaurants/${restaurantId}/subcategories/${subcategoryId}/items/${itemId}/image/confirm`,
+    { object_key: objectKey },
+  )
+}
+
+export function deleteItemImage(
+  restaurantId: string,
+  subcategoryId: string,
+  itemId: string,
+): Promise<void> {
+  return apiDelete<void>(
+    `/restaurants/${restaurantId}/subcategories/${subcategoryId}/items/${itemId}/image`,
+  )
+}
+
+/**
+ * PUTs the raw file straight to the presigned R2 URL. Deliberately does NOT go
+ * through apiFetch: that prefixes VITE_API_URL and forces
+ * `Content-Type: application/json`, both wrong here. It also omits
+ * `credentials: 'include'` (RNF-02) so the session cookie is never sent to the
+ * external R2 origin. On a non-ok response it throws a plain Error (there is no
+ * `{detail}` JSON body from R2 to wrap in an ApiError).
+ */
+export async function uploadImageToR2(uploadUrl: string, file: File): Promise<void> {
+  const res = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type },
+    body: file,
+  })
+  if (!res.ok) {
+    throw new Error(`R2 upload failed with status ${res.status}`)
+  }
 }
 
 // --- CSV import ------------------------------------------------------------

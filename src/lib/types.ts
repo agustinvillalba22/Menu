@@ -195,6 +195,19 @@ export interface Item {
   tags: Tag[]
 }
 
+// --- Item image upload (M10) -----------------------------------------------
+
+export interface ItemImageUploadRequest {
+  content_type: string
+  file_size: number
+}
+
+export interface ItemImageUploadResponse {
+  upload_url: string
+  object_key: string
+  expires_in: number
+}
+
 export interface ImportRowError {
   row: number
   reason: string

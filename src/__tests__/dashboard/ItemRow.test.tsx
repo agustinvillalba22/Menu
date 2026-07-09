@@ -5,6 +5,27 @@ import ItemRow from '../../components/dashboard/ItemRow'
 import type { Item } from '../../lib/types'
 import { jsonResponse, readCall, routeFetch } from '../helpers'
 
+// ItemImageUpload is exercised in its own test file. Here we mock it with a
+// tiny stand-in so we can drive `onImageChange` and observe that ItemRow
+// re-renders it with the new `imageUrl` from local state — no list refetch
+// (CA-08 of the M10 spec).
+vi.mock('../../components/dashboard/ItemImageUpload', () => ({
+  default: ({
+    imageUrl,
+    onImageChange,
+  }: {
+    imageUrl: string | null
+    onImageChange: (url: string | null) => void
+  }) => (
+    <div>
+      <span data-testid="mock-image-url">{imageUrl ?? 'no-image'}</span>
+      <button type="button" onClick={() => onImageChange('https://cdn.example.com/new.jpg')}>
+        mock set image
+      </button>
+    </div>
+  ),
+}))
+
 global.fetch = vi.fn()
 beforeEach(() => vi.clearAllMocks())
 
@@ -189,6 +210,30 @@ describe('ItemRow', () => {
 
     expect(await screen.findByRole('button', { name: /tags \(0\)/i })).toBeInTheDocument()
     expect(await screen.findByRole('button', { name: /modificadores \(0\)/i })).toBeInTheDocument()
+  })
+
+  // CA-08 (M10): ItemRow reflects the updated image_url via onImageChange,
+  // straight from local state, with no refetch of the items list.
+  it('reflects the new image_url from onImageChange without refetching the item list', async () => {
+    routeFetch([{ method: 'GET', match: '/modifiers', response: jsonResponse([]) }])
+
+    renderRow(item)
+
+    // Passes the item's current image_url (null) down to ItemImageUpload.
+    expect(screen.getByTestId('mock-image-url')).toHaveTextContent('no-image')
+
+    await userEvent.click(screen.getByRole('button', { name: /mock set image/i }))
+
+    // Local `current.image_url` updated and re-passed to the child.
+    expect(screen.getByTestId('mock-image-url')).toHaveTextContent(
+      'https://cdn.example.com/new.jpg',
+    )
+    // No GET to the items list (the pre-existing eager /modifiers fetch is
+    // expected and excluded here — it's unrelated to image state).
+    const itemsListGets = callsMatching('/items', 'GET').filter(
+      (call) => !call.url.includes('/modifiers'),
+    )
+    expect(itemsListGets).toHaveLength(0)
   })
 
   // CA-06: the item-level "Borrar" uses the same classes as category/subcategory.
