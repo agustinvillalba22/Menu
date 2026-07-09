@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { useMyRestaurant } from '../../hooks/useMyRestaurant'
 import { createRestaurant, updateRestaurant } from '../../lib/restaurants'
 import type { RestaurantUpdate } from '../../lib/types'
+import QrCodeDisplay from '../../components/dashboard/QrCodeDisplay'
 
 export default function OverviewPage(): React.JSX.Element {
   const { restaurant, loading, error, reload } = useMyRestaurant()
@@ -103,6 +104,8 @@ export default function OverviewPage(): React.JSX.Element {
   }
 
   const publicPath = `/menu/${restaurant.qr_token}`
+  // RF-03: URL absoluta para el QR — el celular que escanea no tiene "origin" propio.
+  const publicUrl = `${window.location.origin}${publicPath}`
 
   return (
     <div className="max-w-2xl rounded-xl bg-white p-6 shadow-sm">
@@ -120,6 +123,7 @@ export default function OverviewPage(): React.JSX.Element {
             </Link>
           </dd>
         </div>
+        <QrCodeDisplay value={publicUrl} fileName={`${restaurant.slug}-qr.png`} />
       </dl>
 
       <div className="mt-6 border-t border-gray-100 pt-4">
