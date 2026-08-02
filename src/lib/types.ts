@@ -97,10 +97,41 @@ export interface PublicSubcategory {
 
 export type CategoryType = 'food' | 'drink'
 
+/**
+ * Curated category icon keys (P8). Mirror of the backend `CategoryIcon`
+ * enum — the dashboard picker only offers these values, and the public menu
+ * chip renders a Lucide component for each (see `lib/categoryIcons.ts`).
+ * `null` means "text-only chip" — no icon component rendered.
+ */
+export type CategoryIcon =
+  | 'utensils'
+  | 'glass_water'
+  | 'pizza'
+  | 'beer'
+  | 'wine'
+  | 'cake'
+  | 'coffee'
+  | 'ice_cream'
+  | 'salad'
+  | 'soup'
+  | 'fish'
+  | 'beef'
+  | 'chicken'
+  | 'bread'
+  | 'cookies'
+  | 'croissant'
+  | 'flame'
+  | 'sparkles'
+  | 'chef_hat'
+  | 'cup_soda'
+  | 'more_horizontal'
+  | 'clipboard_list'
+
 export interface PublicCategory {
   id: string
   name: string
   type: CategoryType
+  icon: CategoryIcon | null
   subcategories: PublicSubcategory[]
 }
 
@@ -112,17 +143,20 @@ export interface PublicCategory {
 export interface CategoryCreate {
   name: string
   type: CategoryType
+  icon?: CategoryIcon | null
 }
 
 export interface CategoryUpdate {
   name?: string
   type?: CategoryType
+  icon?: CategoryIcon | null
 }
 
 export interface Category {
   id: string
   name: string
   type: CategoryType
+  icon: CategoryIcon | null
 }
 
 export interface SubcategoryCreate {

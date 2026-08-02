@@ -17,7 +17,7 @@ const restaurant: Restaurant = {
   role: 'owner',
 }
 
-const entradas: Category = { id: 'c1', name: 'Entradas', type: 'food' }
+const entradas: Category = { id: 'c1', name: 'Entradas', type: 'food', icon: null }
 
 /** Recorded fetch calls whose URL contains `fragment`, optionally by method. */
 function callsMatching(fragment: string, method?: string) {

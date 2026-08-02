@@ -8,7 +8,7 @@ import { jsonResponse, readCall, routeFetch } from '../helpers'
 global.fetch = vi.fn()
 beforeEach(() => vi.clearAllMocks())
 
-const category: Category = { id: 'c1', name: 'Entradas', type: 'food' }
+const category: Category = { id: 'c1', name: 'Entradas', type: 'food', icon: null }
 
 function renderRow() {
   return render(

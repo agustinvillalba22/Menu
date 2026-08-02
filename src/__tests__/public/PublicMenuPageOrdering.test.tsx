@@ -21,6 +21,7 @@ const menu: PublicMenuResponse = {
       id: 'c1',
       name: 'Pizzas',
       type: 'food',
+      icon: null,
       subcategories: [
         {
           id: 's1',

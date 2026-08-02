@@ -21,6 +21,7 @@ const menu: PublicMenuResponse = {
       id: 'c1',
       name: 'Pizzas',
       type: 'food',
+      icon: 'pizza',
       subcategories: [
         {
           id: 's1',
@@ -137,5 +138,29 @@ describe('PublicMenuPage', () => {
     expect(wrapper.style.getPropertyValue('--color-primario')).toBe('')
     expect(wrapper.style.getPropertyValue('--font-heading')).toBe('')
     expect(document.documentElement.style.getPropertyValue('--color-primario')).toBe('')
+  })
+
+  // P8: a category with `icon` set renders a Lucide icon (svg) inside its
+  // filter chip; the "Todo" chip (icon: null) and any text-only chip render
+  // no leading svg.
+  it('renders the category icon inside the filter chip when set', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(menu))
+
+    const { container } = renderMenu()
+    await screen.findByRole('heading', { name: 'Boulette', level: 1 })
+
+    // The Pizzas chip carries `icon: 'pizza'` in the fixture; Lucia renders
+    // an <svg>, so the chip for "Pizzas" has one and the "Todo" chip has none.
+    const pizzasChip = screen.getByRole('button', { name: /pizzas/i }) as HTMLElement
+    const todoChip = screen.getByRole('button', { name: /^todo$/i }) as HTMLElement
+    expect(pizzasChip.querySelector('svg')).not.toBeNull()
+    expect(todoChip.querySelector('svg')).toBeNull()
+
+    // Sanity belt: the rendered svg actually uses the Lucide Pizza shape —
+    // lucide icons set `class="lucide lucide-pizza"` on the root <svg>.
+    expect(pizzasChip.querySelector('svg.lucide-pizza')).not.toBeNull()
+    // The container is unused otherwise but kept to mirror the other tests'
+    // pattern of grabbing it for future assertions.
+    expect(container).toBeInTheDocument()
   })
 })

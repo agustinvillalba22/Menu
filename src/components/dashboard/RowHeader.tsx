@@ -20,6 +20,12 @@ interface RowHeaderProps {
   nameClassName: string
   /** Message shown while confirming delete — must mention cascade for category/subcategory. */
   deleteConfirmMessage: string
+  /**
+   * Optional extra controls rendered inline next to the name input while
+   * editing. Used by CategoryRow (P8) to host the icon select without
+   * forcing every consumer (SubcategoryRow) to pass children.
+   */
+  editExtras?: React.ReactNode
 }
 
 /**
@@ -44,6 +50,7 @@ export default function RowHeader({
   padding,
   nameClassName,
   deleteConfirmMessage,
+  editExtras,
 }: RowHeaderProps): React.JSX.Element {
   return (
     <div className={`flex items-center justify-between gap-2 ${padding}`}>
@@ -68,6 +75,7 @@ export default function RowHeader({
               onChange={(e) => onDraftChange(e.target.value)}
               className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-gray-900 focus:outline-none"
             />
+            {editExtras}
           </>
         ) : (
           <span className={`truncate ${nameClassName}`}>{name}</span>

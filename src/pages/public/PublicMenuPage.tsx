@@ -3,7 +3,14 @@ import { useParams } from 'react-router-dom'
 import { Search, ShoppingBag, ChevronRight } from 'lucide-react'
 import { ApiError } from '../../lib/api'
 import { getPublicMenu } from '../../lib/publicMenu'
-import type { PublicCategory, PublicItem, PublicMenuResponse, Style } from '../../lib/types'
+import { getCategoryIcon } from '../../lib/categoryIcons'
+import type {
+  CategoryIcon,
+  PublicCategory,
+  PublicItem,
+  PublicMenuResponse,
+  Style,
+} from '../../lib/types'
 import { usePublicCart } from '../../components/public/cart'
 import PublicProductCard from '../../components/public/PublicProductCard'
 import PublicItemModal from '../../components/public/PublicItemModal'
@@ -182,6 +189,7 @@ export default function PublicMenuPage(): React.JSX.Element {
           <div className="no-scrollbar flex gap-2 overflow-x-auto">
             <FilterChip
               label="Todo"
+              icon={null}
               active={selectedCategory === 'all'}
               onClick={() => setSelectedCategory('all')}
             />
@@ -189,6 +197,7 @@ export default function PublicMenuPage(): React.JSX.Element {
               <React.Fragment key={c.id}>
                 <FilterChip
                   label={c.name}
+                  icon={c.icon}
                   active={selectedCategory === c.id}
                   onClick={() => setSelectedCategory(c.id)}
                 />
@@ -302,24 +311,28 @@ export default function PublicMenuPage(): React.JSX.Element {
 
 function FilterChip({
   label,
+  icon,
   active,
   onClick,
 }: {
   label: string
+  icon: CategoryIcon | null
   active: boolean
   onClick: () => void
 }): React.JSX.Element {
+  const Icon = icon === null ? null : getCategoryIcon(icon)
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`shrink-0 whitespace-nowrap rounded-2xl border px-4 py-2 text-[11px] font-black transition-all active:scale-95 ${
+      className={`flex shrink-0 items-center gap-1 whitespace-nowrap rounded-2xl border px-4 py-2 text-[11px] font-black transition-all active:scale-95 ${
         active
           ? 'border-primario bg-secundario text-primario'
           : 'border-gray-200/60 bg-white text-gray-400 hover:text-gray-800'
       }`}
     >
+      {Icon !== null && <Icon className="h-3 w-3" aria-hidden="true" />}
       {label}
     </button>
   )

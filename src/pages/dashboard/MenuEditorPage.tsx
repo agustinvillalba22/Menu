@@ -3,8 +3,11 @@ import type { FormEvent } from 'react'
 import { useMyRestaurant } from '../../hooks/useMyRestaurant'
 import { listCategories, createCategory } from '../../lib/menu'
 import { ApiError } from '../../lib/api'
-import type { Category, CategoryType } from '../../lib/types'
+import { getCategoryIconOptions, NO_ICON_VALUE } from '../../lib/categoryIcons'
+import type { Category, CategoryIcon, CategoryType } from '../../lib/types'
 import CategoryRow from '../../components/dashboard/CategoryRow'
+
+const ICON_OPTIONS = getCategoryIconOptions()
 
 export default function MenuEditorPage(): React.JSX.Element {
   const { restaurant, loading: restaurantLoading, error: restaurantError } = useMyRestaurant()
@@ -16,6 +19,9 @@ export default function MenuEditorPage(): React.JSX.Element {
 
   const [newName, setNewName] = useState('')
   const [newType, setNewType] = useState<CategoryType>('food')
+  // P8: null = text-only chip. NO_ICON_VALUE is the select placeholder code
+  // that decodes back into `null` on submit — `<select>` can't carry null.
+  const [newIcon, setNewIcon] = useState<CategoryIcon | null>(null)
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
 
@@ -48,10 +54,20 @@ export default function MenuEditorPage(): React.JSX.Element {
     setCreating(true)
     setCreateError(null)
     try {
-      const category = await createCategory(restaurantId, { name: newName, type: newType })
+      // Omit `icon` entirely when null — the backend defaults to null, and
+      // keeping the payload minimal matches the existing test contract that
+      // asserts POST body == { name, type } for an icon-less category.
+      const payload = { name: newName, type: newType } as {
+        name: string
+        type: CategoryType
+        icon?: CategoryIcon
+      }
+      if (newIcon !== null) payload.icon = newIcon
+      const category = await createCategory(restaurantId, payload)
       setCategories((prev) => [...prev, category])
       setNewName('')
       setNewType('food')
+      setNewIcon(null)
     } catch (err) {
       setCreateError(err instanceof ApiError ? err.message : 'No se pudo crear la categoría.')
     } finally {
@@ -111,6 +127,26 @@ export default function MenuEditorPage(): React.JSX.Element {
             >
               <option value="food">Comida</option>
               <option value="drink">Bebida</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="cat-icon" className="mb-1 block text-sm font-medium text-gray-700">
+              Ícono
+            </label>
+            <select
+              id="cat-icon"
+              value={newIcon ?? NO_ICON_VALUE}
+              onChange={(e) =>
+                setNewIcon(e.target.value === NO_ICON_VALUE ? null : (e.target.value as CategoryIcon))
+              }
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+            >
+              <option value={NO_ICON_VALUE}>Sin ícono</option>
+              {ICON_OPTIONS.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
           </div>
           <button
