@@ -13,6 +13,40 @@ class CategoryType(str, enum.Enum):
     drink = "drink"
 
 
+class CategoryIcon(str, enum.Enum):
+    """Curated icon keys for P8 (chips de categoría con ícono).
+
+    Stored as ``native_enum=False`` text — same pattern as the other enums —
+    so adding new icon keys later is a Python-only change (no migration
+    needed), and the frontend (Fase 1c) maps each key to a Lucide component
+    in a single dict.
+    """
+
+    utensils = "utensils"
+    glass_water = "glass_water"
+    pizza = "pizza"
+    mug_hot = "mug_hot"
+    beer = "beer"
+    wine = "wine"
+    cake = "cake"
+    coffee = "coffee"
+    ice_cream = "ice_cream"
+    salad = "salad"
+    soup = "soup"
+    fish = "fish"
+    beef = "beef"
+    chicken = "chicken"
+    bread = "bread"
+    cookies = "cookies"
+    croissant = "croissant"
+    flame = "flame"
+    sparkles = "sparkles"
+    chef_hat = "chef_hat"
+    cup_soda = "cup_soda"
+    more_horizontal = "more_horizontal"
+    clipboard_list = "clipboard_list"
+
+
 class Menu(Base):
     __tablename__ = "menus"
 
@@ -57,6 +91,14 @@ class Category(Base):
     type: Mapped[CategoryType] = mapped_column(
         Enum(CategoryType, native_enum=False),
         nullable=False,
+    )
+    # Fase 0008 (P8): nullable curated icon key — null means "no icon", the
+    # frontend renders a text-only chip. Stored as text (native_enum=False)
+    # so adding new icon keys later is a Python-only change.
+    icon: Mapped["CategoryIcon | None"] = mapped_column(
+        Enum(CategoryIcon, native_enum=False),
+        nullable=True,
+        default=None,
     )
 
     # relationships

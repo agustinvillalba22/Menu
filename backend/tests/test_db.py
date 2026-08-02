@@ -16,7 +16,8 @@ from app.models.user import User
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
-# The 9 tables defined in SPEC-M1-B
+# The tables defined across migrations 0001 .. 0008. Adding a table here
+# when its migration lands keeps this contract test in sync with the schema.
 EXPECTED_TABLES = {
     "users",
     "restaurants",
@@ -27,6 +28,13 @@ EXPECTED_TABLES = {
     "items",
     "item_tags",
     "menu_styles",
+    # Item modifiers + orders (0005 / item_modifier model)
+    "item_modifiers",
+    "orders",
+    "order_items",
+    "order_item_modifiers",
+    # 0008_restaurant_extensions
+    "business_hours",
 }
 
 
@@ -39,7 +47,7 @@ async def test_db_engine_connects(test_engine):
 
 
 async def test_db_tables_exist(test_engine):
-    """All 9 model tables must exist after Base.metadata.create_all."""
+    """All model tables must exist after Base.metadata.create_all."""
     async with test_engine.connect() as conn:
         table_names = await conn.run_sync(
             lambda sync_conn: inspect(sync_conn).get_table_names()
@@ -47,6 +55,11 @@ async def test_db_tables_exist(test_engine):
     existing = set(table_names)
     missing = EXPECTED_TABLES - existing
     assert not missing, f"Missing tables in schema: {missing}"
+    extra = existing - EXPECTED_TABLES
+    assert not extra, (
+        f"Unexpected tables in schema: {extra}. "
+        "Add them to EXPECTED_TABLES or drop the model."
+    )
 
 
 async def test_db_session_rollback_part_a(test_engine):

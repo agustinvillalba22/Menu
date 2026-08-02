@@ -23,8 +23,14 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from app.models.user import User
-from app.models.restaurant import Restaurant, UserRestaurantRole, RestaurantRole
-from app.models.menu import Menu, Category, Subcategory, CategoryType
+from app.models.restaurant import (
+    Restaurant,
+    UserRestaurantRole,
+    RestaurantRole,
+    RestaurantPlan,
+    BusinessHours,
+)
+from app.models.menu import Menu, Category, Subcategory, CategoryType, CategoryIcon
 from app.models.item import Item, ItemTag
 from app.models.style import MenuStyle, FontFamily
 
@@ -302,3 +308,108 @@ async def test_cascade_delete_menu(db_session):
     assert sub_result.scalar_one_or_none() is None, (
         "Subcategory must be deleted when its parent Category is deleted (cascade)"
     )
+
+
+# ---------------------------------------------------------------------------
+# 0008_restaurant_extensions — RestaurantPlan, BusinessHours, CategoryIcon
+# ---------------------------------------------------------------------------
+
+
+def test_restaurant_plan_enum_values():
+    """RestaurantPlan must expose exactly free/pro/premium."""
+    values = {e.value for e in RestaurantPlan}
+    assert values == {"free", "pro", "premium"}
+
+
+def test_restaurant_plan_defaults_to_free():
+    """Restaurant.plan column default must be `RestaurantPlan.free`.
+
+    Asserted at the column-definition level (not via flush) since
+    SQLAlchemy applies `default=` at INSERT time, not at attribute access.
+    """
+    plan_col = Restaurant.__mapper__.columns["plan"]
+    assert plan_col.default is not None, "Restaurant.plan must declare a default"
+    assert plan_col.default.arg is RestaurantPlan.free
+
+
+def test_category_icon_enum_is_curated():
+    """CategoryIcon must be a non-empty curated set; `utensils` is the
+    canonical default the dashboard form uses."""
+    values = {e.value for e in CategoryIcon}
+    assert "utensils" in values
+    assert len(values) >= 16, "CategoryIcon should cover common menu categories"
+
+
+async def test_category_icon_nullable_by_default(db_session):
+    """A Category built without icon defaults to None (no icon)."""
+    restaurant = _make_restaurant()
+    db_session.add(restaurant)
+    await db_session.flush()
+    menu = _make_menu(restaurant_id=restaurant.id)
+    db_session.add(menu)
+    await db_session.flush()
+
+    category = _make_category(menu_id=menu.id)
+    db_session.add(category)
+    await db_session.flush()
+
+    assert category.icon is None, "Category.icon must default to None"
+
+
+async def test_business_hours_cascade_delete_with_restaurant(db_session):
+    """Deleting a Restaurant must cascade-delete its business_hours rows."""
+    restaurant = _make_restaurant()
+    db_session.add(restaurant)
+    await db_session.flush()
+
+    from datetime import time
+
+    hours = BusinessHours(
+        restaurant_id=restaurant.id,
+        weekday=0,
+        open_time=time(9, 0),
+        close_time=time(18, 0),
+    )
+    db_session.add(hours)
+    await db_session.flush()
+    hours_id = hours.id
+
+    await db_session.delete(restaurant)
+    await db_session.flush()
+
+    result = await db_session.execute(
+        select(BusinessHours).where(BusinessHours.id == hours_id)
+    )
+    assert result.scalar_one_or_none() is None, (
+        "BusinessHours must be cascade-deleted with its restaurant"
+    )
+
+
+async def test_business_hours_unique_restaurant_weekday(db_session):
+    """A second business_hours row for the same (restaurant, weekday) must fail."""
+    restaurant = _make_restaurant()
+    db_session.add(restaurant)
+    await db_session.flush()
+
+    from datetime import time
+
+    db_session.add(
+        BusinessHours(
+            restaurant_id=restaurant.id,
+            weekday=1,
+            open_time=time(9, 0),
+            close_time=time(18, 0),
+        )
+    )
+    await db_session.flush()
+
+    db_session.add(
+        BusinessHours(
+            restaurant_id=restaurant.id,
+            weekday=1,  # same weekday → unique violation
+            open_time=time(19, 0),
+            close_time=time(23, 0),
+        )
+    )
+    with pytest.raises(IntegrityError):
+        await db_session.flush()
