@@ -1,12 +1,19 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMyRestaurant } from '../../hooks/useMyRestaurant'
 import { getStyle, updateStyle } from '../../lib/style'
+import { THEME_PRESETS, type ThemePreset } from '../../lib/themePresets'
 import type { FontFamily, Style, StyleUpdate } from '../../lib/types'
 
 const FONT_OPTIONS: FontFamily[] = ['Inter', 'Playfair Display', 'Poppins', 'DM Sans']
 const DEFAULT_PRIMARY = '#FC462F'
 const DEFAULT_SECONDARY = '#FFE0E0'
+
+/** Normalize a hex value to lowercase so PATCH diffs are case-stable — the
+ * backend stores whatever bytes we send, and `<input type="color">` always
+ * yields lowercase, so preset hexes must flow through the same pipe to avoid
+ * spurious "the secondary_color changed!" diffs from a case-only delta. */
+const norm = (hex: string): string => hex.toLowerCase()
 
 export default function AppearancePage(): React.JSX.Element {
   const { restaurant, loading: restaurantLoading, error: restaurantError } = useMyRestaurant()
@@ -22,6 +29,28 @@ export default function AppearancePage(): React.JSX.Element {
   const [status, setStatus] = useState<'success' | 'error' | null>(null)
 
   const restaurantId = restaurant?.id ?? null
+
+  // Match the current (primary, secondary, font) against a preset to highlight
+  // its card in the grid. Computed per render — the inputs are the only source
+  // of truth, so this stays consistent whether the owner clicked a preset or
+  // tweaked a channel manually.
+  const activePresetId = useMemo<string | null>(() => {
+    const p = norm(primaryColor)
+    const s = norm(secondaryColor)
+    const match = THEME_PRESETS.find(
+      (preset) =>
+        norm(preset.primary_color) === p &&
+        norm(preset.secondary_color) === s &&
+        preset.font_family === fontFamily,
+    )
+    return match?.id ?? null
+  }, [primaryColor, secondaryColor, fontFamily])
+
+  function applyPreset(preset: ThemePreset): void {
+    setFontFamily(preset.font_family)
+    setPrimaryColor(norm(preset.primary_color))
+    setSecondaryColor(norm(preset.secondary_color))
+  }
 
   useEffect(() => {
     if (restaurantId === null) return
@@ -97,7 +126,7 @@ export default function AppearancePage(): React.JSX.Element {
   }
 
   return (
-    <div className="max-w-md rounded-xl bg-white p-6 shadow-sm">
+    <div className="max-w-2xl rounded-xl bg-white p-6 shadow-sm">
       <h1 className="mb-6 text-xl font-semibold text-gray-900">Apariencia</h1>
 
       {status === 'success' && (
@@ -110,6 +139,46 @@ export default function AppearancePage(): React.JSX.Element {
           No se pudieron guardar los cambios.
         </div>
       )}
+
+      {/* Preset grid — one click fills all three channels below. The cards
+          act as shortcuts, not as a separate store: their `aria-pressed`
+          state mirrors the active-preset computation so screen readers
+          announce selection consistently with the visual highlight. */}
+      <fieldset className="mb-6">
+        <legend className="mb-2 block text-sm font-medium text-gray-700">
+          Paletas predefinidas
+        </legend>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {THEME_PRESETS.map((preset) => {
+            const isActive = preset.id === activePresetId
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                aria-pressed={isActive}
+                title={preset.description}
+                onClick={() => applyPreset(preset)}
+                className={`flex flex-col gap-2 rounded-lg border p-3 text-left transition focus:outline-none focus:ring-2 focus:ring-gray-900 ${
+                  isActive
+                    ? 'border-gray-900 ring-1 ring-gray-900'
+                    : 'border-gray-200 hover:border-gray-400'
+                }`}
+              >
+                <div
+                  className="flex h-12 items-center justify-center rounded text-sm font-bold"
+                  style={{
+                    backgroundColor: norm(preset.secondary_color),
+                    color: norm(preset.primary_color),
+                  }}
+                >
+                  Aa
+                </div>
+                <span className="text-xs font-semibold text-gray-900">{preset.name}</span>
+              </button>
+            )
+          })}
+        </div>
+      </fieldset>
 
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         <div>

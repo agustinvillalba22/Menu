@@ -95,4 +95,67 @@ describe('AppearancePage', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/no se pudieron guardar/i)
   })
+
+  // Fase 1b (P1): clicking a preset card fills all three channels and, on
+  // save, PATCHes only the ones that actually differ from the loaded style.
+  // "Clásico" shares font + secondary with the loaded style but differs on
+  // primary, so the body must carry only `primary_color` (no spurious
+  // secondary diff from the uppercase preset hex either — the page lowercases).
+  it('clicking a preset PATCHes only the channels that differ', async () => {
+    routeFetch([
+      {
+        method: 'PATCH',
+        match: '/style',
+        // server echoes back the new primary; secondary stays as loaded
+        response: jsonResponse({ ...style, primary_color: '#fc462f' }),
+      },
+      { method: 'GET', match: '/style', response: jsonResponse(style) },
+      { method: 'GET', match: '/restaurants', response: jsonResponse([restaurant]) },
+    ])
+
+    render(<AppearancePage />)
+
+    // Wait for the existing primary input to surface (proves the load landed).
+    await screen.findByLabelText(/color primario/i)
+
+    const clasico = await screen.findByRole('button', { name: /clásico/i })
+    await userEvent.click(clasico)
+
+    await userEvent.click(screen.getByRole('button', { name: /guardar/i }))
+    await screen.findByRole('status')
+
+    expect(JSON.parse(patchCall().body as string)).toEqual({ primary_color: '#fc462f' })
+  })
+
+  // Switching to a preset that touches all three channels PATCHes all three.
+  it('clicking a preset that changes all three PATCHes every field', async () => {
+    routeFetch([
+      {
+        method: 'PATCH',
+        match: '/style',
+        response: jsonResponse({
+          font_family: 'DM Sans',
+          primary_color: '#111827',
+          secondary_color: '#fbbf24',
+        }),
+      },
+      { method: 'GET', match: '/style', response: jsonResponse(style) },
+      { method: 'GET', match: '/restaurants', response: jsonResponse([restaurant]) },
+    ])
+
+    render(<AppearancePage />)
+
+    await screen.findByLabelText(/color primario/i)
+    const elegante = await screen.findByRole('button', { name: /elegante/i })
+    await userEvent.click(elegante)
+
+    await userEvent.click(screen.getByRole('button', { name: /guardar/i }))
+    await screen.findByRole('status')
+
+    expect(JSON.parse(patchCall().body as string)).toEqual({
+      font_family: 'DM Sans',
+      primary_color: '#111827',
+      secondary_color: '#fbbf24',
+    })
+  })
 })

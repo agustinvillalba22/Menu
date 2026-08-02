@@ -2,6 +2,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Lilita+One&family=Space+Grotesk:wght@300..700&family=Cinzel:wght@400..900&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
+/* Fase 1b (P1): the four FontFamily enum values must be callable as
+   `--font-heading` on the public menu. `Playfair Display` was already
+   imported above; the remaining three (Inter, Poppins, DM Sans) land here so
+   selecting them in the dashboard actually renders the right headings.
+   Loading all three is one round trip, so the owner never sees a FOUC when
+   flipping presets in the grid. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
 @theme {
   --font-sans: "Satoshi", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Satoshi", "Inter", ui-sans-serif, system-ui, sans-serif;
