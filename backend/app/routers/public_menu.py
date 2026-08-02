@@ -56,6 +56,7 @@ def _build_category(category: Category) -> PublicCategoryRead:
         id=category.id,
         name=category.name,
         type=category.type,
+        icon=category.icon,
         subcategories=[_build_subcategory(s) for s in subs],
     )
 

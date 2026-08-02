@@ -47,7 +47,12 @@ async def create_category(
 ) -> Category:
     """Create a Category on the restaurant's default Menu."""
     menu = await _get_default_menu(restaurant_id, session)
-    category = Category(name=data.name, type=data.type, menu_id=menu.id)
+    category = Category(
+        name=data.name,
+        type=data.type,
+        icon=data.icon,
+        menu_id=menu.id,
+    )
     session.add(category)
     await session.commit()
     await session.refresh(category)

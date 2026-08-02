@@ -19,13 +19,13 @@ class CategoryIcon(str, enum.Enum):
     Stored as ``native_enum=False`` text — same pattern as the other enums —
     so adding new icon keys later is a Python-only change (no migration
     needed), and the frontend (Fase 1c) maps each key to a Lucide component
-    in a single dict.
+    in a single dict. Only keys with a concrete Lucide component counterpart
+    are listed here — the union is intentional, not aspirational.
     """
 
     utensils = "utensils"
     glass_water = "glass_water"
     pizza = "pizza"
-    mug_hot = "mug_hot"
     beer = "beer"
     wine = "wine"
     cake = "cake"
@@ -36,6 +36,9 @@ class CategoryIcon(str, enum.Enum):
     fish = "fish"
     beef = "beef"
     chicken = "chicken"
+    # `bread`/`cookies`/`chicken` don't have a 1:1 Lucide name in this version;
+    # the frontend maps them onto `Sandwich`/`Cookie`/`Drumstick` respectively —
+    # the key stays human-readable, the visual is just a substitute.
     bread = "bread"
     cookies = "cookies"
     croissant = "croissant"

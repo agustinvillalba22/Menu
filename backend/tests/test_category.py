@@ -327,3 +327,126 @@ async def test_subcategory_not_found(client: AsyncClient):
     )
     assert res.status_code == 404
     assert res.json()["detail"] == "subcategory_not_found"
+
+
+# ---------------------------------------------------------------------------
+# P8 — Category.icon
+# ---------------------------------------------------------------------------
+
+
+async def test_create_category_with_icon_persists_and_returns_it(
+    client: AsyncClient, db_session: AsyncSession
+):
+    """POST with `icon` set stores it on the Category row and returns it.
+
+    The 201 body must echo `icon` as the enum's value so the dashboard can
+    read it back without re-fetching; the DB row must carry the same value
+    (not the enum object) since it round-trips through `Enum(native_enum=False)`
+    as text.
+    """
+    headers = await as_user(client)
+    rid = await make_restaurant(client, headers)
+
+    res = await client.post(
+        f"/restaurants/{rid}/categories",
+        json={"name": "Pizzas", "type": "food", "icon": "pizza"},
+        headers=headers,
+    )
+    assert res.status_code == 201
+    body = res.json()
+    assert body["icon"] == "pizza"
+
+    persisted = (
+        await db_session.execute(
+            select(Category).where(Category.id == uuid.UUID(body["id"]))
+        )
+    ).scalar_one()
+    assert persisted.icon is not None
+    assert persisted.icon.value == "pizza"
+
+
+async def test_create_category_without_icon_defaults_to_null(client: AsyncClient):
+    """A category created without `icon` reads back `null`, not a default —
+    text-only chip on the public menu (P8 spec)."""
+    headers = await as_user(client)
+    rid = await make_restaurant(client, headers)
+
+    res = await client.post(
+        f"/restaurants/{rid}/categories",
+        json={"name": "Entradas", "type": "food"},
+        headers=headers,
+    )
+    assert res.status_code == 201
+    assert res.json()["icon"] is None
+
+
+async def test_create_category_with_invalid_icon_rejected_422(client: AsyncClient):
+    """An icon key outside the curated enum must 422 — curated preset only,
+    no free-text icon names from the client."""
+    headers = await as_user(client)
+    rid = await make_restaurant(client, headers)
+
+    res = await client.post(
+        f"/restaurants/{rid}/categories",
+        json={"name": "Café", "type": "drink", "icon": "rocket"},
+        headers=headers,
+    )
+    assert res.status_code == 422
+
+
+async def test_patch_can_set_update_and_clear_icon(client: AsyncClient):
+    """PATCH with `icon` set, changed, and explicitly null — the three valid
+    transitions. An explicit `null` clears the icon (not the same as omitting
+    the field, which the next test pins down)."""
+    headers = await as_user(client)
+    rid = await make_restaurant(client, headers)
+
+    created = await client.post(
+        f"/restaurants/{rid}/categories",
+        json={"name": "Bebidas", "type": "drink", "icon": "cup_soda"},
+        headers=headers,
+    )
+    cid = created.json()["id"]
+
+    # Change to another curated key.
+    res = await client.patch(
+        f"/restaurants/{rid}/categories/{cid}",
+        json={"icon": "wine"},
+        headers=headers,
+    )
+    assert res.status_code == 200
+    assert res.json()["icon"] == "wine"
+
+    # Explicit null clears it.
+    res = await client.patch(
+        f"/restaurants/{rid}/categories/{cid}",
+        json={"icon": None},
+        headers=headers,
+    )
+    assert res.status_code == 200
+    assert res.json()["icon"] is None
+
+
+async def test_patch_omitting_icon_keeps_existing_value(client: AsyncClient):
+    """PATCH that omits `icon` must NOT touch the column — fields absent from
+    the body are not in `exclude_unset`, so the existing icon survives a name
+    or type-only PATCH."""
+    headers = await as_user(client)
+    rid = await make_restaurant(client, headers)
+
+    created = await client.post(
+        f"/restaurants/{rid}/categories",
+        json={"name": "Postres", "type": "food", "icon": "cake"},
+        headers=headers,
+    )
+    cid = created.json()["id"]
+
+    res = await client.patch(
+        f"/restaurants/{rid}/categories/{cid}",
+        json={"name": "Postres & Dulces"},
+        headers=headers,
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["name"] == "Postres & Dulces"
+    assert body["icon"] == "cake", "icon must survive a name-only PATCH"

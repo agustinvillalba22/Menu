@@ -310,3 +310,33 @@ async def test_token_resolves_correct_restaurant(
         select(Restaurant).where(Restaurant.name == "Unico")
     )
     assert str(row.scalar_one().qr_token) == restaurant["qr_token"]
+
+
+# ---------------------------------------------------------------------------
+# P8 — `icon` surfaces on the public menu payload
+# ---------------------------------------------------------------------------
+
+
+async def test_public_category_exposes_icon_when_set(client: AsyncClient):
+    """Categories with an icon expose `icon` in the public payload; those
+    without expose `null`. The public menu needs both states to render a
+    Lucide chip and a text-only chip respectively."""
+    headers = await as_user(client)
+    restaurant = await make_restaurant(client, headers, name="Con Iconos")
+
+    await client.post(
+        f"/restaurants/{restaurant['id']}/categories",
+        json={"name": "Pizzas", "type": "food", "icon": "pizza"},
+        headers=headers,
+    )
+    await client.post(
+        f"/restaurants/{restaurant['id']}/categories",
+        json={"name": "Entradas", "type": "food"},
+        headers=headers,
+    )
+
+    res = await client.get(f"/menu/{restaurant['qr_token']}")
+    assert res.status_code == 200
+    by_name = {c["name"]: c for c in res.json()["categories"]}
+    assert by_name["Pizzas"]["icon"] == "pizza"
+    assert by_name["Entradas"]["icon"] is None

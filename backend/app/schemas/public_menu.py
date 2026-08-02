@@ -4,7 +4,7 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, field_serializer
 
 from app.models.item_modifier import ModifierType
-from app.models.menu import CategoryType
+from app.models.menu import CategoryIcon, CategoryType
 from app.models.style import FontFamily
 
 
@@ -56,6 +56,10 @@ class PublicCategoryRead(BaseModel):
     id: uuid.UUID
     name: str
     type: CategoryType
+    # P8: same nullable curated icon key used by the dashboard. The public menu
+    # reads it to render the Lucide component next to the chip name; null
+    # means "text-only chip".
+    icon: CategoryIcon | None = None
     subcategories: list[PublicSubcategoryRead]
 
     model_config = ConfigDict(from_attributes=True)
