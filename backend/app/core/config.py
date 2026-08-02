@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     AUTH_COOKIE_NAME: str = "access_token"
     COOKIE_SECURE: bool = False
 
+    # Fase 0a — tz fallback for restaurants whose `timezone` is null and for
+    # flows without a restaurant context. IANA name; UTC is a safe no-op.
+    DEFAULT_TIMEZONE: str = "UTC"
+
     # Cloudflare R2 (S3-compatible object storage) — M4 item images.
     # No defaults: missing any of these fails app startup (fail-fast, same
     # pattern as DATABASE_URL / SECRET_KEY).
