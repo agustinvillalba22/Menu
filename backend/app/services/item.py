@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.models.item import Item, ItemTag
 from app.models.menu import Category, Menu, Subcategory
 from app.schemas.item import ItemCreate, ItemUpdate
+from app.services import image_upload
 
 
 async def _get_subcategory(
@@ -132,13 +133,9 @@ async def delete_item(
     """
     item = await _get_item(restaurant_id, subcategory_id, item_id, session)
     if item.image_url:
-        # Lazy import avoids a circular import (item_image imports _get_item).
-        from app.services.item_image import (
-            _delete_object_best_effort,
-            _object_key_from_url,
+        await image_upload.delete_object_best_effort(
+            image_upload.object_key_from_url(item.image_url)
         )
-
-        await _delete_object_best_effort(_object_key_from_url(item.image_url))
     await session.delete(item)
     await session.commit()
 
