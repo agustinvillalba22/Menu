@@ -1,4 +1,5 @@
 import uuid
+from datetime import time
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, field_serializer
@@ -65,6 +66,22 @@ class PublicCategoryRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PublicBusinessHoursRead(BaseModel):
+    """One row per weekday, as the owner set them.
+
+    Returned as bare ints + times (no "Mon" string): the public menu's
+    client-side formatters render them per-locale, and the weekday int
+    matches ``datetime.weekday()`` so the open/closed pill and any "today"
+    highlight share one definition.
+    """
+
+    weekday: int
+    open_time: time
+    close_time: time
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class PublicRestaurantRead(BaseModel):
     name: str
     slug: str
@@ -72,6 +89,21 @@ class PublicRestaurantRead(BaseModel):
     # client-side. The server still enforces it on POST /menu/{qr_token}/orders
     # (404 orders_disabled); this field only drives what the SPA renders.
     orders_enabled: bool
+    # P6 — local info shown in the public header (logo, address, phone,
+    # schedule summary + Abierto/Cerrado pill). All nullable OR empty-string
+    # tolerant so a brand-new restaurant with no info yet renders clean.
+    address: str
+    phone: str
+    logo_url: str | None = None
+    timezone: str
+    business_hours: list[PublicBusinessHoursRead]
+    is_open_now: bool
+    # P7 — lets the public checkout decide whether to render the
+    # "Confirmar por WhatsApp" button without a second round trip. The phone
+    # itself is never sent: only a boolean so we don't leak the raw number to
+    # page-source scrapers; the deep link URL is minted server-side in the
+    # POST /orders response and that's the only place the real wa.me URL lives.
+    whatsapp_enabled: bool
 
     model_config = ConfigDict(from_attributes=True)
 

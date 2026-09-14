@@ -38,6 +38,9 @@ export default function DashboardLayout(): React.JSX.Element {
               <NavLink to="/dashboard/orders" className={navLinkClass}>
                 Pedidos
               </NavLink>
+              <NavLink to="/dashboard/info" className={navLinkClass}>
+                Información
+              </NavLink>
               <NavLink to="/dashboard/appearance" className={navLinkClass}>
                 Apariencia
               </NavLink>

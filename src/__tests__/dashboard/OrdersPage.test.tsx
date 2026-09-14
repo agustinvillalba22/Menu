@@ -29,6 +29,9 @@ const order: OrderRead = {
   total: '23.00',
   created_at: '2026-07-07T10:00:00Z',
   updated_at: '2026-07-07T10:00:00Z',
+  // P7: the dashboard list/patch side never receives a whatsapp_url (the
+  // backend builds it only on POST public /orders) — null is the contract.
+  whatsapp_url: null,
   items: [
     {
       id: 'oi1',

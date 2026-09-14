@@ -14,7 +14,18 @@ beforeEach(() => {
 
 /** Menu fixture with ordering ON and an item carrying two real modifiers. */
 const menu: PublicMenuResponse = {
-  restaurant: { name: 'Boulette', slug: 'boulette', orders_enabled: true },
+  restaurant: {
+    name: 'Boulette',
+    slug: 'boulette',
+    orders_enabled: true,
+    address: '',
+    phone: '',
+    logo_url: null,
+    timezone: '',
+    business_hours: [],
+    is_open_now: false,
+    whatsapp_enabled: false,
+  },
   style: null,
   categories: [
     {
@@ -175,6 +186,65 @@ describe('PublicMenuPage — ordering enabled', () => {
         },
       ],
     })
+  })
+
+  // P7 — when the restaurant has whatsapp_enabled and the order's response
+  // carries a wa.me whatsapp_url, the confirmation screen shows the
+  // "Confirmar por WhatsApp" button pointing at that URL.
+  it('shows the WhatsApp confirm button on success when the local has a phone', async () => {
+    const orderWithWhatsapp = {
+      ...createdOrder,
+      whatsapp_url: 'https://wa.me/5491112345678?text=Nuevo%20pedido',
+    }
+    const menuWithWhatsapp: typeof menu = {
+      ...menu,
+      restaurant: { ...menu.restaurant, whatsapp_enabled: true },
+    }
+    routeFetch([
+      { method: 'POST', match: '/orders', response: jsonResponse(orderWithWhatsapp, 201) },
+      { method: 'GET', match: '/menu/', response: jsonResponse(menuWithWhatsapp) },
+    ])
+
+    renderMenu()
+    await screen.findByRole('heading', { name: 'Boulette', level: 1 })
+
+    await userEvent.click(screen.getByRole('button', { name: /agregar margherita/i }))
+    await userEvent.click(screen.getByRole('button', { name: /añadir al pedido/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Ver carrito' }))
+    await userEvent.click(screen.getByRole('button', { name: /finalizar pedido/i }))
+
+    await userEvent.type(screen.getByLabelText(/tu nombre/i), 'Ana')
+    await userEvent.type(screen.getByLabelText(/número de mesa/i), 'Mesa 1')
+    await userEvent.click(screen.getByRole('button', { name: /confirmar pedido/i }))
+
+    const button = await screen.findByTestId('whatsapp-confirm-button')
+    expect(button).toHaveAttribute('href', orderWithWhatsapp.whatsapp_url)
+    expect(button).toHaveAttribute('target', '_blank')
+  })
+
+  // P7 — when the restaurant has no whatsapp phone (whatsapp_enabled=false),
+  // the confirmation screen must NOT render the WhatsApp button, even if the
+  // backend returned a (would-never) whatsapp_url.
+  it('hides the WhatsApp confirm button when the local has no phone', async () => {
+    routeFetch([
+      { method: 'POST', match: '/orders', response: jsonResponse(createdOrder, 201) },
+      { method: 'GET', match: '/menu/', response: jsonResponse(menu) },
+    ])
+
+    renderMenu()
+    await screen.findByRole('heading', { name: 'Boulette', level: 1 })
+
+    await userEvent.click(screen.getByRole('button', { name: /agregar margherita/i }))
+    await userEvent.click(screen.getByRole('button', { name: /añadir al pedido/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Ver carrito' }))
+    await userEvent.click(screen.getByRole('button', { name: /finalizar pedido/i }))
+
+    await userEvent.type(screen.getByLabelText(/tu nombre/i), 'Ana')
+    await userEvent.type(screen.getByLabelText(/número de mesa/i), 'Mesa 1')
+    await userEvent.click(screen.getByRole('button', { name: /confirmar pedido/i }))
+
+    await screen.findByTestId('order-confirmation')
+    expect(screen.queryByTestId('whatsapp-confirm-button')).not.toBeInTheDocument()
   })
 })
 

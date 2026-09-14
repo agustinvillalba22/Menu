@@ -1017,3 +1017,134 @@ async def test_create_order_modifier_price_snapshot_not_clamped(
     assert body["items"][0]["subtotal"] == "0.00"
     assert body["items"][0]["modifiers"][0]["price_snapshot"] == "-150.00"
     assert body["items"][0]["unit_price_snapshot"] == "100.00"
+
+
+# ---------------------------------------------------------------------------
+# P7 — whatsapp_url en OrderRead (POST público de órdenes)
+# ---------------------------------------------------------------------------
+
+
+async def test_create_order_whatsapp_url_null_when_no_phone(client: AsyncClient):
+    """Sin ``whatsapp_phone`` configurado → ``whatsapp_url`` null en la
+    respuesta. El checkout público usa ese null para ocultar el botón."""
+    headers = await as_user(client)
+    restaurant = await make_restaurant(client, headers)
+    rid, qr = restaurant["id"], restaurant["qr_token"]
+    sid = await make_subcategory(client, headers, rid)
+    iid = await make_item(client, headers, rid, sid, price="5.00")
+    await enable_orders(client, headers, rid)
+
+    client.cookies.clear()
+    res = await client.post(
+        f"/menu/{qr}/orders",
+        json={
+            "customer_name": "Ana",
+            "order_type": "llevar",
+            "items": [{"item_id": iid, "quantity": 1, "modifier_ids": []}],
+        },
+    )
+    assert res.status_code == 201
+    body = res.json()
+    assert body["whatsapp_url"] is None
+
+
+async def test_create_order_whatsapp_url_built_when_phone_set(client: AsyncClient):
+    """Con ``whatsapp_phone`` configurado → ``whatsapp_url`` es un wa.me deep
+    link con el mensaje formado server-side a partir de los snapshots del
+    pedido (cliente, items, total). El teléfono va sin el `+` (wa.me format).
+    """
+    headers = await as_user(client)
+    restaurant = await make_restaurant(client, headers, name="Bodegón Don Pepe")
+    rid, qr = restaurant["id"], restaurant["qr_token"]
+    sid = await make_subcategory(client, headers, rid)
+    iid = await make_item(
+        client, headers, rid, sid, name="Milanesa", price="8.00"
+    )
+    mid = await make_modifier(
+        client, headers, rid, sid, iid, name="Papas fritas", price_delta="2.00"
+    )
+    await enable_orders(client, headers, rid, name=restaurant["name"])
+    # Set a real WhatsApp number for this restaurant.
+    info = await client.patch(
+        f"/restaurants/{rid}/info",
+        json={"whatsapp_phone": "+5491112345678", "address": "Av. X 123"},
+        headers=headers,
+    )
+    assert info.status_code == 200, info.text
+
+    client.cookies.clear()
+    res = await client.post(
+        f"/menu/{qr}/orders",
+        json={
+            "customer_name": "Ana",
+            "order_type": "mesa",
+            "table_or_address": "5",
+            "items": [
+                {
+                    "item_id": iid,
+                    "quantity": 2,
+                    "modifier_ids": [mid],
+                    "special_instructions": "sin cebolla",
+                }
+            ],
+            "notes": "llevar cubiertos",
+        },
+    )
+    assert res.status_code == 201, res.text
+    body = res.json()
+    url = body["whatsapp_url"]
+    assert url is not None
+    # Phone appears un-plussed, as the schema validator stored it.
+    assert url.startswith("https://wa.me/5491112345678?text=")
+    # The message is URL-encoded — decode it and assert on the snapshots that
+    # survive the round-trip, not on cosmetic formatting (whitespace, label
+    # words) which is intentionally free to evolve.
+    from urllib.parse import unquote
+    msg = unquote(url.split("text=", 1)[1])
+    assert "Bodegón Don Pepe" in msg
+    assert "Ana" in msg
+    assert "Milanesa" in msg
+    assert "Papas fritas" in msg
+    assert "sin cebolla" in msg
+    # (8.00 + 2.00) * 2 = 20.00 — server-side recomputed total in the message.
+    assert "20.00" in msg
+    assert "llevar cubiertos" in msg
+    assert "Mesa" in msg and "5" in msg
+
+
+async def test_create_order_whatsapp_url_uses_snapshots_not_live_values(
+    client: AsyncClient,
+):
+    """If the owner edits a price between the order POST and a future message
+    rebuild, the message in the URL stays anchored to the order's snapshots,
+    matching the same invariant the order rows already enforce (M11 RF-05).
+    """
+    headers = await as_user(client)
+    restaurant = await make_restaurant(client, headers)
+    rid, qr = restaurant["id"], restaurant["qr_token"]
+    sid = await make_subcategory(client, headers, rid)
+    iid = await make_item(client, headers, rid, sid, name="Café", price="5.00")
+    await enable_orders(client, headers, rid)
+    await client.patch(
+        f"/restaurants/{rid}/info",
+        json={"whatsapp_phone": "5491112345678"},
+        headers=headers,
+    )
+
+    client.cookies.clear()
+    res = await client.post(
+        f"/menu/{qr}/orders",
+        json={
+            "customer_name": "Ana",
+            "order_type": "llevar",
+            "items": [{"item_id": iid, "quantity": 1, "modifier_ids": []}],
+        },
+    )
+    assert res.status_code == 201
+    body = res.json()
+    msg = unquote(body["whatsapp_url"].split("text=", 1)[1]) if body["whatsapp_url"] else ""
+    assert "5.00" in msg  # snapshot price
+
+
+# Local import of unquote used by the snapshot test above.
+from urllib.parse import unquote  # noqa: E402

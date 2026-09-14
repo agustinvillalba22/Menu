@@ -5,6 +5,7 @@ from slugify import slugify
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.menu import Menu
 from app.models.restaurant import Restaurant, RestaurantRole, UserRestaurantRole
@@ -139,6 +140,59 @@ async def update_restaurant(
     # orders_enabled is optional; an explicit null is treated as "no change".
     if fields.get("orders_enabled") is not None:
         restaurant.orders_enabled = fields["orders_enabled"]
+    await session.commit()
+    await session.refresh(restaurant)
+    return restaurant
+
+
+# ---------------------------------------------------------------------------
+# P6 / P7 — Restaurant info (address/phone/tz/logo/whatsapp_phone) ----------
+# ---------------------------------------------------------------------------
+#
+# Eager-load business_hours on every read that will be turned into a
+# ``RestaurantInfoRead``: the public menu and the dashboard info page both
+# need them (the latter to render the editor, the former to compute
+# ``is_open_now``). One selectinload keeps the read tree bounded; the
+# alternative (separate queries) would re-introduce the N+1 the rest of the
+# codebase already avoids via selectinload on Menu.categories.
+
+
+async def get_restaurant_with_hours(
+    restaurant_id: uuid.UUID, session: AsyncSession
+) -> Restaurant:
+    """Fetch a restaurant with its business_hours eagerly loaded.
+
+    Distinct from ``get_restaurant`` because callers that need the schedule
+    (info read, public menu's ``is_open_now``) want the rows in one shot;
+    callers that just want the row (PATCH name) keep using the cheaper
+    single-table fetch.
+    """
+    result = await session.execute(
+        select(Restaurant)
+        .where(Restaurant.id == restaurant_id)
+        .options(selectinload(Restaurant.business_hours))
+    )
+    return result.scalar_one()
+
+
+async def update_restaurant_info(
+    restaurant_id: uuid.UUID,
+    data,
+    session: AsyncSession,
+) -> Restaurant:
+    """Apply a partial PATCH to the restaurant contact info columns.
+
+    Mirrors the existing ``update_restaurant`` for name/orders_enabled:
+    ``exclude_unset=True`` so an omitted field is untouched, an explicit null
+    clears the nullable columns (whatsapp_phone, logo_url) and an explicit
+    value sets them. Validation of ``whatsapp_phone`` lives on the schema
+    (regex), not here — the service only persists.
+    """
+    restaurant = await get_restaurant(restaurant_id, session)
+    fields = data.model_dump(exclude_unset=True)
+    for column in ("address", "phone", "whatsapp_phone", "timezone", "logo_url"):
+        if column in fields:
+            setattr(restaurant, column, fields[column])
     await session.commit()
     await session.refresh(restaurant)
     return restaurant

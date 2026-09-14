@@ -14,7 +14,18 @@ beforeEach(() => {
 })
 
 const menu: PublicMenuResponse = {
-  restaurant: { name: 'Boulette', slug: 'boulette', orders_enabled: false },
+  restaurant: {
+    name: 'Boulette',
+    slug: 'boulette',
+    orders_enabled: false,
+    address: '',
+    phone: '',
+    logo_url: null,
+    timezone: '',
+    business_hours: [],
+    is_open_now: false,
+    whatsapp_enabled: false,
+  },
   style: { font_family: 'Playfair Display', primary_color: '#112233', secondary_color: '#445566' },
   categories: [
     {
@@ -162,5 +173,65 @@ describe('PublicMenuPage', () => {
     // The container is unused otherwise but kept to mirror the other tests'
     // pattern of grabbing it for future assertions.
     expect(container).toBeInTheDocument()
+  })
+
+  // P6 — header local-info block: when the owner has set business_hours the
+  // open/closed pill renders with the server-computed is_open_now, and the
+  // schedule summary condenses consecutive same-window weekdays ("Lun-Vie
+  // 09-18"). When the restaurant is brand new (no address/phone/hours/logo)
+  // the block stays hidden and the header keeps its original shape.
+  it('renders the open/closed pill and schedule summary when hours are set', async () => {
+    const withInfo: PublicMenuResponse = {
+      ...menu,
+      restaurant: {
+        ...menu.restaurant,
+        name: 'Bodegón Don Pepe',
+        address: 'Av. Corrientes 1234',
+        phone: '11 1234-5678',
+        logo_url: 'https://cdn.test/logo.png',
+        business_hours: [
+          { weekday: 0, open_time: '09:00:00', close_time: '18:00:00' },
+          { weekday: 1, open_time: '09:00:00', close_time: '18:00:00' },
+          { weekday: 2, open_time: '09:00:00', close_time: '18:00:00' },
+          { weekday: 3, open_time: '09:00:00', close_time: '18:00:00' },
+          { weekday: 4, open_time: '09:00:00', close_time: '18:00:00' },
+          { weekday: 5, open_time: '11:00:00', close_time: '23:30:00' },
+        ],
+        is_open_now: true,
+      },
+    }
+
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(withInfo))
+
+    renderMenu()
+
+    // Pill is labeled via aria-label so it's accessible-friendly regardless
+    // of the visible text wrapping.
+    expect(await screen.findByLabelText(/local abierto|abierto ahora/i)).toBeInTheDocument()
+
+    // The schedule summary appears as one truncated string with the grouped
+    // Mon-Fri run condensed.
+    expect(screen.getByText(/Lun-Vie 09:00-18:00/)).toBeInTheDocument()
+    expect(screen.getByText(/Sáb 11:00-23:30/)).toBeInTheDocument()
+
+    // Address + phone chips render with their text.
+    expect(screen.getByText('Av. Corrientes 1234')).toBeInTheDocument()
+    expect(screen.getByText('11 1234-5678')).toBeInTheDocument()
+
+    // Logo on the heading row.
+    const logo = screen.getByAltText(/logo de bodegón don pepe/i) as HTMLImageElement
+    expect(logo.src).toBe('https://cdn.test/logo.png')
+  })
+
+  // The complement: an empty-info restaurant (default fixture) keeps the
+  // info block hidden so the header renders as before P6.
+  it('hides the local-info block when the restaurant has no info set', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(menu))
+
+    renderMenu()
+    await screen.findByRole('heading', { name: 'Boulette', level: 1 })
+
+    expect(screen.queryByLabelText(/local abierto|cerrado/i)).not.toBeInTheDocument()
+    expect(screen.queryByAltText(/logo de/i)).not.toBeInTheDocument()
   })
 })

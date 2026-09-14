@@ -76,6 +76,13 @@ class OrderRead(BaseModel):
     created_at: datetime
     updated_at: datetime
     items: list[OrderItemRead]
+    # P7: pre-built ``https://wa.me/...`` URL the customer's checkout UI opens
+    # after the order is persisted. Null when the restaurant has no
+    # ``whatsapp_phone`` (button hidden) or when the read comes from the
+    # dashboard side (list/patch), where the URL is irrelevant — it's only set
+    # by the public POST endpoint, since only that router has the restaurant
+    # at hand to build it. Default null keeps every other caller valid.
+    whatsapp_url: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

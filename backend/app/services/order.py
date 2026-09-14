@@ -113,7 +113,7 @@ def _build_line(item: Item, line: OrderItemCreate) -> OrderItem:
 
 async def create_order(
     qr_token: str, data: OrderCreate, session: AsyncSession
-) -> Order:
+) -> tuple[Order, Restaurant]:
     """Create a public order for the restaurant resolved by ``qr_token``.
 
     Resolution/validation order (M11 RF-05):
@@ -122,6 +122,11 @@ async def create_order(
       3. 404 item_not_found  — an item_id is missing or belongs elsewhere.
       4. 404 modifier_not_found — a modifier_id does not belong to its line item.
     Total is recomputed entirely server-side.
+
+    Returns ``(order, restaurant)`` because the public router needs the
+    restaurant's ``whatsapp_phone`` to build the optional WhatsApp confirm
+    URL (P7) on the just-persisted order. Other callers (list/patch) only
+    need the order; they get the restaurant through the URL's id.
     """
     restaurant = await get_public_menu(qr_token, session)
     if not restaurant.orders_enabled:
@@ -153,7 +158,8 @@ async def create_order(
     )
     session.add(order)
     await session.commit()
-    return await _load_order(order.id, session)
+    order = await _load_order(order.id, session)
+    return order, restaurant
 
 
 async def list_orders(

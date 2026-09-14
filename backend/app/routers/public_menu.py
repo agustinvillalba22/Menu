@@ -6,6 +6,7 @@ from app.models.item import Item
 from app.models.menu import Category, Subcategory
 from app.models.restaurant import Restaurant
 from app.schemas.public_menu import (
+    PublicBusinessHoursRead,
     PublicCategoryRead,
     PublicItemModifierRead,
     PublicItemRead,
@@ -15,6 +16,7 @@ from app.schemas.public_menu import (
     PublicSubcategoryRead,
     PublicTagRead,
 )
+from app.services.business_hours import compute_is_open_now
 from app.services.public_menu import get_public_menu
 
 router = APIRouter()
@@ -61,6 +63,38 @@ def _build_category(category: Category) -> PublicCategoryRead:
     )
 
 
+def _build_restaurant(restaurant: Restaurant) -> PublicRestaurantRead:
+    """Compose the public restaurant shape with P6 (info + hours + open/closed)
+    and P7 (whatsapp_enabled flag) fields.
+
+    ``is_open_now`` is computed here (not in the service layer) so the
+    response shape is the only place that decides what the public sees — the
+    service returns the ORM row and stays free of response-shaping concerns.
+    ``whatsapp_enabled`` is a boolean only: never leak the raw phone number
+    to page-source scrapers (P7 deep link is minted server-side in the POST
+    /orders response).
+    """
+    return PublicRestaurantRead(
+        name=restaurant.name,
+        slug=restaurant.slug,
+        orders_enabled=restaurant.orders_enabled,
+        address=restaurant.address,
+        phone=restaurant.phone,
+        logo_url=restaurant.logo_url,
+        timezone=restaurant.timezone,
+        business_hours=[
+            PublicBusinessHoursRead(
+                weekday=bh.weekday,
+                open_time=bh.open_time,
+                close_time=bh.close_time,
+            )
+            for bh in restaurant.business_hours
+        ],
+        is_open_now=compute_is_open_now(restaurant),
+        whatsapp_enabled=bool(restaurant.whatsapp_phone),
+    )
+
+
 def _build_response(restaurant: Restaurant) -> PublicMenuResponse:
     # The restaurant has a single auto-created default menu (see M3.1).
     menu = restaurant.menus[0] if restaurant.menus else None
@@ -71,7 +105,7 @@ def _build_response(restaurant: Restaurant) -> PublicMenuResponse:
         else None
     )
     return PublicMenuResponse(
-        restaurant=PublicRestaurantRead.model_validate(restaurant),
+        restaurant=_build_restaurant(restaurant),
         style=style,
         categories=[_build_category(c) for c in categories],
     )

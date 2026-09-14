@@ -14,6 +14,7 @@ from app.services.order import (
     list_orders,
     update_order_status,
 )
+from app.services.whatsapp import build_whatsapp_url
 
 router = APIRouter()
 
@@ -24,9 +25,17 @@ async def create_public_order(
     data: OrderCreate,
     session: AsyncSession = Depends(get_db),
 ) -> OrderRead:
-    """Public (no-auth) order creation. Total is recomputed server-side."""
-    order = await create_order(qr_token, data, session)
-    return OrderRead.model_validate(order)
+    """Public (no-auth) order creation. Total is recomputed server-side.
+
+    The response carries ``whatsapp_url`` built from the freshly-resolved
+    restaurant (P7): the customer's checkout can open a "Confirmar por
+    WhatsApp" deep link without re-fetching anything. Null when the
+    restaurant hasn't set a WhatsApp number.
+    """
+    order, restaurant = await create_order(qr_token, data, session)
+    read = OrderRead.model_validate(order)
+    read.whatsapp_url = build_whatsapp_url(order, restaurant)
+    return read
 
 
 @router.get(

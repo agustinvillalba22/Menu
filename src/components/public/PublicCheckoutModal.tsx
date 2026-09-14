@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { X, CheckCircle2, Loader2, AlertTriangle } from 'lucide-react'
+import { X, CheckCircle2, Loader2, AlertTriangle, MessageCircle } from 'lucide-react'
 import { ApiError } from '../../lib/api'
 import { createOrder } from '../../lib/orders'
 import type { CartLine } from './cart'
@@ -9,6 +9,11 @@ interface PublicCheckoutModalProps {
   qrToken: string
   lines: CartLine[]
   total: number
+  // P7: when true, the confirmation screen offers a "Confirmar por WhatsApp"
+  // button that opens `order.whatsapp_url` (a server-minted wa.me deep link).
+  // When false, the button is omitted entirely — the local has not configured
+  // a WhatsApp number.
+  whatsappEnabled: boolean
   onClose: () => void
   onSuccess: () => void
 }
@@ -41,6 +46,7 @@ export default function PublicCheckoutModal({
   qrToken,
   lines,
   total,
+  whatsappEnabled,
   onClose,
   onSuccess,
 }: PublicCheckoutModalProps): React.JSX.Element {
@@ -119,6 +125,25 @@ export default function PublicCheckoutModal({
                 <span className="font-mono font-black text-primario">${phase.order.total}</span>
               </div>
             </div>
+            {/* P7 — "Confirmar por WhatsApp". Only rendered when the local has
+                a WhatsApp number (the public-menu flag is async-derived and the
+                per-order `whatsapp_url` is built server-side from the order's
+                snapshots on POST /orders). Opening is a plain anchor with
+                `target=_blank` and `rel=noopener` — no JS window.open — so it
+                works on mobile where popups are blocked and the wa.me deep link
+                hands off to the WhatsApp app via the OS. */}
+            {whatsappEnabled && phase.order.whatsapp_url && (
+              <a
+                href={phase.order.whatsapp_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-4 text-base font-bold text-white shadow-lg transition-all hover:bg-emerald-700 active:scale-[0.98]"
+                data-testid="whatsapp-confirm-button"
+              >
+                <MessageCircle className="h-5 w-5" aria-hidden="true" />
+                Confirmar por WhatsApp
+              </a>
+            )}
             <button
               type="button"
               onClick={onClose}

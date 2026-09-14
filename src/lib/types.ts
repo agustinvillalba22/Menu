@@ -253,18 +253,93 @@ export interface ImportResult {
   errors: ImportRowError[]
 }
 
+export interface PublicBusinessHours {
+  weekday: number
+  open_time: string
+  close_time: string
+}
+
 export interface PublicRestaurant {
   name: string
   slug: string
   // Drives the ordering UI (cart/checkout) on the public menu. The server also
   // enforces it on POST /menu/{qr_token}/orders (404 orders_disabled).
   orders_enabled: boolean
+  // P6 — local info shown in the public header (logo, address, phone,
+  // schedule summary + Abierto/Cerrado pill). Strings are '' when unset so
+  // the header can use `if (address)` consistently with the rest of the code.
+  address: string
+  phone: string
+  logo_url: string | null
+  timezone: string
+  business_hours: PublicBusinessHours[]
+  is_open_now: boolean
+  // P7 — lets the checkout render the "Confirmar por WhatsApp" button
+  // without a second round trip. Boolean only: the raw phone never leaves the
+  // server (the deep link URL is minted server-side in POST /orders).
+  whatsapp_enabled: boolean
 }
 
 export interface PublicMenuResponse {
   restaurant: PublicRestaurant
   style: Style | null
   categories: PublicCategory[]
+}
+
+// --- Restaurant info + business hours + logo (P6, Fase 1d) ----------------
+
+/** One day's open/close window, as read by the dashboard info page. */
+export interface BusinessHours {
+  id?: string
+  weekday: number
+  open_time: string
+  close_time: string
+}
+
+/** Body for PUT /restaurants/{id}/business-hours — one row's upsert payload. */
+export interface BusinessHoursUpsert {
+  weekday: number
+  open_time: string
+  close_time: string
+}
+
+export interface RestaurantInfo {
+  address: string
+  phone: string
+  whatsapp_phone: string | null
+  whatsapp_enabled: boolean
+  logo_url: string | null
+  timezone: string
+  business_hours: BusinessHours[]
+  is_open_now: boolean
+}
+
+/** Partial PATCH for the contact-info columns.
+ *
+ * Mirrors the backend `RestaurantInfoUpdate`: an omitted field is left
+ * untouched; an explicit null clears the nullable phone/logo; an empty
+ * string clears `whatsapp_phone` (the dashboard never sends `null` on a
+ * typed `<input type="tel">`).
+ */
+export interface RestaurantInfoUpdate {
+  address?: string
+  phone?: string
+  whatsapp_phone?: string | null
+  timezone?: string
+  // logo_url is normally managed by the R2 upload endpoints, but kept type-
+  // open so the dashboard never has to special-case a PATCH.
+  logo_url?: string | null
+}
+
+export interface LogoUploadRequest {
+  content_type: string
+  file_size: number
+}
+
+export interface LogoUploadResponse {
+  upload_url: string
+  object_key: string
+  expires_in: number
 }
 
 // --- Pedidos (M11) ---------------------------------------------------------
@@ -317,6 +392,12 @@ export interface OrderRead {
   created_at: string
   updated_at: string
   items: OrderItemRead[]
+  // P7: server-minted wa.me deep link built off the order's snapshots and
+  // the restaurant's whatsapp_phone. Only set on the POST /menu/{qr}/orders
+  // response. Null when the restaurant has no whatsapp phone OR when the read
+  // comes from the dashboard side (list/patch), where the URL is irrelevant.
+  // The checkout's "Confirmar por WhatsApp" button uses this verbatim.
+  whatsapp_url: string | null
 }
 
 // --- Panel de administración (M13.2) ---------------------------------------

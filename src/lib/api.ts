@@ -79,6 +79,16 @@ export function apiPatch<T>(path: string, body?: unknown): Promise<T> {
   })
 }
 
+// PUT isn't used by the existing endpoints (they prefer PATCH for partial
+// updates), but the business-hours "replace whole week" endpoint (P6, Fase
+// 1d) is a true idempotent replace — PUT is the right verb for that contract.
+export function apiPut<T>(path: string, body?: unknown): Promise<T> {
+  return apiFetch<T>(path, {
+    method: 'PUT',
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+}
+
 export function apiDelete<T>(path: string): Promise<T> {
   return apiFetch<T>(path, { method: 'DELETE' })
 }

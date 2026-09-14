@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { Search, ShoppingBag, ChevronRight } from 'lucide-react'
+import { Search, ShoppingBag, ChevronRight, MapPin, Phone, Clock } from 'lucide-react'
 import { ApiError } from '../../lib/api'
 import { getPublicMenu } from '../../lib/publicMenu'
 import { getCategoryIcon } from '../../lib/categoryIcons'
+import { formatSchedule } from '../../lib/businessHours'
 import type {
   CategoryIcon,
   PublicCategory,
@@ -139,6 +140,13 @@ export default function PublicMenuPage(): React.JSX.Element {
         <header className="rounded-b-[40px] bg-primario p-6 pb-8 text-white shadow-md lg:rounded-b-none lg:px-10 lg:py-6">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:gap-10">
             <div className="flex items-center justify-between lg:contents">
+              {restaurant.logo_url && (
+                <img
+                  src={restaurant.logo_url}
+                  alt={`Logo de ${restaurant.name}`}
+                  className="h-12 w-12 shrink-0 rounded-full border-2 border-white/40 object-cover lg:order-0"
+                />
+              )}
               <h1 className="font-headings text-3xl font-bold uppercase leading-none tracking-tight text-white lg:order-1 lg:shrink-0">
                 {restaurant.name}
               </h1>
@@ -178,6 +186,18 @@ export default function PublicMenuPage(): React.JSX.Element {
                 <Search className="h-5 w-5 stroke-[2.5] text-gray-400" />
               </div>
             </div>
+
+            {/* P6 — local info row: open/closed pill, address, phone, schedule.
+                Rendered only when the owner has set something, so a fresh
+                restaurant with empty info keeps the original minimal header. */}
+            <LocalInfoBar
+              address={restaurant.address}
+              phone={restaurant.phone}
+              logoUrl={restaurant.logo_url}
+              isOpenNow={restaurant.is_open_now}
+              hasHours={restaurant.business_hours.length > 0}
+              schedule={formatSchedule(restaurant.business_hours)}
+            />
           </div>
         </header>
 
@@ -299,6 +319,10 @@ export default function PublicMenuPage(): React.JSX.Element {
               qrToken={qrToken}
               lines={cart.lines}
               total={cart.total}
+              // P7: the server's already-resolved is_open_now and whatsapp_enabled
+              // are on `restaurant` — pass the flag down so the checkout can
+              // render the "Confirmar por WhatsApp" button iff a phone is set.
+              whatsappEnabled={restaurant.whatsapp_enabled === true}
               onClose={() => setCheckoutOpen(false)}
               onSuccess={() => cart.clear()}
             />
@@ -335,5 +359,89 @@ function FilterChip({
       {Icon !== null && <Icon className="h-3 w-3" aria-hidden="true" />}
       {label}
     </button>
+  )
+}
+
+/**
+ * Local info row rendered under the search input (Fase 1d — P6): open/closed
+ * pill + address/phone/schedule as small white chips, only when the owner has
+ * actually set any of them. Open/closed is the server's `is_open_now` (no
+ * client clock guessing). Schedule is the one-line summary built by
+ * `formatSchedule`.
+ *
+ * The pill needs special handling for the parent's `bg-primario` (P1 yellow
+ * theme already inverts the button colors via `.theme-amarillo`); we keep the
+ * pill simple — green chip for Abierto, gray for Cerrado — so it reads
+ * correctly regardless of theme.
+ */
+function LocalInfoBar({
+  address,
+  phone,
+  logoUrl,
+  isOpenNow,
+  hasHours,
+  schedule,
+}: {
+  address: string
+  phone: string
+  logoUrl: string | null
+  isOpenNow: boolean
+  hasHours: boolean
+  schedule: string
+}): React.JSX.Element | null {
+  // Render only when the owner has set anything worth showing — an empty
+  // restaurant keeps the original minimal header.
+  const hasAnything =
+    address.trim() !== '' ||
+    phone.trim() !== '' ||
+    logoUrl !== null ||
+    hasHours
+  if (!hasAnything) return null
+
+  return (
+    <div
+      className={
+        'flex w-full flex-wrap items-center gap-x-3 gap-y-1.5 pt-2 text-[12px] text-white/90 lg:order-4'
+      }
+    >
+      {hasHours && (
+        <span
+          aria-label={isOpenNow ? 'Local abierto' : 'Local cerrado'}
+          className={
+            'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ' +
+            (isOpenNow
+              ? 'bg-green-500/95 text-white'
+              : 'bg-white/15 text-white ring-1 ring-white/30')
+          }
+        >
+          <span
+            aria-hidden="true"
+            className={
+              'inline-block h-1.5 w-1.5 rounded-full ' +
+              (isOpenNow ? 'bg-white' : 'bg-white/60')
+            }
+          />
+          {isOpenNow ? 'Abierto ahora' : 'Cerrado'}
+        </span>
+      )}
+      {address.trim() !== '' && (
+        <span className="inline-flex items-center gap-1">
+          <MapPin aria-hidden="true" className="h-3 w-3" />
+          <span className="truncate max-w-[14rem]">{address}</span>
+        </span>
+      )}
+      {phone.trim() !== '' && (
+        <span className="inline-flex items-center gap-1">
+          <Phone aria-hidden="true" className="h-3 w-3" />
+          <span>{phone}</span>
+        </span>
+      )}
+      {schedule !== '' && (
+        <span className="inline-flex min-w-0 items-center gap-1">
+          <Clock aria-hidden="true" className="h-3 w-3 shrink-0" />
+          <span className="truncate">{schedule}</span>
+        </span>
+      )}
+    </div>
   )
 }

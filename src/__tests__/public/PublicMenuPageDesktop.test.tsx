@@ -12,7 +12,18 @@ beforeEach(() => {
 
 /** Menu fixture with two items in the same subcategory, to exercise the product grid. */
 const menu: PublicMenuResponse = {
-  restaurant: { name: 'Boulette', slug: 'boulette', orders_enabled: false },
+  restaurant: {
+    name: 'Boulette',
+    slug: 'boulette',
+    orders_enabled: false,
+    address: '',
+    phone: '',
+    logo_url: null,
+    timezone: '',
+    business_hours: [],
+    is_open_now: false,
+    whatsapp_enabled: false,
+  },
   style: null,
   categories: [
     {

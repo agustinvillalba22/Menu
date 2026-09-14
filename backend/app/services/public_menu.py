@@ -13,9 +13,13 @@ async def get_public_menu(qr_token: str, session: AsyncSession) -> Restaurant:
 
     Eager-loads the full read tree in a bounded number of queries (one per
     relationship level via ``selectinload``) to avoid N+1:
-    restaurant -> style, and restaurant -> menus -> categories ->
+    restaurant -> style, business_hours, and restaurant -> menus -> categories ->
     subcategories -> items -> tags. Alphabetical ordering is applied by the
     caller when building the response.
+
+    ``business_hours`` (P6) is loaded here so ``is_open_now`` can be computed
+    without a second trip, and so the public response can list the schedule
+    for the header.
 
     Raises 404 ``menu_not_found`` if no restaurant owns the token, or if the
     restaurant exists but is inactive (``is_active=False``) — M13.1 (RF-05)
@@ -27,6 +31,7 @@ async def get_public_menu(qr_token: str, session: AsyncSession) -> Restaurant:
         .where(Restaurant.qr_token == qr_token)
         .options(
             selectinload(Restaurant.style),
+            selectinload(Restaurant.business_hours),
             selectinload(Restaurant.menus)
             .selectinload(Menu.categories)
             .selectinload(Category.subcategories)
