@@ -11,6 +11,7 @@ from app.models.item_modifier import ItemModifier
 from app.models.order import Order, OrderItem, OrderItemModifier, OrderStatus
 from app.models.restaurant import Restaurant
 from app.schemas.order import OrderCreate, OrderItemCreate
+from app.services.menu import resolve_active_menu
 from app.services.public_menu import get_public_menu
 
 # Numeric(10, 2) columns (subtotal/total) top out at 8 integer digits. The
@@ -146,6 +147,11 @@ async def create_order(
     )
     _check_amount(total)
 
+    # P2 (Fase 2b): stamp which menu the guest was browsing. Items are still
+    # collected across ALL menus (a cart can outlive a menu switch mid-meal);
+    # menu_id is provenance, not an integrity constraint.
+    active_menu = resolve_active_menu(restaurant)
+
     order = Order(
         restaurant_id=restaurant.id,
         status=OrderStatus.pending,
@@ -154,6 +160,7 @@ async def create_order(
         table_or_address=data.table_or_address,
         notes=data.notes,
         total=total,
+        menu_id=active_menu.id if active_menu is not None else None,
         items=order_items,
     )
     session.add(order)

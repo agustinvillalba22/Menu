@@ -19,7 +19,8 @@ async def get_public_menu(qr_token: str, session: AsyncSession) -> Restaurant:
 
     ``business_hours`` (P6) is loaded here so ``is_open_now`` can be computed
     without a second trip, and so the public response can list the schedule
-    for the header.
+    for the header. ``promos`` (P4) is loaded the same way — the active-promo
+    resolution is done in-memory off the loaded rows.
 
     Raises 404 ``menu_not_found`` if no restaurant owns the token, or if the
     restaurant exists but is inactive (``is_active=False``) — M13.1 (RF-05)
@@ -32,6 +33,7 @@ async def get_public_menu(qr_token: str, session: AsyncSession) -> Restaurant:
         .options(
             selectinload(Restaurant.style),
             selectinload(Restaurant.business_hours),
+            selectinload(Restaurant.promos),
             selectinload(Restaurant.menus)
             .selectinload(Menu.categories)
             .selectinload(Category.subcategories)

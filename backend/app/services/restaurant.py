@@ -69,7 +69,15 @@ async def create_restaurant(
                     role=RestaurantRole.owner,
                 )
             )
-            session.add(Menu(name=_DEFAULT_MENU_NAME, restaurant_id=restaurant.id))
+            # Fase 0009 (P2): the auto-created menu is the restaurant's
+            # default — always active until the owner schedules otherwise.
+            session.add(
+                Menu(
+                    name=_DEFAULT_MENU_NAME,
+                    restaurant_id=restaurant.id,
+                    is_default=True,
+                )
+            )
             session.add(MenuStyle(restaurant_id=restaurant.id))
 
             await session.commit()

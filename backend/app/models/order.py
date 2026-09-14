@@ -50,12 +50,25 @@ class Order(Base, TimestampMixin):
     table_or_address: Mapped[str | None] = mapped_column(String, nullable=True)
     notes: Mapped[str | None] = mapped_column(String, nullable=True)
     total: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    # Fase 0009 (P2): which menu the guest was browsing when ordering. SET NULL
+    # (not CASCADE): deleting a menu must not destroy order history; null means
+    # "ordered under the pre-P2 single-menu model" or the menu was removed.
+    menu_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("menus.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     # relationships
     items: Mapped[list["OrderItem"]] = relationship(
         "OrderItem",
         back_populates="order",
         cascade="all, delete-orphan",
+    )
+    # One-directional: Menu keeps no `orders` backref — orders are read via
+    # their own restaurant-scoped queries, never "through" a menu.
+    menu: Mapped["app.models.menu.Menu | None"] = relationship(  # type: ignore[name-defined]
+        "Menu",
     )
 
 

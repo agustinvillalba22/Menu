@@ -16,6 +16,13 @@ class Settings(BaseSettings):
     # flows without a restaurant context. IANA name; UTC is a safe no-op.
     DEFAULT_TIMEZONE: str = "UTC"
 
+    # Fase 2b (P2) — global kill-switch for multi-menu auto-switching. Off =
+    # every restaurant serves its `is_default` menu (pre-P2 behavior, total
+    # back-compat). On = menus with `start_time` are filtered by the current
+    # time in the restaurant's tz, falling back to `is_default` when none
+    # matches. Per-restaurant gating arrives with the Fase 3 CRUD.
+    MENU_SCHEDULING_ENABLED: bool = False
+
     # Cloudflare R2 (S3-compatible object storage) — M4 item images.
     # No defaults: missing any of these fails app startup (fail-fast, same
     # pattern as DATABASE_URL / SECRET_KEY).

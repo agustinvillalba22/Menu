@@ -1,7 +1,8 @@
 import enum
 import uuid
+from datetime import time
 
-from sqlalchemy import Enum, ForeignKey, String
+from sqlalchemy import Boolean, Enum, ForeignKey, SmallInteger, String, Time
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -63,6 +64,28 @@ class Menu(Base):
         UUID(as_uuid=True),
         ForeignKey("restaurants.id", ondelete="CASCADE"),
         nullable=False,
+    )
+
+    # --- Fase 0009 (P2) — multi-menu scheduling, back-compat mode ---
+    # The auto-created menu of every restaurant keeps ``is_default=True`` and
+    # null scheduling fields, so it is always active (back-compat). Future
+    # menus created via CRUD (Fase 3) default to False — the dashboard then
+    # marks exactly one menu per restaurant as default.
+    is_default: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="false",
+    )
+    # Optional daily activation window (restaurant tz). Null start_time means
+    # "no schedule" — the menu is only reachable via the is_default fallback.
+    start_time: Mapped[time | None] = mapped_column(Time, nullable=True)
+    end_time: Mapped[time | None] = mapped_column(Time, nullable=True)
+    # Bitmask of active weekdays: bit i set = weekday i active (0=Mon..6=Sun,
+    # matching ``datetime.weekday()``). Null means "every day"; 0 is rejected
+    # at the service layer (a menu active no days is a configuration bug).
+    weekday_mask: Mapped[int | None] = mapped_column(
+        SmallInteger, nullable=True
     )
 
     # relationships

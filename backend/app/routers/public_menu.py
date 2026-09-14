@@ -11,12 +11,15 @@ from app.schemas.public_menu import (
     PublicItemModifierRead,
     PublicItemRead,
     PublicMenuResponse,
+    PublicPromoRead,
     PublicRestaurantRead,
     PublicStyleRead,
     PublicSubcategoryRead,
     PublicTagRead,
 )
 from app.services.business_hours import compute_is_open_now
+from app.services.menu import resolve_active_menu
+from app.services.promo import active_promo_for
 from app.services.public_menu import get_public_menu
 
 router = APIRouter()
@@ -96,17 +99,24 @@ def _build_restaurant(restaurant: Restaurant) -> PublicRestaurantRead:
 
 
 def _build_response(restaurant: Restaurant) -> PublicMenuResponse:
-    # The restaurant has a single auto-created default menu (see M3.1).
-    menu = restaurant.menus[0] if restaurant.menus else None
+    # P2 (Fase 2b): the auto-switching lives in resolve_active_menu — flag
+    # off (default) this is exactly the pre-P2 "the default menu" behavior.
+    menu = resolve_active_menu(restaurant)
     categories = sorted(menu.categories, key=lambda c: c.name) if menu else []
     style = (
         PublicStyleRead.model_validate(restaurant.style)
         if restaurant.style is not None
         else None
     )
+    # P4 (Fase 2c): the active promo, resolved server-side (is_active +
+    # window vs now in the restaurant's tz). Null when there is none.
+    promo = active_promo_for(restaurant)
     return PublicMenuResponse(
         restaurant=_build_restaurant(restaurant),
         style=style,
+        promo=(
+            PublicPromoRead.model_validate(promo) if promo is not None else None
+        ),
         categories=[_build_category(c) for c in categories],
     )
 

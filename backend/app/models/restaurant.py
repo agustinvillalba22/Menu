@@ -116,6 +116,13 @@ class Restaurant(Base):
         cascade="all, delete-orphan",
         order_by="[BusinessHours.weekday, BusinessHours.open_time]",
     )
+    # Fase 0009 (P4) — promotional banners. Cascade with the restaurant;
+    # the public service (Fase 2c) picks the active one at read time.
+    promos: Mapped[list["app.models.promo.Promo"]] = relationship(  # type: ignore[name-defined]
+        "Promo",
+        back_populates="restaurant",
+        cascade="all, delete-orphan",
+    )
 
 
 class UserRestaurantRole(Base):

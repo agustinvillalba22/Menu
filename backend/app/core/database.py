@@ -9,6 +9,11 @@ from sqlalchemy.ext.asyncio import (
 
 from app.core.config import settings
 
+# Import the model registry so every mapper (and its cross-module string-based
+# relationships) is configured before the first query — required by entrypoints
+# that never touch a model module directly.
+import app.models  # noqa: F401
+
 engine: AsyncEngine = create_async_engine(settings.DATABASE_URL, echo=False)
 
 AsyncSessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import PublicMenuPage from '../../pages/public/PublicMenuPage'
 import type { PublicMenuResponse } from '../../lib/types'
@@ -27,6 +28,7 @@ const menu: PublicMenuResponse = {
     whatsapp_enabled: false,
   },
   style: { font_family: 'Playfair Display', primary_color: '#112233', secondary_color: '#445566' },
+  promo: null,
   categories: [
     {
       id: 'c1',
@@ -233,5 +235,72 @@ describe('PublicMenuPage', () => {
 
     expect(screen.queryByLabelText(/local abierto|cerrado/i)).not.toBeInTheDocument()
     expect(screen.queryByAltText(/logo de/i)).not.toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// P4 (Fase 2c) — active promo banner
+// ---------------------------------------------------------------------------
+
+describe('PublicMenuPage — promo banner', () => {
+  const withPromo: PublicMenuResponse = {
+    ...menu,
+    promo: {
+      id: 'p1',
+      title: '2x1 Pizzas',
+      subtitle: 'Solo hoy',
+      description: 'Pide el plato del día y llevá la segunda gratis',
+      discount_pct: 50,
+      image_url: 'https://cdn.test/promo.jpg',
+      item_id: 'i1', // Margherita
+    },
+  }
+
+  it('renders the server-resolved promo banner with the discount headline', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(withPromo))
+
+    renderMenu()
+
+    expect(await screen.findByTestId('promo-banner')).toBeInTheDocument()
+    expect(screen.getByText('50% OFF')).toBeInTheDocument()
+    expect(screen.getByText('Solo hoy')).toBeInTheDocument()
+    expect(
+      screen.getByText('Pide el plato del día y llevá la segunda gratis'),
+    ).toBeInTheDocument()
+    const img = screen.getByAltText('2x1 Pizzas') as HTMLImageElement
+    expect(img.src).toBe('https://cdn.test/promo.jpg')
+  })
+
+  it('opens the linked item modal when the banner is clicked', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(withPromo))
+
+    renderMenu()
+    expect(screen.queryByRole('button', { name: 'Cerrar' })).not.toBeInTheDocument()
+
+    await userEvent.click(await screen.findByTestId('promo-banner'))
+
+    // The linked item (i1 = Margherita) opens its detail modal — ordering is
+    // disabled in this fixture, so assert via the modal's close button.
+    expect(await screen.findByRole('button', { name: 'Cerrar' })).toBeInTheDocument()
+  })
+
+  it('renders the promo title as headline when there is no discount', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse({ ...withPromo, promo: { ...withPromo.promo!, discount_pct: null } }),
+    )
+
+    renderMenu()
+
+    expect(await screen.findByText('2x1 Pizzas', { selector: '[data-testid="promo-banner"] *' })).toBeInTheDocument()
+    expect(screen.queryByText('50% OFF')).not.toBeInTheDocument()
+  })
+
+  it('renders no banner when the promo is null', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(menu))
+
+    renderMenu()
+    await screen.findByRole('heading', { name: 'Boulette', level: 1 })
+
+    expect(screen.queryByTestId('promo-banner')).not.toBeInTheDocument()
   })
 })

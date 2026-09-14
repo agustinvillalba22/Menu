@@ -17,6 +17,7 @@ import PublicProductCard from '../../components/public/PublicProductCard'
 import PublicItemModal from '../../components/public/PublicItemModal'
 import PublicCartDrawer from '../../components/public/PublicCartDrawer'
 import PublicCheckoutModal from '../../components/public/PublicCheckoutModal'
+import PublicPromoBanner from '../../components/public/PublicPromoBanner'
 
 type LoadState =
   | { status: 'loading' }
@@ -133,6 +134,14 @@ export default function PublicMenuPage(): React.JSX.Element {
   const { restaurant, style } = state.data
   const orderingEnabled = restaurant.orders_enabled === true
 
+  // P4 — resolve the promo's linked item (if any) so the banner can open
+  // its detail modal straight from the categories tree already in memory.
+  const promoItem =
+    state.data.promo?.item_id != null
+      ? categories.flatMap((c) => c.subcategories).flatMap((s) => s.items)
+          .find((i) => i.id === state.data.promo?.item_id) ?? null
+      : null
+
   return (
     <div style={themeStyle(style)} className="min-h-screen bg-[#faf6f0] font-sans text-gray-900">
       <div className="mx-auto flex min-h-screen w-full max-w-md flex-col border-x border-gray-200 bg-white pb-24 lg:max-w-6xl lg:border-x-0">
@@ -200,6 +209,16 @@ export default function PublicMenuPage(): React.JSX.Element {
             />
           </div>
         </header>
+
+        {/* P4 — active promo banner (server-resolved; null renders nothing) */}
+        {state.data.promo && (
+          <PublicPromoBanner
+            promo={state.data.promo}
+            onOpenItem={
+              promoItem !== null ? () => setSelectedItem(promoItem) : undefined
+            }
+          />
+        )}
 
         {/* Category filter */}
         <nav

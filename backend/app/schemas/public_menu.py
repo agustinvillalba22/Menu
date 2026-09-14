@@ -116,7 +116,30 @@ class PublicStyleRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PublicPromoRead(BaseModel):
+    """The active promo banner (P4) — never the scheduling internals.
+
+    The public sees what to render (title/subtitle/description/discount/
+    image/linked item); ``is_active``/``starts_at``/``ends_at`` are
+    dashboard-only concerns resolved server-side in ``active_promo_for``.
+    """
+
+    id: uuid.UUID
+    title: str
+    subtitle: str | None = None
+    description: str | None = None
+    discount_pct: int | None = None
+    image_url: str | None = None
+    item_id: uuid.UUID | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class PublicMenuResponse(BaseModel):
     restaurant: PublicRestaurantRead
     style: PublicStyleRead | None
+    # P4 — the currently-active promo, or null when there is none. Resolved
+    # server-side against is_active + the validity window in the
+    # restaurant's tz; the client never re-derives it.
+    promo: PublicPromoRead | None = None
     categories: list[PublicCategoryRead]

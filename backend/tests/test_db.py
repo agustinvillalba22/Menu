@@ -35,6 +35,8 @@ EXPECTED_TABLES = {
     "order_item_modifiers",
     # 0008_restaurant_extensions
     "business_hours",
+    # 0009_menu_scheduling_and_promos
+    "promos",
 }
 
 

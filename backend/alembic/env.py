@@ -20,6 +20,7 @@ import app.models.menu        # noqa: F401
 import app.models.item        # noqa: F401
 import app.models.item_modifier  # noqa: F401
 import app.models.order       # noqa: F401
+import app.models.promo       # noqa: F401
 import app.models.style       # noqa: F401
 
 from app.models.base import Base

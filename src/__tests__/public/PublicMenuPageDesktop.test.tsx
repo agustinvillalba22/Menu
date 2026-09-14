@@ -25,6 +25,7 @@ const menu: PublicMenuResponse = {
     whatsapp_enabled: false,
   },
   style: null,
+  promo: null,
   categories: [
     {
       id: 'c1',

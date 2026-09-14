@@ -283,7 +283,77 @@ export interface PublicRestaurant {
 export interface PublicMenuResponse {
   restaurant: PublicRestaurant
   style: Style | null
+  // P4 — the currently-active promo banner, resolved server-side against
+  // is_active + the validity window in the restaurant's tz. Null = none.
+  promo: PublicPromo | null
   categories: PublicCategory[]
+}
+
+// --- Promos (P4/P5, Fase 2c/2d) ---------------------------------------------
+
+/** What the public menu renders — never the scheduling internals. */
+export interface PublicPromo {
+  id: string
+  title: string
+  subtitle: string | null
+  description: string | null
+  discount_pct: number | null
+  image_url: string | null
+  item_id: string | null
+}
+
+/** Dashboard read shape — includes the server-computed expiry signal (P5). */
+export interface Promo {
+  id: string
+  restaurant_id: string
+  title: string
+  subtitle: string | null
+  description: string | null
+  discount_pct: number | null
+  image_url: string | null
+  item_id: string | null
+  is_active: boolean
+  starts_at: string | null
+  ends_at: string | null
+  // Calendar days until ends_at in the restaurant's tz (server-side), null
+  // when the promo has no end date. 0 = expires today or already past.
+  days_remaining: number | null
+}
+
+export interface PromoCreate {
+  title: string
+  subtitle?: string | null
+  description?: string | null
+  discount_pct?: number | null
+  image_url?: string | null
+  item_id?: string | null
+  is_active?: boolean
+  starts_at?: string | null
+  ends_at?: string | null
+}
+
+/** Partial PATCH — only the fields actually present are applied. */
+export interface PromoUpdate {
+  title?: string
+  subtitle?: string | null
+  description?: string | null
+  discount_pct?: number | null
+  image_url?: string | null
+  item_id?: string | null
+  is_active?: boolean
+  starts_at?: string | null
+  ends_at?: string | null
+}
+
+export interface PromoImageUploadRequest {
+  content_type: string
+  file_size: number
+}
+
+export interface PromoImageUploadResponse {
+  upload_url: string
+  object_key: string
+  expires_in: number
 }
 
 // --- Restaurant info + business hours + logo (P6, Fase 1d) ----------------
