@@ -20,7 +20,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.item import Item
 from app.models.menu import Category, Menu, Subcategory
-from app.models.promo import Promo
+from app.models.promo import Promo, PromoScope
 from app.models.restaurant import Restaurant
 from app.schemas.promo import (
     PromoCreate,
@@ -86,6 +86,50 @@ async def _check_item_owned(
         raise HTTPException(status_code=404, detail="item_not_found")
 
 
+async def _check_category_owned(
+    restaurant_id: uuid.UUID, category_id: uuid.UUID, session: AsyncSession
+) -> None:
+    """The linked category must belong to one of the restaurant's menus."""
+    result = await session.execute(
+        select(Category.id)
+        .join(Menu, Category.menu_id == Menu.id)
+        .where(Category.id == category_id, Menu.restaurant_id == restaurant_id)
+    )
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(status_code=404, detail="category_not_found")
+
+
+def _validate_scope(
+    scope: PromoScope,
+    item_id: uuid.UUID | None,
+    category_id: uuid.UUID | None,
+    discount_pct: int | None,
+) -> None:
+    """Scope/link consistency (Fase 0010, 422 detail-strings).
+
+    - scope='item'     -> item_id required, category_id must be null.
+    - scope='category' -> category_id required, item_id must be null.
+    - scope='catalog'  -> both must be null (discounts everything).
+    - scope='none'     -> both must be null (banner only, no discount).
+    - Any scope != 'none' requires discount_pct.
+    """
+    if scope == PromoScope.item:
+        if item_id is None:
+            raise HTTPException(status_code=422, detail="promo_requires_item")
+        if category_id is not None:
+            raise HTTPException(status_code=422, detail="scope_mismatch")
+    elif scope == PromoScope.category:
+        if category_id is None:
+            raise HTTPException(status_code=422, detail="promo_requires_category")
+        if item_id is not None:
+            raise HTTPException(status_code=422, detail="scope_mismatch")
+    else:  # 'none' | 'catalog'
+        if item_id is not None or category_id is not None:
+            raise HTTPException(status_code=422, detail="scope_mismatch")
+    if scope != PromoScope.none and discount_pct is None:
+        raise HTTPException(status_code=422, detail="discount_requires_pct")
+
+
 # ---------------------------------------------------------------------------
 # Dashboard CRUD
 # ---------------------------------------------------------------------------
@@ -96,8 +140,11 @@ async def create_promo(
 ) -> Promo:
     _reject_naive_input(starts_at=data.starts_at, ends_at=data.ends_at)
     _validate_window(data.starts_at, data.ends_at)
+    _validate_scope(data.scope, data.item_id, data.category_id, data.discount_pct)
     if data.item_id is not None:
         await _check_item_owned(restaurant_id, data.item_id, session)
+    if data.category_id is not None:
+        await _check_category_owned(restaurant_id, data.category_id, session)
     promo = Promo(restaurant_id=restaurant_id, **data.model_dump())
     session.add(promo)
     await session.commit()
@@ -151,11 +198,16 @@ async def update_promo(
         )
     if "item_id" in changes and changes["item_id"] is not None:
         await _check_item_owned(restaurant_id, changes["item_id"], session)
+    if "category_id" in changes and changes["category_id"] is not None:
+        await _check_category_owned(restaurant_id, changes["category_id"], session)
     for field, value in changes.items():
         setattr(promo, field, value)
     # Validate the *effective* window: a PATCH that only touches ends_at
     # must still be checked against the already-stored starts_at.
     _validate_window(promo.starts_at, promo.ends_at)
+    # Same for the scope: the effective (scope, item_id, category_id,
+    # discount_pct) tuple must be consistent after the merge.
+    _validate_scope(promo.scope, promo.item_id, promo.category_id, promo.discount_pct)
     await session.commit()
     return await get_promo(restaurant_id, promo_id, session)
 
@@ -170,6 +222,36 @@ async def delete_promo(
         )
     await session.delete(promo)
     await session.commit()
+
+
+# ---------------------------------------------------------------------------
+# Discount resolution (Fase 0010)
+# ---------------------------------------------------------------------------
+
+
+def promo_discount_pct(promo: Promo | None, item: Item) -> int | None:
+    """The discount % the promo applies to this item's order lines, or None.
+
+    Pure function over the in-memory rows (no query): the public cart
+    mirrors the exact same rule client-side, and ``create_order`` applies it
+    server-side at POST — one shared rule, server authoritative.
+
+    A promo with no ``discount_pct``, scope 'none', or a non-matching scope
+    link discounts nothing.
+    """
+    if promo is None or promo.discount_pct is None:
+        return None
+    if promo.scope == PromoScope.none:
+        return None
+    if promo.scope == PromoScope.item:
+        return promo.discount_pct if item.id == promo.item_id else None
+    if promo.scope == PromoScope.category:
+        return (
+            promo.discount_pct
+            if item.subcategory.category_id == promo.category_id
+            else None
+        )
+    return promo.discount_pct  # catalog
 
 
 # ---------------------------------------------------------------------------

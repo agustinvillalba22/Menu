@@ -1,5 +1,5 @@
 import uuid
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -12,6 +12,7 @@ from app.models.order import Order, OrderItem, OrderItemModifier, OrderStatus
 from app.models.restaurant import Restaurant
 from app.schemas.order import OrderCreate, OrderItemCreate
 from app.services.menu import resolve_active_menu
+from app.services.promo import active_promo_for, promo_discount_pct
 from app.services.public_menu import get_public_menu
 
 # Numeric(10, 2) columns (subtotal/total) top out at 8 integer digits. The
@@ -66,12 +67,23 @@ async def _load_order(order_id: uuid.UUID, session: AsyncSession) -> Order:
     return result.scalar_one()
 
 
-def _build_line(item: Item, line: OrderItemCreate) -> OrderItem:
+def _apply_discount(value: Decimal, pct: int) -> Decimal:
+    """Apply a whole-number % discount, quantized to cents (Fase 0010)."""
+    factor = Decimal(100 - pct) / Decimal(100)
+    return (value * factor).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def _build_line(item: Item, line: OrderItemCreate, promo=None) -> OrderItem:
     """Build an OrderItem (with modifier snapshots) for a single payload line.
 
     The server recomputes every price from live DB values; nothing from the
     client body except item_id/modifier_ids/quantity/special_instructions is
     trusted (M11 RF-05, CA-05).
+
+    Fase 0010: the active promo's discount (scope-matched) is applied to the
+    effective unit price — base + modifiers, clamped at 0 (M11.1 parity).
+    ``unit_price_snapshot`` keeps the LIST price and ``discount_pct``
+    snapshots what was applied, so order history explains its own subtotal.
     """
     modifiers_by_id: dict[uuid.UUID, ItemModifier] = {
         m.id: m for m in item.modifiers
@@ -91,6 +103,9 @@ def _build_line(item: Item, line: OrderItemCreate) -> OrderItem:
     # effective unit price below $0. Clamp before multiplying by quantity so
     # a high quantity cannot hide a would-be-negative unit price.
     effective_unit_price = max(unit_price + modifiers_total, Decimal("0"))
+    discount_pct = promo_discount_pct(promo, item)
+    if discount_pct is not None:
+        effective_unit_price = _apply_discount(effective_unit_price, discount_pct)
     subtotal: Decimal = effective_unit_price * line.quantity
     _check_amount(subtotal)
 
@@ -98,6 +113,7 @@ def _build_line(item: Item, line: OrderItemCreate) -> OrderItem:
         item_id=item.id,
         name_snapshot=item.name,
         unit_price_snapshot=unit_price,
+        discount_pct=discount_pct,
         quantity=line.quantity,
         special_instructions=line.special_instructions,
         subtotal=subtotal,
@@ -135,12 +151,17 @@ async def create_order(
 
     items_by_id = _collect_items(restaurant)
 
+    # Fase 0010: resolve the active promo once (eager-loaded, no extra
+    # query) — the same rule the public cart applied client-side, but
+    # recomputed here from live rows. Server is authoritative.
+    promo = active_promo_for(restaurant)
+
     order_items: list[OrderItem] = []
     for line in data.items:
         item = items_by_id.get(line.item_id)
         if item is None:
             raise HTTPException(status_code=404, detail="item_not_found")
-        order_items.append(_build_line(item, line))
+        order_items.append(_build_line(item, line, promo))
 
     total: Decimal = sum(
         (oi.subtotal for oi in order_items), start=Decimal("0")

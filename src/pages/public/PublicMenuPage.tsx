@@ -59,7 +59,10 @@ export default function PublicMenuPage(): React.JSX.Element {
   const [cartOpen, setCartOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
 
-  const cart = usePublicCart(qrToken)
+  // Fase 0010: the active promo feeds the cart's displayed totals — the
+  // same rule the server recomputes at POST (server authoritative).
+  const activePromo = state.status === 'ready' ? state.data.promo : null
+  const cart = usePublicCart(qrToken, activePromo)
 
   useEffect(() => {
     if (qrToken === undefined) {
@@ -274,6 +277,7 @@ export default function PublicMenuPage(): React.JSX.Element {
                           item={item}
                           orderingEnabled={orderingEnabled}
                           onSelect={setSelectedItem}
+                          promo={activePromo}
                         />
                       </React.Fragment>
                     ))}
@@ -315,6 +319,7 @@ export default function PublicMenuPage(): React.JSX.Element {
       <PublicItemModal
         item={selectedItem}
         orderingEnabled={orderingEnabled}
+        promo={activePromo}
         onClose={() => setSelectedItem(null)}
         onAdd={(item, modifiers, quantity, note) => cart.addLine(item, modifiers, quantity, note)}
       />
@@ -325,6 +330,7 @@ export default function PublicMenuPage(): React.JSX.Element {
           <PublicCartDrawer
             isOpen={cartOpen}
             lines={cart.lines}
+            promo={activePromo}
             onClose={() => setCartOpen(false)}
             onUpdateQuantity={cart.updateQuantity}
             onRemove={cart.removeLine}

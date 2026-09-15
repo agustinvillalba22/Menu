@@ -11,7 +11,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.promo import Promo
+from app.models.promo import Promo, PromoScope
 
 
 class PromoBase(BaseModel):
@@ -20,9 +20,13 @@ class PromoBase(BaseModel):
     description: str | None = Field(default=None, max_length=1000)
     discount_pct: int | None = Field(default=None, ge=0, le=100)
     image_url: str | None = None
-    # Optional link to one of the restaurant's own items (verified at the
-    # service layer — cross-restaurant ids are 404 item_not_found).
+    # Fase 0010 — what the discount applies to. 'none' = banner only.
+    scope: PromoScope = PromoScope.none
+    # Optional link to one of the restaurant's own items (scope='item';
+    # verified at the service layer — cross-restaurant ids are 404).
     item_id: uuid.UUID | None = None
+    # Optional link to one of the restaurant's own categories (scope='category').
+    category_id: uuid.UUID | None = None
     is_active: bool = False
     starts_at: datetime | None = None
     ends_at: datetime | None = None
@@ -39,7 +43,9 @@ class PromoUpdate(BaseModel):
     description: str | None = Field(default=None, max_length=1000)
     discount_pct: int | None = Field(default=None, ge=0, le=100)
     image_url: str | None = None
+    scope: PromoScope | None = None
     item_id: uuid.UUID | None = None
+    category_id: uuid.UUID | None = None
     is_active: bool | None = None
     starts_at: datetime | None = None
     ends_at: datetime | None = None
@@ -53,7 +59,9 @@ class PromoRead(BaseModel):
     description: str | None
     discount_pct: int | None
     image_url: str | None
+    scope: PromoScope
     item_id: uuid.UUID | None
+    category_id: uuid.UUID | None
     is_active: bool
     starts_at: datetime | None
     ends_at: datetime | None

@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, field_serializer
 
 from app.models.item_modifier import ModifierType
 from app.models.menu import CategoryIcon, CategoryType
+from app.models.promo import PromoScope
 from app.models.style import FontFamily
 
 
@@ -35,6 +36,10 @@ class PublicItemRead(BaseModel):
     description: str
     price: Decimal
     image_url: str | None = None
+    # Fase 0010: the owning subcategory's category id — lets the public cart
+    # evaluate category-scoped promo discounts without a second round trip
+    # (the promo rides in PublicMenuResponse.promo with its own scope).
+    category_id: uuid.UUID
     tags: list[PublicTagRead]
     modifiers: list[PublicItemModifierRead]
 
@@ -119,9 +124,11 @@ class PublicStyleRead(BaseModel):
 class PublicPromoRead(BaseModel):
     """The active promo banner (P4) — never the scheduling internals.
 
-    The public sees what to render (title/subtitle/description/discount/
-    image/linked item); ``is_active``/``starts_at``/``ends_at`` are
-    dashboard-only concerns resolved server-side in ``active_promo_for``.
+    The public sees what to render (title/subtitle/discount/image/links);
+    ``is_active``/``starts_at``/``ends_at`` are dashboard-only concerns
+    resolved server-side in ``active_promo_for``. ``scope``/``category_id``
+    (Fase 0010) let the cart apply the same discount the server will
+    recompute at POST — one shared rule, server authoritative.
     """
 
     id: uuid.UUID
@@ -130,7 +137,9 @@ class PublicPromoRead(BaseModel):
     description: str | None = None
     discount_pct: int | None = None
     image_url: str | None = None
+    scope: PromoScope
     item_id: uuid.UUID | None = None
+    category_id: uuid.UUID | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

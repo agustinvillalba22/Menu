@@ -1,7 +1,8 @@
 import React from 'react'
 import { X, Trash2, Plus, Minus, Send, ShoppingBag, ImageOff } from 'lucide-react'
+import type { PublicPromo } from '../../lib/types'
 import type { CartLine } from './cart'
-import { cartTotal, lineTotal, lineUnitPrice } from './cart'
+import { cartTotal, lineDiscountPct, lineTotal, lineUnitPrice } from './cart'
 
 interface PublicCartDrawerProps {
   isOpen: boolean
@@ -10,6 +11,8 @@ interface PublicCartDrawerProps {
   onUpdateQuantity: (lineId: string, delta: number) => void
   onRemove: (lineId: string) => void
   onCheckout: () => void
+  /** Active promo (Fase 0010) — discounted per-line/total display. */
+  promo?: PublicPromo | null
 }
 
 /** Sliding cart panel bound to the real per-restaurant cart lines. */
@@ -20,10 +23,11 @@ export default function PublicCartDrawer({
   onUpdateQuantity,
   onRemove,
   onCheckout,
+  promo,
 }: PublicCartDrawerProps): React.JSX.Element | null {
   if (!isOpen) return null
 
-  const total = cartTotal(lines)
+  const total = cartTotal(lines, promo)
   const count = lines.reduce((sum, l) => sum + l.quantity, 0)
 
   return (
@@ -93,11 +97,16 @@ export default function PublicCartDrawer({
                         {line.item.name}
                       </h4>
                       <span className="text-sm font-black text-primario">
-                        ${lineTotal(line).toFixed(2)}
+                        ${lineTotal(line, promo).toFixed(2)}
                       </span>
                     </div>
                     <p className="mt-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-                      Unitario: ${lineUnitPrice(line).toFixed(2)}
+                      Unitario: ${lineUnitPrice(line, promo).toFixed(2)}
+                      {lineDiscountPct(line, promo) !== null && (
+                        <span className="ml-1 rounded-full bg-amber-400/90 px-1.5 py-0.5 font-black text-black">
+                          -{lineDiscountPct(line, promo)}%
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>

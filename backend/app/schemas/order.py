@@ -52,6 +52,10 @@ class OrderItemRead(BaseModel):
     item_id: uuid.UUID | None
     name_snapshot: str
     unit_price_snapshot: Decimal
+    # Fase 0010: promo discount applied to this line (NULL = none). The
+    # registry shows "-20%" next to the list price so the owner can audit
+    # why subtotal < unit_price_snapshot * quantity.
+    discount_pct: int | None = None
     quantity: int
     special_instructions: str | None
     subtotal: Decimal

@@ -97,6 +97,11 @@ class OrderItem(Base):
         Numeric(10, 2),
         nullable=False,
     )
+    # Fase 0010: snapshot of the promo discount actually applied to this
+    # line (NULL = none). unit_price_snapshot keeps the LIST price, subtotal
+    # the actually-paid amount — discount_pct explains the difference so
+    # history stays auditable after the promo is edited/deleted.
+    discount_pct: Mapped[int | None] = mapped_column(Integer, nullable=True)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     special_instructions: Mapped[str | None] = mapped_column(String, nullable=True)
     subtotal: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)

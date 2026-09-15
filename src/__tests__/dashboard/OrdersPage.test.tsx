@@ -38,6 +38,7 @@ const order: OrderRead = {
       item_id: 'i1',
       name_snapshot: 'Margherita',
       unit_price_snapshot: '11.50',
+      discount_pct: null,
       quantity: 2,
       special_instructions: 'Bien cocida',
       subtotal: '23.00',

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { PublicItem, PublicModifier } from '../../lib/types'
+import type { PublicItem, PublicModifier, PublicPromo } from '../../lib/types'
+import { applyDiscount, promoDiscountPct } from '../../lib/promoDiscount'
 
 /** A single configured line in the public cart (item + chosen modifiers). */
 export interface CartLine {
@@ -21,19 +22,33 @@ export function makeLineId(item: PublicItem, modifiers: PublicModifier[]): strin
   return `${item.id}::${ids.join('-')}`
 }
 
-/** Per-unit price = base price + sum of chosen deltas (deltas may be negative). */
-export function lineUnitPrice(line: CartLine): number {
+/** The % discount a promo applies to this line's item (Fase 0010). */
+export function lineDiscountPct(
+  line: CartLine,
+  promo?: PublicPromo | null,
+): number | null {
+  return promoDiscountPct(promo, line.item)
+}
+
+/**
+ * Per-unit price = base price + sum of chosen deltas (deltas may be
+ * negative), clamped at 0, with the promo discount applied when the item is
+ * in scope — the same rule the server recomputes at POST.
+ */
+export function lineUnitPrice(line: CartLine, promo?: PublicPromo | null): number {
   const base = parseFloat(line.item.price)
   const deltas = line.modifiers.reduce((sum, m) => sum + parseFloat(m.price_delta), 0)
-  return base + deltas
+  const effective = Math.max(base + deltas, 0)
+  const pct = lineDiscountPct(line, promo)
+  return pct === null ? effective : applyDiscount(effective, pct)
 }
 
-export function lineTotal(line: CartLine): number {
-  return lineUnitPrice(line) * line.quantity
+export function lineTotal(line: CartLine, promo?: PublicPromo | null): number {
+  return lineUnitPrice(line, promo) * line.quantity
 }
 
-export function cartTotal(lines: CartLine[]): number {
-  return lines.reduce((sum, l) => sum + lineTotal(l), 0)
+export function cartTotal(lines: CartLine[], promo?: PublicPromo | null): number {
+  return lines.reduce((sum, l) => sum + lineTotal(l, promo), 0)
 }
 
 export function cartCount(lines: CartLine[]): number {
@@ -57,8 +72,14 @@ interface UsePublicCart {
 /**
  * Cart state persisted to localStorage under a qrToken-scoped key. Reloads when
  * the token changes so scanning a different restaurant starts a fresh cart.
+ *
+ * ``promo`` (Fase 0010) only feeds the *displayed* totals — the same rule the
+ * server recomputes at POST; the stored lines never mutate.
  */
-export function usePublicCart(qrToken: string | undefined): UsePublicCart {
+export function usePublicCart(
+  qrToken: string | undefined,
+  promo?: PublicPromo | null,
+): UsePublicCart {
   const [lines, setLines] = useState<CartLine[]>([])
 
   useEffect(() => {
@@ -142,7 +163,7 @@ export function usePublicCart(qrToken: string | undefined): UsePublicCart {
   return {
     lines,
     count: cartCount(lines),
-    total: cartTotal(lines),
+    total: cartTotal(lines, promo),
     addLine,
     updateQuantity,
     removeLine,

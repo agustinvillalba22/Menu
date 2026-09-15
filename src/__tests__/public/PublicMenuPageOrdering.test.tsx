@@ -45,6 +45,7 @@ const menu: PublicMenuResponse = {
               description: 'Tomate y mozzarella',
               price: '10.00',
               image_url: null,
+              category_id: 'c1',
               tags: [],
               modifiers: [
                 { id: 'm1', name: 'Extra queso', price_delta: '1.50', type: 'extra' },
@@ -258,5 +259,72 @@ describe('PublicMenuPage — ordering disabled', () => {
 
     expect(screen.queryByRole('button', { name: 'Ver carrito' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /agregar margherita/i })).not.toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Fase 0010 — promo discount in the public ordering flow
+// ---------------------------------------------------------------------------
+
+describe('PublicMenuPage — promo discounts the cart', () => {
+  const menuWithCatalogPromo: PublicMenuResponse = {
+    ...menu,
+    promo: {
+      id: 'p1',
+      title: 'Happy hour',
+      subtitle: null,
+      description: null,
+      discount_pct: 20,
+      image_url: null,
+      scope: 'catalog',
+      item_id: null,
+      category_id: null,
+    },
+  }
+
+  it('shows the discounted price with the list price struck through', async () => {
+    routeFetch([
+      { method: 'GET', match: '/menu/', response: jsonResponse(menuWithCatalogPromo) },
+    ])
+
+    renderMenu()
+    await screen.findByRole('heading', { name: 'Boulette', level: 1 })
+
+    // Margherita lists at $10.00 -> $8.00 with the 20% catalog promo.
+    expect(screen.getByTestId('product-price-i1')).toHaveTextContent('$8.00')
+    expect(screen.getByText('$10.00')).toBeInTheDocument() // struck-through list price
+    expect(screen.getByText('-20%')).toBeInTheDocument()
+  })
+
+  it('checks out with the discounted total (client mirror, server recomputes)', async () => {
+    routeFetch([
+      { method: 'POST', match: '/orders', response: jsonResponse(createdOrder, 201) },
+      { method: 'GET', match: '/menu/', response: jsonResponse(menuWithCatalogPromo) },
+    ])
+
+    renderMenu()
+    await screen.findByRole('heading', { name: 'Boulette', level: 1 })
+
+    await userEvent.click(screen.getByRole('button', { name: /agregar margherita/i }))
+    await userEvent.click(screen.getByRole('button', { name: /añadir al pedido/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Ver carrito' }))
+
+    // Drawer: unit 8.00 with the -20% tag (card + drawer), line and total discounted.
+    expect(await screen.findByText('Unitario: $8.00')).toBeInTheDocument()
+    expect(screen.getAllByText('-20%').length).toBeGreaterThanOrEqual(2)
+    expect(screen.getAllByText('$8.00').length).toBeGreaterThan(0)
+
+    // The POST payload is item ids only — the guest never sends prices; the
+    // server recomputes (and re-applies) the discount authoritatively.
+    await userEvent.click(screen.getByRole('button', { name: /finalizar pedido/i }))
+    await userEvent.type(screen.getByLabelText(/tu nombre/i), 'Ana')
+    await userEvent.type(screen.getByLabelText(/número de mesa/i), 'Mesa 1')
+    await userEvent.click(screen.getByRole('button', { name: /confirmar pedido/i }))
+    expect(await screen.findByText('Pedido confirmado')).toBeInTheDocument()
+    const posts = vi
+      .mocked(fetch)
+      .mock.calls.map((c) => readCall(c as [unknown, unknown]))
+      .filter((c) => c.method === 'POST' && c.url.includes('/orders'))
+    expect(JSON.parse(posts[0].body as string).items[0]).not.toHaveProperty('price')
   })
 })

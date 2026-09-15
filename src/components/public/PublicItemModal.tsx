@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { X, Plus, Minus, ShoppingBag, ImageOff } from 'lucide-react'
-import type { PublicItem, PublicModifier } from '../../lib/types'
+import type { PublicItem, PublicModifier, PublicPromo } from '../../lib/types'
+import { applyDiscount, promoDiscountPct } from '../../lib/promoDiscount'
 import { badgeInfo } from './badges'
 
 interface PublicItemModalProps {
@@ -8,6 +9,8 @@ interface PublicItemModalProps {
   orderingEnabled: boolean
   onClose: () => void
   onAdd: (item: PublicItem, modifiers: PublicModifier[], quantity: number, note?: string) => void
+  /** Active promo (Fase 0010) — discounts the displayed prices when in scope. */
+  promo?: PublicPromo | null
 }
 
 function modifierLabel(m: PublicModifier): string {
@@ -26,6 +29,7 @@ export default function PublicItemModal({
   orderingEnabled,
   onClose,
   onAdd,
+  promo,
 }: PublicItemModalProps): React.JSX.Element | null {
   const [quantity, setQuantity] = useState(1)
   const [selected, setSelected] = useState<PublicModifier[]>([])
@@ -47,9 +51,14 @@ export default function PublicItemModal({
     )
   }
 
+  // Fase 0010 — the promo discount applies to the effective unit price
+  // (base + modifiers, clamped at 0), the same rule the cart and the server use.
   const base = parseFloat(item.price)
   const deltas = selected.reduce((sum, m) => sum + parseFloat(m.price_delta), 0)
-  const total = (base + deltas) * quantity
+  const pct = promoDiscountPct(promo, item)
+  const effectiveUnit =
+    pct === null ? Math.max(base + deltas, 0) : applyDiscount(Math.max(base + deltas, 0), pct)
+  const total = effectiveUnit * quantity
 
   const handleAdd = (): void => {
     onAdd(item, selected, quantity, note.trim() || undefined)
@@ -107,11 +116,21 @@ export default function PublicItemModal({
               )}
               <div className="flex items-center gap-2 pt-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                  Precio base:
+                  {pct !== null ? 'Precio promocional:' : 'Precio base:'}
                 </span>
                 <span className="text-base font-black text-primario">
-                  ${parseFloat(item.price).toFixed(2)}
+                  ${(pct === null ? base : applyDiscount(base, pct)).toFixed(2)}
                 </span>
+                {pct !== null && (
+                  <>
+                    <span className="text-xs font-medium text-gray-400 line-through">
+                      ${base.toFixed(2)}
+                    </span>
+                    <span className="rounded-full bg-amber-400/90 px-1.5 py-0.5 text-[9px] font-black text-black">
+                      -{pct}%
+                    </span>
+                  </>
+                )}
               </div>
               {item.tags.length > 0 && (
                 <ul className="flex flex-wrap gap-1.5 pt-2">

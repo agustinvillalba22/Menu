@@ -13,6 +13,7 @@ const item: PublicItem = {
   description: 'Tomate y mozzarella',
   price: '10.00',
   image_url: null,
+  category_id: 'c1',
   tags: [],
   modifiers: [],
 }

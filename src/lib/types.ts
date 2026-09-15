@@ -85,6 +85,9 @@ export interface PublicItem {
   description: string
   price: string
   image_url: string | null // NUEVO (M11)
+  // Fase 0010 — owning category, so the cart can evaluate category-scoped
+  // promo discounts without a second round trip.
+  category_id: string
   tags: PublicTag[]
   modifiers: PublicModifier[] // NUEVO (M11)
 }
@@ -291,6 +294,9 @@ export interface PublicMenuResponse {
 
 // --- Promos (P4/P5, Fase 2c/2d) ---------------------------------------------
 
+/** What the promo's discount applies to (Fase 0010) — mirrors PromoScope. */
+export type PromoScope = 'none' | 'item' | 'category' | 'catalog'
+
 /** What the public menu renders — never the scheduling internals. */
 export interface PublicPromo {
   id: string
@@ -299,7 +305,10 @@ export interface PublicPromo {
   description: string | null
   discount_pct: number | null
   image_url: string | null
+  // Fase 0010 — lets the cart mirror the server's discount rule.
+  scope: PromoScope
   item_id: string | null
+  category_id: string | null
 }
 
 /** Dashboard read shape — includes the server-computed expiry signal (P5). */
@@ -311,7 +320,9 @@ export interface Promo {
   description: string | null
   discount_pct: number | null
   image_url: string | null
+  scope: PromoScope
   item_id: string | null
+  category_id: string | null
   is_active: boolean
   starts_at: string | null
   ends_at: string | null
@@ -326,7 +337,9 @@ export interface PromoCreate {
   description?: string | null
   discount_pct?: number | null
   image_url?: string | null
+  scope?: PromoScope
   item_id?: string | null
+  category_id?: string | null
   is_active?: boolean
   starts_at?: string | null
   ends_at?: string | null
@@ -339,7 +352,9 @@ export interface PromoUpdate {
   description?: string | null
   discount_pct?: number | null
   image_url?: string | null
+  scope?: PromoScope
   item_id?: string | null
+  category_id?: string | null
   is_active?: boolean
   starts_at?: string | null
   ends_at?: string | null
@@ -444,6 +459,9 @@ export interface OrderItemRead {
   item_id: string | null
   name_snapshot: string
   unit_price_snapshot: string
+  // Fase 0010 — promo discount applied to the line (null = none). Explains
+  // why subtotal < unit_price_snapshot * quantity in the registry.
+  discount_pct: number | null
   quantity: number
   special_instructions: string | null
   subtotal: string

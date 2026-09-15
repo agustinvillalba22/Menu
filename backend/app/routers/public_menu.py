@@ -33,6 +33,9 @@ def _build_item(item: Item) -> PublicItemRead:
         description=item.description,
         price=item.price,
         image_url=item.image_url,
+        # The owning subcategory's category (Fase 0010) — the subcategory is
+        # always in memory here via the eager-loaded public tree.
+        category_id=item.subcategory.category_id,
         tags=[PublicTagRead(id=t.id, name=t.name) for t in item.tags],
         modifiers=[
             PublicItemModifierRead(

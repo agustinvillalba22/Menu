@@ -26,7 +26,9 @@ function promoFixture(overrides: Partial<Promo> = {}): Promo {
     description: null,
     discount_pct: 50,
     image_url: null,
+    scope: 'none',
     item_id: null,
+    category_id: null,
     is_active: true,
     starts_at: null,
     ends_at: null,
@@ -109,7 +111,7 @@ describe('PromosPage', () => {
     await userEvent.click(await screen.findByRole('button', { name: /nueva promo/i }))
 
     await userEvent.type(screen.getByLabelText(/título \*/i), '2x1 Pizzas')
-    await userEvent.type(screen.getByLabelText(/descuento/i), '50')
+    await userEvent.type(screen.getByLabelText(/descuento \(%\)/i), '50')
     // datetime-local value as the browser produces it (local tz).
     await userEvent.type(
       screen.getByLabelText(/vigencia desde/i),
@@ -167,5 +169,114 @@ describe('PromosPage', () => {
     )
     expect(deletes).toHaveLength(1)
     confirmSpy.mockRestore()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Fase 0010 — scope selector in the create form
+// ---------------------------------------------------------------------------
+
+describe('PromosPage — discount scope', () => {
+  it('POSTs scope=catalog with the discount, no item/category links', async () => {
+    routeFetch([
+      ...baseRoutes([]),
+      { method: 'POST', match: '/promos', response: jsonResponse(promoFixture(), 201) },
+    ])
+
+    render(<PromosPage />)
+    await userEvent.click(await screen.findByRole('button', { name: /nueva promo/i }))
+
+    await userEvent.type(screen.getByLabelText(/título \*/i), 'Happy hour')
+    await userEvent.type(screen.getByLabelText(/descuento \(%\)/i), '20')
+    await userEvent.selectOptions(
+      screen.getByLabelText(/alcance del descuento/i),
+      'catalog',
+    )
+    // scope=catalog shows neither the item nor the category select.
+    expect(screen.queryByLabelText(/^producto \*/i)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/^categoría \*/i)).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /^guardar$/i }))
+
+    const posts = fetchCalls().filter((c) => c.method === 'POST' && c.url.includes('/promos'))
+    const body = JSON.parse(posts[0].body as string)
+    expect(body.scope).toBe('catalog')
+    expect(body.discount_pct).toBe(20)
+    expect(body.item_id).toBeNull()
+    expect(body.category_id).toBeNull()
+  })
+
+  it('shows the category select only for scope=category and validates it', async () => {
+    const catList = [
+      {
+        id: 'cat-1',
+        name: 'Pizzas',
+        type: 'food' as const,
+        icon: null,
+        subcategories: [],
+      },
+    ]
+    routeFetch([
+      { method: 'GET', match: '/promos', response: jsonResponse([]) },
+      { method: 'GET', match: '/categories', response: jsonResponse(catList) },
+      { method: 'GET', match: '/restaurants', response: jsonResponse([restaurant]) },
+    ])
+
+    render(<PromosPage />)
+    await userEvent.click(await screen.findByRole('button', { name: /nueva promo/i }))
+
+    await userEvent.type(screen.getByLabelText(/título \*/i), 'Pizzas 20%')
+    await userEvent.type(screen.getByLabelText(/descuento \(%\)/i), '20')
+    await userEvent.selectOptions(
+      screen.getByLabelText(/alcance del descuento/i),
+      'category',
+    )
+
+    // Category select appeared; pick one and POST.
+    const catSelect = await screen.findByLabelText(/^categoría \*/i)
+    await userEvent.selectOptions(catSelect, 'cat-1')
+
+    // Re-route for the POST + reload.
+    routeFetch([
+      {
+        method: 'POST',
+        match: '/promos',
+        response: jsonResponse(
+          promoFixture({ scope: 'category', category_id: 'cat-1', discount_pct: 20 }),
+          201,
+        ),
+      },
+      { method: 'GET', match: '/promos', response: jsonResponse([]) },
+      { method: 'GET', match: '/categories', response: jsonResponse(catList) },
+      { method: 'GET', match: '/restaurants', response: jsonResponse([restaurant]) },
+    ])
+    await userEvent.click(screen.getByRole('button', { name: /^guardar$/i }))
+
+    const posts = fetchCalls().filter((c) => c.method === 'POST' && c.url.includes('/promos'))
+    expect(posts).toHaveLength(1)
+    const body = JSON.parse(posts[0].body as string)
+    expect(body.scope).toBe('category')
+    expect(body.category_id).toBe('cat-1')
+  })
+
+  it('refuses to save scope=item without a discount percentage', async () => {
+    routeFetch([
+      ...baseRoutes([]),
+      { method: 'POST', match: '/promos', response: jsonResponse(promoFixture(), 201) },
+    ])
+
+    render(<PromosPage />)
+    await userEvent.click(await screen.findByRole('button', { name: /nueva promo/i }))
+
+    await userEvent.type(screen.getByLabelText(/título \*/i), 'Sin pct')
+    await userEvent.selectOptions(
+      screen.getByLabelText(/alcance del descuento/i),
+      'catalog',
+    )
+    await userEvent.click(screen.getByRole('button', { name: /^guardar$/i }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/porcentaje de descuento/i)
+    const posts = fetchCalls().filter((c) => c.method === 'POST' && c.url.includes('/promos'))
+    expect(posts).toHaveLength(0)
   })
 })

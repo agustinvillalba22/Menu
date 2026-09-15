@@ -18,7 +18,7 @@ import {
   listSubcategories,
   listItems,
 } from '../../lib/menu'
-import type { Item, Promo, PromoUpdate } from '../../lib/types'
+import type { Item, Promo, PromoScope, PromoUpdate } from '../../lib/types'
 
 // The dashboard "Promos" page (P4/P5, Fase 2c/2d): list + create/edit form
 // (texto, % desc, vigencia, producto vinculado, imagen R2) + the P5 expiry
@@ -38,6 +38,13 @@ const ERROR_MESSAGES: Record<string, string> = {
   item_not_found: 'El producto vinculado ya no existe.',
   unsupported_content_type: 'Formato no soportado (usar JPG, PNG o WEBP).',
   file_too_large: 'El archivo supera el tamaño máximo (5 MB).',
+}
+
+const SCOPE_LABELS: Record<PromoScope, string> = {
+  none: '',
+  item: 'Producto',
+  category: 'Categoría',
+  catalog: 'Catálogo',
 }
 
 function errorMessage(err: unknown, fallback: string): string {
@@ -68,7 +75,9 @@ type FormState = {
   subtitle: string
   description: string
   discountPct: string
+  scope: PromoScope
   itemId: string
+  categoryId: string
   startsAt: string
   endsAt: string
   isActive: boolean
@@ -79,7 +88,9 @@ const EMPTY_FORM: FormState = {
   subtitle: '',
   description: '',
   discountPct: '',
+  scope: 'none',
   itemId: '',
+  categoryId: '',
   startsAt: '',
   endsAt: '',
   isActive: false,
@@ -91,7 +102,9 @@ function formFromPromo(promo: Promo): FormState {
     subtitle: promo.subtitle ?? '',
     description: promo.description ?? '',
     discountPct: promo.discount_pct === null ? '' : String(promo.discount_pct),
+    scope: promo.scope,
     itemId: promo.item_id ?? '',
+    categoryId: promo.category_id ?? '',
     startsAt: isoToLocalInput(promo.starts_at),
     endsAt: isoToLocalInput(promo.ends_at),
     isActive: promo.is_active,
@@ -107,8 +120,10 @@ export default function PromosPage(): React.JSX.Element {
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
 
-  // Items for the "producto vinculado" select — loaded once with the promos.
+  // Items for the "producto vinculado" select and categories for the
+  // "categoría" scope — both loaded once with the promos.
   const [items, setItems] = useState<{ id: string; name: string }[]>([])
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
 
   // 'new' | editing promo id | null (list mode).
   const [editing, setEditing] = useState<'new' | string | null>(null)
@@ -133,6 +148,7 @@ export default function PromosPage(): React.JSX.Element {
         listCategories(id),
       ])
       setPromos(promoList)
+      setCategories(categoryList.map((c) => ({ id: c.id, name: c.name })))
       const itemOptions: { id: string; name: string }[] = []
       for (const category of categoryList) {
         const subs = await listSubcategories(id, category.id)
@@ -192,6 +208,18 @@ export default function PromosPage(): React.JSX.Element {
         setFormError('El descuento debe ser un número entre 0 y 100.')
         return
       }
+      if (form.scope !== 'none' && discount === null) {
+        setFormError('Elegí el porcentaje de descuento para el alcance seleccionado.')
+        return
+      }
+      if (form.scope === 'item' && form.itemId === '') {
+        setFormError('Elegí el producto al que aplica el descuento.')
+        return
+      }
+      if (form.scope === 'category' && form.categoryId === '') {
+        setFormError('Elegí la categoría a la que aplica el descuento.')
+        return
+      }
 
       if (editing === 'new') {
         await createPromo(restaurantId, {
@@ -199,7 +227,10 @@ export default function PromosPage(): React.JSX.Element {
           subtitle: form.subtitle === '' ? null : form.subtitle,
           description: form.description === '' ? null : form.description,
           discount_pct: discount,
-          item_id: form.itemId === '' ? null : form.itemId,
+          scope: form.scope,
+          item_id: form.scope === 'item' && form.itemId !== '' ? form.itemId : null,
+          category_id:
+            form.scope === 'category' && form.categoryId !== '' ? form.categoryId : null,
           is_active: form.isActive,
           starts_at: localInputToIso(form.startsAt),
           ends_at: localInputToIso(form.endsAt),
@@ -213,8 +244,12 @@ export default function PromosPage(): React.JSX.Element {
         const nextDescription = form.description === '' ? null : form.description
         if (nextDescription !== editingPromo.description) patch.description = nextDescription
         if (discount !== editingPromo.discount_pct) patch.discount_pct = discount
-        const nextItemId = form.itemId === '' ? null : form.itemId
+        if (form.scope !== editingPromo.scope) patch.scope = form.scope
+        const nextItemId = form.scope === 'item' && form.itemId !== '' ? form.itemId : null
         if (nextItemId !== editingPromo.item_id) patch.item_id = nextItemId
+        const nextCategoryId =
+          form.scope === 'category' && form.categoryId !== '' ? form.categoryId : null
+        if (nextCategoryId !== editingPromo.category_id) patch.category_id = nextCategoryId
         if (form.isActive !== editingPromo.is_active) patch.is_active = form.isActive
         const nextStarts = localInputToIso(form.startsAt)
         if (nextStarts !== (editingPromo.starts_at === null ? null : new Date(editingPromo.starts_at).toISOString())) {
@@ -440,20 +475,56 @@ export default function PromosPage(): React.JSX.Element {
             </label>
 
             <label className="block text-sm">
-              <span className="mb-1 block font-medium text-gray-700">Producto vinculado</span>
+              <span className="mb-1 block font-medium text-gray-700">Alcance del descuento</span>
               <select
-                value={form.itemId}
-                onChange={(e) => setForm({ ...form, itemId: e.target.value })}
+                value={form.scope}
+                onChange={(e) =>
+                  setForm({ ...form, scope: e.target.value as PromoScope })
+                }
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
               >
-                <option value="">Ninguno</option>
-                {items.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
+                <option value="none">Ninguno (solo banner)</option>
+                <option value="item">Un producto</option>
+                <option value="category">Una categoría</option>
+                <option value="catalog">Todo el catálogo</option>
               </select>
             </label>
+
+            {form.scope === 'item' && (
+              <label className="block text-sm">
+                <span className="mb-1 block font-medium text-gray-700">Producto *</span>
+                <select
+                  value={form.itemId}
+                  onChange={(e) => setForm({ ...form, itemId: e.target.value })}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                >
+                  <option value="">Elegí un producto</option>
+                  {items.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {form.scope === 'category' && (
+              <label className="block text-sm">
+                <span className="mb-1 block font-medium text-gray-700">Categoría *</span>
+                <select
+                  value={form.categoryId}
+                  onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                >
+                  <option value="">Elegí una categoría</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
 
             <label className="block text-sm">
               <span className="mb-1 block font-medium text-gray-700">Vigencia desde</span>
@@ -602,6 +673,11 @@ export default function PromosPage(): React.JSX.Element {
                   >
                     {promo.is_active ? 'Activa' : 'Inactiva'}
                   </span>
+                  {promo.scope !== 'none' && promo.discount_pct !== null && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                      {SCOPE_LABELS[promo.scope]}
+                    </span>
+                  )}
                   {/* P5 badge — server-computed days_remaining. */}
                   {promo.days_remaining !== null && (
                     <span

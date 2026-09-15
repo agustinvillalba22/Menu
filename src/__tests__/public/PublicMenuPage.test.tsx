@@ -46,6 +46,7 @@ const menu: PublicMenuResponse = {
               description: 'Tomate y mozzarella',
               price: '12.50',
               image_url: null,
+              category_id: 'c1',
               tags: [{ id: 't1', name: 'Vegetariana' }],
               modifiers: [],
             },
@@ -252,7 +253,9 @@ describe('PublicMenuPage — promo banner', () => {
       description: 'Pide el plato del día y llevá la segunda gratis',
       discount_pct: 50,
       image_url: 'https://cdn.test/promo.jpg',
+      scope: 'item',
       item_id: 'i1', // Margherita
+      category_id: null,
     },
   }
 
