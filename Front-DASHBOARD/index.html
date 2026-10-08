@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Safeguard for window.fetch in environments where it only exposes a getter
+      (function() {
+        try {
+          var originalFetch = window.fetch;
+          Object.defineProperty(window, 'fetch', {
+            get: function() {
+              return originalFetch;
+            },
+            set: function(fn) {
+              originalFetch = fn;
+            },
+            configurable: true,
+            enumerable: true
+          });
+        } catch (e) {
+          try {
+            var proto = Window.prototype;
+            var originalProtoFetch = window.fetch;
+            Object.defineProperty(proto, 'fetch', {
+              get: function() {
+                return originalProtoFetch;
+              },
+              set: function(fn) {
+                originalProtoFetch = fn;
+              },
+              configurable: true,
+              enumerable: true
+            });
+          } catch (err) {}
+        }
+
+        window.addEventListener('error', function(event) {
+          if (event && event.message && event.message.indexOf('Cannot set property fetch') !== -1) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return true;
+          }
+        }, true);
+      })();
+    </script>
+    <title>GastroSuite - Sistema de Gestión Gastronómica</title>
+    <meta name="description" content="Dashboard integral y minimalista para restaurantes: administración de menú, comandas en tiempo real, plano interactivo de mesas, stock y apariencia personalizada." />
+    <meta property="og:title" content="GastroSuite - Sistema de Gestión Gastronómica" />
+    <meta property="og:description" content="Dashboard integral y minimalista para restaurantes: administración de menú, comandas en tiempo real, plano interactivo de mesas, stock y apariencia personalizada." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..800;1,400..800&family=Bebas+Neue&family=Lilita+One&family=Montserrat:ital,wght@0,300..800;1,300..800&family=Playfair+Display:ital,wght@0,400..800;1,400..800&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=Quicksand:wght@300..700&family=Syne:wght@400..800&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-neutral-50 text-neutral-900 antialiased selection:bg-neutral-200">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

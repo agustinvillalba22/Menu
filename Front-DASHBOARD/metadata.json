@@ -1,0 +1,6 @@
+{
+  "name": "GastroSuite - Sistema de Gestión Gastronómica",
+  "description": "Dashboard integral y minimalista para restaurantes: administración de menú, comandas en tiempo real, plano interactivo de mesas, stock y apariencia personalizada.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

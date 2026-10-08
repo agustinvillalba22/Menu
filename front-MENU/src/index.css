@@ -1,0 +1,236 @@
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@900,800,700,500,400,300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Lilita+One&family=Space+Grotesk:wght@300..700&family=Cinzel:wght@400..900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Satoshi", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Satoshi", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom class for headings to follow selected typography option dynamically */
+.font-headings {
+  font-family: var(--font-heading, "Satoshi"), "Satoshi", "Inter", sans-serif !important;
+}
+
+/* Base configuration for dynamic multi-themed variables */
+:root {
+  --color-primario: #FC462F;
+  --color-primario-dark: #D62712;
+  --color-secundario: #FFE0E0;
+  --color-terciario: #FCDA3A;
+}
+
+/* Custom CSS class definitions based on dynamic layout variables with subtle gradient depth */
+.bg-primario {
+  background: linear-gradient(155deg, var(--color-primario) 0%, var(--color-primario-dark, var(--color-primario)) 100%) !important;
+}
+.bg-primario-gradient {
+  background: linear-gradient(155deg, var(--color-primario) 0%, var(--color-primario-dark, var(--color-primario)) 100%) !important;
+}
+.text-primario {
+  color: var(--color-primario) !important;
+}
+.border-primario {
+  border-color: var(--color-primario) !important;
+}
+
+/* Glassmorphism search box for supreme visual aesthetic */
+.glass-search {
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+}
+
+.dark .glass-search {
+  background: rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+}
+
+.theme-amarillo .glass-search {
+  background: rgba(45, 40, 40, 0.08);
+  border-color: rgba(45, 40, 40, 0.25);
+  color: #2D2828 !important;
+}
+
+.theme-amarillo .glass-search::placeholder {
+  color: rgba(45, 40, 40, 0.65) !important;
+}
+
+/* Custom Contrast & Typography Overrides for Amarillo Cítrico Theme */
+.theme-amarillo .bg-primario,
+.theme-amarillo .bg-primario * {
+  color: #2D2828 !important;
+  border-color: rgba(45, 40, 40, 0.15);
+}
+
+.theme-amarillo .bg-primario svg {
+  color: #2D2828 !important;
+  stroke: #2D2828 !important;
+}
+
+.theme-amarillo .bg-primario .text-white,
+.theme-amarillo .bg-primario .text-white\/95,
+.theme-amarillo .bg-primario .text-white\/90,
+.theme-amarillo .bg-primario .text-white\/85,
+.theme-amarillo .bg-primario .text-white\/80,
+.theme-amarillo .bg-primario .text-white\/70,
+.theme-amarillo .bg-primario .text-white\/60,
+.theme-amarillo .bg-primario .text-white\/50 {
+  color: #2D2828 !important;
+}
+
+.theme-amarillo .bg-primario .text-white\/80,
+.theme-amarillo .bg-primario .text-white\/70,
+.theme-amarillo .bg-primario .text-white\/60 {
+  color: rgba(45, 40, 40, 0.75) !important;
+}
+
+.theme-amarillo .bg-primario .text-white\/50 {
+  color: rgba(45, 40, 40, 0.55) !important;
+}
+
+.theme-amarillo .bg-primario .border-white\/10 {
+  border-color: rgba(45, 40, 40, 0.15) !important;
+}
+
+.theme-amarillo .bg-primario .border-white\/20 {
+  border-color: rgba(45, 40, 40, 0.25) !important;
+}
+
+/* Highlighted elements on light backgrounds that would lack contrast in raw yellow */
+:not(.dark).theme-amarillo .text-primario:not(.card-large-price),
+html:not(.dark) .theme-amarillo .text-primario:not(.card-large-price) {
+  color: #2D2828 !important;
+}
+
+.theme-amarillo .card-large-price {
+  color: var(--color-primario) !important;
+}
+
+:not(.dark).theme-amarillo .border-primario,
+html:not(.dark) .theme-amarillo .border-primario {
+  border-color: #2D2828 !important;
+}
+
+/* In dark mode, yellow text on dark surfaces has excellent AAA contrast (>10:1) */
+.dark.theme-amarillo .text-primario,
+html.dark .theme-amarillo .text-primario {
+  color: var(--color-primario) !important;
+}
+
+.dark.theme-amarillo .border-primario,
+html.dark .theme-amarillo .border-primario {
+  border-color: var(--color-primario) !important;
+}
+
+/* Custom header cart & dark mode buttons adjustment under Yellow Theme for high contrast */
+.theme-amarillo #btn-header-cart,
+.theme-amarillo #btn-header-dark-mode {
+  background-color: #2D2828 !important;
+}
+.theme-amarillo #btn-header-cart svg,
+.theme-amarillo #btn-header-dark-mode svg {
+  color: var(--color-primario) !important;
+  stroke: var(--color-primario) !important;
+}
+
+/* Search input focus outline adjustment under Yellow Theme */
+.theme-amarillo #search-input:focus {
+  --tw-ring-color: #2D2828 !important;
+}
+
+.bg-secundario {
+  background-color: var(--color-secundario) !important;
+}
+.text-secundario {
+  color: var(--color-secundario) !important;
+}
+.border-secundario {
+  border-color: var(--color-secundario) !important;
+}
+
+.bg-tertiary-custom {
+  background-color: var(--color-terciario) !important;
+}
+
+/* Custom CSS utilities for checkered retro italian look */
+.bg-checkered {
+  background-image: repeating-conic-gradient(var(--color-primario) 0% 25%, #ffffff 0% 50%);
+  background-size: 24px 24px;
+}
+
+.dark .bg-checkered {
+  background-image: repeating-conic-gradient(var(--color-primario) 0% 25%, #1f1f23 0% 50%);
+}
+
+.bg-checkered-sm {
+  background-image: repeating-conic-gradient(var(--color-primario) 0% 25%, #ffffff 0% 50%);
+  background-size: 16px 16px;
+}
+
+.dark .bg-checkered-sm {
+  background-image: repeating-conic-gradient(var(--color-primario) 0% 25%, #1f1f23 0% 50%);
+}
+
+.bg-checkered-beige {
+  background-image: repeating-conic-gradient(var(--color-primario) 0% 25%, #faf6f0 0% 50%);
+  background-size: 20px 20px;
+}
+
+.dark .bg-checkered-beige {
+  background-image: repeating-conic-gradient(var(--color-primario) 0% 25%, #18181b 0% 50%);
+}
+
+/* Base override for beautiful smooth scrolling and cozy beige / dark backgrounds */
+body {
+  background-color: #faf6f0;
+  color: #1a1a1a;
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+html.dark body {
+  background-color: #121214;
+  color: #f4f4f5;
+}
+
+/* Accessibility: prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Custom scrollbars for category selectors */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Shine scanning animation for the promotional banner */
+@keyframes shine {
+  0% { left: -100%; }
+  50% { left: 100%; }
+  100% { left: 100%; }
+}
+.animate-shine {
+  position: relative;
+  animation: shine 4.5s infinite linear;
+}

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Boulette - Pizzería Napolitana</title>
+    <meta name="description" content="Menú digital interactivo para Boulette, pizzería de masa madre de estilo napolitano. Realiza pedidos directamente por WhatsApp." />
+    <meta property="og:title" content="Boulette - Pizzería Napolitana" />
+    <meta property="og:description" content="Menú digital interactivo para Boulette, pizzería de masa madre de estilo napolitano. Realiza pedidos directamente por WhatsApp." />
+    <script>
+      (function() {
+        try {
+          let _fetch = window.fetch;
+          Object.defineProperty(window, 'fetch', {
+            get: function() {
+              return _fetch;
+            },
+            set: function(fn) {
+              _fetch = fn;
+            },
+            configurable: true,
+            enumerable: true
+          });
+        } catch (e) {
+          try {
+            var proto = window;
+            while (proto) {
+              var desc = Object.getOwnPropertyDescriptor(proto, 'fetch');
+              if (desc && desc.configurable) {
+                var cur = desc.get ? desc.get.call(window) : desc.value;
+                Object.defineProperty(proto, 'fetch', {
+                  get: function() { return cur; },
+                  set: function(v) { cur = v; },
+                  configurable: true,
+                  enumerable: true
+                });
+                break;
+              }
+              proto = Object.getPrototypeOf(proto);
+            }
+          } catch (err) {}
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
