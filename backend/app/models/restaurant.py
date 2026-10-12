@@ -123,6 +123,33 @@ class Restaurant(Base):
         back_populates="restaurant",
         cascade="all, delete-orphan",
     )
+    # M17 — physical tables, ordered by number for the dashboard/public list.
+    tables: Mapped[list["app.models.table.Table"]] = relationship(  # type: ignore[name-defined]
+        "Table",
+        back_populates="restaurant",
+        cascade="all, delete-orphan",
+        order_by="app.models.table.Table.number",
+    )
+    # M18 — operational staff roster, ordered by name.
+    staff_members: Mapped[list["app.models.staff_member.StaffMember"]] = relationship(  # type: ignore[name-defined]
+        "StaffMember",
+        back_populates="restaurant",
+        cascade="all, delete-orphan",
+        order_by="app.models.staff_member.StaffMember.name",
+    )
+    # M19 — suppliers + manually-managed stock, each ordered by name.
+    suppliers: Mapped[list["app.models.supplier.Supplier"]] = relationship(  # type: ignore[name-defined]
+        "Supplier",
+        back_populates="restaurant",
+        cascade="all, delete-orphan",
+        order_by="app.models.supplier.Supplier.name",
+    )
+    stock_items: Mapped[list["app.models.stock_item.StockItem"]] = relationship(  # type: ignore[name-defined]
+        "StockItem",
+        back_populates="restaurant",
+        cascade="all, delete-orphan",
+        order_by="app.models.stock_item.StockItem.name",
+    )
 
 
 class UserRestaurantRole(Base):

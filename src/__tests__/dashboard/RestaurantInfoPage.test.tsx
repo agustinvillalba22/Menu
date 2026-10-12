@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import RestaurantInfoPage from '../../pages/dashboard/RestaurantInfoPage'
 import type { Restaurant, RestaurantInfo } from '../../lib/types'
@@ -154,5 +154,51 @@ describe('RestaurantInfoPage', () => {
         { weekday: 0, open_time: '09:00:00', close_time: '18:00:00' },
       ],
     })
+  })
+
+  // M15 CA-05: PATCH /info, PUT /business-hours and the logo endpoints are
+  // owner-only on the backend — an editor sees every mutation control
+  // disabled/hidden with an explanation, but current data stays visible.
+  it('disables the info, hours and logo controls for an editor while keeping current data visible', async () => {
+    routeFetch([
+      { method: 'GET', match: '/info', response: jsonResponse(info) },
+      {
+        method: 'GET',
+        match: '/restaurants',
+        response: jsonResponse([{ ...restaurant, role: 'editor' }]),
+      },
+    ])
+
+    render(<RestaurantInfoPage />)
+
+    const address = (await screen.findByLabelText(/dirección/i)) as HTMLInputElement
+    expect(address).toBeDisabled()
+    expect(screen.getByLabelText(/teléfono/i)).toBeDisabled()
+    expect(screen.getByRole('button', { name: /guardar información/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /guardar horarios/i })).toBeDisabled()
+    expect(screen.getAllByRole('checkbox')[0]).toBeDisabled()
+
+    // Current business hours are still rendered, not hidden. The hours grid
+    // settles in a state update after the address field first appears (same
+    // pattern as elsewhere in this file, which always interacts before
+    // asserting on it) — wait for it explicitly instead of racing it.
+    await waitFor(() => expect(screen.getAllByRole('checkbox')[0]).toBeChecked()) // weekday 0, from `info`
+
+    // Logo uploader shows the explanation instead of an upload action.
+    expect(screen.queryByRole('button', { name: /subir logo/i })).not.toBeInTheDocument()
+    expect(
+      screen.getAllByText(/solo el administrador del restaurante puede modificar/i).length,
+    ).toBeGreaterThan(0)
+  })
+
+  // M15 CA-06: an owner sees every control enabled, same as today.
+  it('keeps the info, hours and logo controls enabled for an owner', async () => {
+    render(<RestaurantInfoPage />)
+
+    const address = await screen.findByLabelText(/dirección/i)
+    expect(address).not.toBeDisabled()
+    expect(screen.getByRole('button', { name: /guardar información/i })).not.toBeDisabled()
+    expect(screen.getByRole('button', { name: /guardar horarios/i })).not.toBeDisabled()
+    expect(screen.getByRole('button', { name: /subir logo/i })).toBeInTheDocument()
   })
 })

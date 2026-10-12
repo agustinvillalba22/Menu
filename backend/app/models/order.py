@@ -58,6 +58,14 @@ class Order(Base, TimestampMixin):
         ForeignKey("menus.id", ondelete="SET NULL"),
         nullable=True,
     )
+    # M17 — set only when order_type == 'mesa' and the guest picked a real
+    # Table (vs. the free-text table_or_address fallback). SET NULL (not
+    # CASCADE): deleting a table must not destroy order history.
+    table_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tables.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     # relationships
     items: Mapped[list["OrderItem"]] = relationship(

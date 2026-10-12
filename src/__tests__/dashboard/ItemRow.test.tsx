@@ -243,7 +243,7 @@ describe('ItemRow', () => {
 
     const deleteButton = screen.getByRole('button', { name: /^borrar$/i })
     expect(deleteButton.className).toBe(
-      'text-xs font-medium text-red-600 hover:text-red-800 disabled:cursor-not-allowed disabled:opacity-50',
+      'text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50',
     )
   })
 })

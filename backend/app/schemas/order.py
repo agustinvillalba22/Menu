@@ -24,6 +24,10 @@ class OrderCreate(BaseModel):
     customer_name: str = Field(min_length=1, max_length=120)
     order_type: OrderType
     table_or_address: str | None = Field(default=None, max_length=200)
+    # M17: when order_type == 'mesa' and the restaurant has real tables
+    # configured, the client sends the picked table's id instead of free
+    # text — the server stamps table_or_address itself (see create_order).
+    table_id: uuid.UUID | None = None
     notes: str | None = Field(default=None, max_length=500)
     # max_length caps request size / DB writes for this public, unauthenticated
     # endpoint (M11 review CRIT-01).
@@ -75,6 +79,7 @@ class OrderRead(BaseModel):
     customer_name: str
     order_type: OrderType
     table_or_address: str | None
+    table_id: uuid.UUID | None = None
     notes: str | None
     total: Decimal
     created_at: datetime

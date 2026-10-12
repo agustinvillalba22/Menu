@@ -2,6 +2,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Lilita+One&family=Space+Grotesk:wght@300..700&family=Cinzel:wght@400..900&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
+/* M16 RF-01 — dark mode toggled by a `.dark` class on <html> (via useTheme),
+   not only `prefers-color-scheme`. Tailwind v4 custom-variant syntax. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Fase 1b (P1): the four FontFamily enum values must be callable as
    `--font-heading` on the public menu. `Playfair Display` was already
    imported above; the remaining three (Inter, Poppins, DM Sans) land here so

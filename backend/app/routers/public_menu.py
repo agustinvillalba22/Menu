@@ -15,6 +15,7 @@ from app.schemas.public_menu import (
     PublicRestaurantRead,
     PublicStyleRead,
     PublicSubcategoryRead,
+    PublicTableRead,
     PublicTagRead,
 )
 from app.services.business_hours import compute_is_open_now
@@ -120,6 +121,7 @@ def _build_response(restaurant: Restaurant) -> PublicMenuResponse:
         promo=(
             PublicPromoRead.model_validate(promo) if promo is not None else None
         ),
+        tables=[PublicTableRead.model_validate(t) for t in restaurant.tables],
         categories=[_build_category(c) for c in categories],
     )
 

@@ -76,12 +76,12 @@ export default function MenuEditorPage(): React.JSX.Element {
   }
 
   if (restaurantLoading) {
-    return <p className="text-sm text-gray-600">Cargando…</p>
+    return <p className="text-sm text-gray-600 dark:text-gray-300">Cargando…</p>
   }
 
   if (restaurantError) {
     return (
-      <div role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+      <div role="alert" className="rounded-md bg-red-50 dark:bg-red-950 px-3 py-2 text-sm text-red-700 dark:text-red-400">
         {restaurantError}
       </div>
     )
@@ -89,7 +89,7 @@ export default function MenuEditorPage(): React.JSX.Element {
 
   if (!restaurant) {
     return (
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-gray-600 dark:text-gray-300">
         Creá tu restaurante primero desde “Mi restaurante”.
       </p>
     )
@@ -97,12 +97,12 @@ export default function MenuEditorPage(): React.JSX.Element {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl bg-white p-6 shadow-sm">
-        <h1 className="mb-6 text-xl font-semibold text-gray-900">Menú</h1>
+      <div className="rounded-xl bg-white dark:bg-gray-900 p-6 shadow-sm">
+        <h1 className="mb-6 text-xl font-semibold text-gray-900 dark:text-gray-100">Menú</h1>
 
         <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-3">
           <div>
-            <label htmlFor="cat-name" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="cat-name" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Nueva categoría
             </label>
             <input
@@ -112,25 +112,25 @@ export default function MenuEditorPage(): React.JSX.Element {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Nombre"
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+              className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
             />
           </div>
           <div>
-            <label htmlFor="cat-type" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="cat-type" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Tipo
             </label>
             <select
               id="cat-type"
               value={newType}
               onChange={(e) => setNewType(e.target.value as CategoryType)}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+              className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
             >
               <option value="food">Comida</option>
               <option value="drink">Bebida</option>
             </select>
           </div>
           <div>
-            <label htmlFor="cat-icon" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="cat-icon" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Ícono
             </label>
             <select
@@ -139,7 +139,7 @@ export default function MenuEditorPage(): React.JSX.Element {
               onChange={(e) =>
                 setNewIcon(e.target.value === NO_ICON_VALUE ? null : (e.target.value as CategoryIcon))
               }
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+              className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
             >
               <option value={NO_ICON_VALUE}>Sin ícono</option>
               {ICON_OPTIONS.map((opt) => (
@@ -152,27 +152,27 @@ export default function MenuEditorPage(): React.JSX.Element {
           <button
             type="submit"
             disabled={creating}
-            className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-md bg-gray-900 dark:bg-gray-100 px-4 py-2 text-sm font-medium text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {creating ? 'Agregando…' : 'Agregar categoría'}
           </button>
         </form>
 
         {createError && (
-          <div role="alert" className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          <div role="alert" className="mt-4 rounded-md bg-red-50 dark:bg-red-950 px-3 py-2 text-sm text-red-700 dark:text-red-400">
             {createError}
           </div>
         )}
 
         <div className="mt-6">
-          {loading && <p className="text-sm text-gray-500">Cargando categorías…</p>}
+          {loading && <p className="text-sm text-gray-500 dark:text-gray-400">Cargando categorías…</p>}
           {loadError && (
-            <div role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+            <div role="alert" className="rounded-md bg-red-50 dark:bg-red-950 px-3 py-2 text-sm text-red-700 dark:text-red-400">
               {loadError}
             </div>
           )}
           {!loading && !loadError && categories.length === 0 && (
-            <p className="text-sm text-gray-500">Todavía no hay categorías.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Todavía no hay categorías.</p>
           )}
           {categories.length > 0 && (
             <ul className="space-y-3">

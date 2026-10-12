@@ -8,8 +8,9 @@ from sqlalchemy.orm import selectinload
 
 from app.models.item import Item
 from app.models.item_modifier import ItemModifier
-from app.models.order import Order, OrderItem, OrderItemModifier, OrderStatus
+from app.models.order import Order, OrderItem, OrderItemModifier, OrderStatus, OrderType
 from app.models.restaurant import Restaurant
+from app.models.table import Table
 from app.schemas.order import OrderCreate, OrderItemCreate
 from app.services.menu import resolve_active_menu
 from app.services.promo import active_promo_for, promo_discount_pct
@@ -149,6 +150,24 @@ async def create_order(
     if not restaurant.orders_enabled:
         raise HTTPException(status_code=404, detail="orders_disabled")
 
+    # M17: a real Table takes precedence over free-text table_or_address —
+    # server-stamps the display text so a spoofed client value can never show
+    # a table number that doesn't exist.
+    table_id = data.table_id
+    table_or_address = data.table_or_address
+    if data.order_type == OrderType.mesa and data.table_id is not None:
+        result = await session.execute(
+            select(Table).where(
+                Table.id == data.table_id, Table.restaurant_id == restaurant.id
+            )
+        )
+        table = result.scalar_one_or_none()
+        if table is None:
+            raise HTTPException(status_code=404, detail="table_not_found")
+        table_or_address = f"Mesa {table.number}"
+    else:
+        table_id = None
+
     items_by_id = _collect_items(restaurant)
 
     # Fase 0010: resolve the active promo once (eager-loaded, no extra
@@ -178,7 +197,8 @@ async def create_order(
         status=OrderStatus.pending,
         customer_name=data.customer_name,
         order_type=data.order_type,
-        table_or_address=data.table_or_address,
+        table_or_address=table_or_address,
+        table_id=table_id,
         notes=data.notes,
         total=total,
         menu_id=active_menu.id if active_menu is not None else None,

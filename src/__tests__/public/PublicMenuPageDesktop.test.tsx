@@ -26,6 +26,7 @@ const menu: PublicMenuResponse = {
   },
   style: null,
   promo: null,
+  tables: [],
   categories: [
     {
       id: 'c1',

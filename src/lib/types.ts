@@ -289,6 +289,8 @@ export interface PublicMenuResponse {
   // P4 — the currently-active promo banner, resolved server-side against
   // is_active + the validity window in the restaurant's tz. Null = none.
   promo: PublicPromo | null
+  // M17 — the restaurant's configured tables (empty if none set up yet).
+  tables: Table[]
   categories: PublicCategory[]
 }
 
@@ -427,6 +429,117 @@ export interface LogoUploadResponse {
   expires_in: number
 }
 
+// --- Mesas (M17) -------------------------------------------------------------
+
+export interface Table {
+  id: string
+  number: number
+  capacity: number | null
+}
+
+export interface TableCreatePayload {
+  number: number
+  capacity?: number | null
+}
+
+export interface TableUpdatePayload {
+  number?: number
+  capacity?: number | null
+}
+
+// --- Staff (M18) -------------------------------------------------------------
+// Identification-only roster — no relation to auth, no permissions gated by
+// `position`. See .agents/specs/M18_staff_roster.md.
+
+export type StaffPosition = 'mozo' | 'bartender' | 'jefe_cocina' | 'cajero' | 'gerente'
+
+export interface StaffMember {
+  id: string
+  name: string
+  position: StaffPosition
+  pin: string
+  active: boolean
+}
+
+export interface StaffMemberCreatePayload {
+  name: string
+  position: StaffPosition
+  pin: string
+}
+
+export interface StaffMemberUpdatePayload {
+  name?: string
+  position?: StaffPosition
+  pin?: string
+  active?: boolean
+}
+
+// --- Stock + Proveedores (M19) ----------------------------------------------
+// Manually-managed inventory — no link to menu Items/Orders, no
+// auto-decrement. See .agents/specs/M19_stock_suppliers.md.
+
+export interface Supplier {
+  id: string
+  name: string
+  category: string | null
+  contact_person: string | null
+  phone: string | null
+  email: string | null
+  address: string | null
+  delivery_days: string | null
+  payment_terms: string | null
+  notes: string | null
+  active: boolean
+}
+
+export interface SupplierCreatePayload {
+  name: string
+  category?: string | null
+  contact_person?: string | null
+  phone?: string | null
+  email?: string | null
+  address?: string | null
+  delivery_days?: string | null
+  payment_terms?: string | null
+  notes?: string | null
+}
+
+export type SupplierUpdatePayload = Partial<SupplierCreatePayload> & { active?: boolean }
+
+export type StockCategory =
+  | 'carnes_pescados'
+  | 'verduras_frescos'
+  | 'almacen_secos'
+  | 'lacteos'
+  | 'bebidas_licores'
+
+export type StockUnit = 'kg' | 'g' | 'l' | 'unidades' | 'botellas'
+
+export interface StockItem {
+  id: string
+  name: string
+  category: StockCategory
+  unit: StockUnit
+  quantity: string // Decimal as string, same convention as price
+  min_threshold: string
+  cost_per_unit: string | null
+  supplier_id: string | null
+  last_restocked: string | null // YYYY-MM-DD
+}
+
+export interface StockItemCreatePayload {
+  name: string
+  category: StockCategory
+  unit: StockUnit
+  quantity?: string
+  min_threshold?: string
+  cost_per_unit?: string | null
+  supplier_id?: string | null
+  last_restocked?: string | null
+}
+
+export type StockItemUpdatePayload = Partial<StockItemCreatePayload>
+
 // --- Pedidos (M11) ---------------------------------------------------------
 
 export type OrderType = 'mesa' | 'llevar' | 'envio'
@@ -443,6 +556,9 @@ export interface OrderCreatePayload {
   customer_name: string
   order_type: OrderType
   table_or_address?: string | null
+  // M17 — when order_type is 'mesa' and the restaurant has real tables
+  // configured, the client sends the picked table's id instead of free text.
+  table_id?: string | null
   notes?: string | null
   items: OrderItemCreate[]
 }
@@ -475,6 +591,7 @@ export interface OrderRead {
   customer_name: string
   order_type: OrderType
   table_or_address: string | null
+  table_id: string | null
   notes: string | null
   total: string
   created_at: string

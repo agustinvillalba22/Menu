@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMyRestaurant } from '../../hooks/useMyRestaurant'
+import { isOwner } from '../../lib/restaurants'
 import { getStyle, updateStyle } from '../../lib/style'
 import { THEME_PRESETS, type ThemePreset } from '../../lib/themePresets'
 import type { FontFamily, Style, StyleUpdate } from '../../lib/types'
@@ -106,12 +107,12 @@ export default function AppearancePage(): React.JSX.Element {
   }
 
   if (restaurantLoading || loading) {
-    return <p className="text-sm text-gray-600">Cargando…</p>
+    return <p className="text-sm text-gray-600 dark:text-gray-300">Cargando…</p>
   }
 
   if (restaurantError || loadError) {
     return (
-      <div role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+      <div role="alert" className="rounded-md bg-red-50 dark:bg-red-950 px-3 py-2 text-sm text-red-700 dark:text-red-400">
         {restaurantError ?? loadError}
       </div>
     )
@@ -119,23 +120,36 @@ export default function AppearancePage(): React.JSX.Element {
 
   if (!restaurant) {
     return (
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-gray-600 dark:text-gray-300">
         Creá tu restaurante primero desde “Mi restaurante”.
       </p>
     )
   }
 
+  // M15 RF-03: PATCH /restaurants/{id}/style is owner-only on the backend;
+  // the GET (what's rendered here) stays editor-visible.
+  const canEdit = isOwner(restaurant)
+
   return (
-    <div className="max-w-2xl rounded-xl bg-white p-6 shadow-sm">
-      <h1 className="mb-6 text-xl font-semibold text-gray-900">Apariencia</h1>
+    <div className="max-w-2xl rounded-xl bg-white dark:bg-gray-900 p-6 shadow-sm">
+      <h1 className="mb-6 text-xl font-semibold text-gray-900 dark:text-gray-100">Apariencia</h1>
+
+      {!canEdit && (
+        <p
+          id="appearance-owner-only"
+          className="mb-4 rounded-md bg-gray-50 dark:bg-gray-950 px-3 py-2 text-xs text-gray-500 dark:text-gray-400"
+        >
+          Solo el administrador del restaurante puede modificar la apariencia.
+        </p>
+      )}
 
       {status === 'success' && (
-        <div role="status" className="mb-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+        <div role="status" className="mb-4 rounded-md bg-green-50 dark:bg-green-950 px-3 py-2 text-sm text-green-700 dark:text-green-400">
           Cambios guardados.
         </div>
       )}
       {status === 'error' && (
-        <div role="alert" className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div role="alert" className="mb-4 rounded-md bg-red-50 dark:bg-red-950 px-3 py-2 text-sm text-red-700 dark:text-red-400">
           No se pudieron guardar los cambios.
         </div>
       )}
@@ -145,7 +159,7 @@ export default function AppearancePage(): React.JSX.Element {
           state mirrors the active-preset computation so screen readers
           announce selection consistently with the visual highlight. */}
       <fieldset className="mb-6">
-        <legend className="mb-2 block text-sm font-medium text-gray-700">
+        <legend className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
           Paletas predefinidas
         </legend>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -156,12 +170,14 @@ export default function AppearancePage(): React.JSX.Element {
                 key={preset.id}
                 type="button"
                 aria-pressed={isActive}
+                aria-describedby={canEdit ? undefined : 'appearance-owner-only'}
                 title={preset.description}
+                disabled={!canEdit}
                 onClick={() => applyPreset(preset)}
-                className={`flex flex-col gap-2 rounded-lg border p-3 text-left transition focus:outline-none focus:ring-2 focus:ring-gray-900 ${
+                className={`flex flex-col gap-2 rounded-lg border p-3 text-left transition focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 disabled:cursor-not-allowed disabled:opacity-60 ${
                   isActive
-                    ? 'border-gray-900 ring-1 ring-gray-900'
-                    : 'border-gray-200 hover:border-gray-400'
+                    ? 'border-gray-900 dark:border-gray-100 ring-1 ring-gray-900 dark:ring-gray-100'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500'
                 }`}
               >
                 <div
@@ -173,24 +189,25 @@ export default function AppearancePage(): React.JSX.Element {
                 >
                   Aa
                 </div>
-                <span className="text-xs font-semibold text-gray-900">{preset.name}</span>
+                <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{preset.name}</span>
               </button>
             )
           })}
         </div>
       </fieldset>
 
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate aria-describedby={canEdit ? undefined : 'appearance-owner-only'}>
         <div>
-          <label htmlFor="font_family" className="mb-1 block text-sm font-medium text-gray-700">
+          <label htmlFor="font_family" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Tipografía
           </label>
           <select
             id="font_family"
             name="font_family"
             value={fontFamily}
+            disabled={!canEdit}
             onChange={(e) => setFontFamily(e.target.value as FontFamily)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+            className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
           >
             {FONT_OPTIONS.map((font) => (
               <option key={font} value={font}>
@@ -201,7 +218,7 @@ export default function AppearancePage(): React.JSX.Element {
         </div>
 
         <div>
-          <label htmlFor="primary_color" className="mb-1 block text-sm font-medium text-gray-700">
+          <label htmlFor="primary_color" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Color primario
           </label>
           <input
@@ -209,13 +226,14 @@ export default function AppearancePage(): React.JSX.Element {
             name="primary_color"
             type="color"
             value={primaryColor}
+            disabled={!canEdit}
             onChange={(e) => setPrimaryColor(e.target.value)}
-            className="h-10 w-full rounded-md border border-gray-300"
+            className="h-10 w-full rounded-md border border-gray-300 dark:border-gray-600 disabled:cursor-not-allowed disabled:opacity-60"
           />
         </div>
 
         <div>
-          <label htmlFor="secondary_color" className="mb-1 block text-sm font-medium text-gray-700">
+          <label htmlFor="secondary_color" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Color secundario
           </label>
           <input
@@ -223,15 +241,16 @@ export default function AppearancePage(): React.JSX.Element {
             name="secondary_color"
             type="color"
             value={secondaryColor}
+            disabled={!canEdit}
             onChange={(e) => setSecondaryColor(e.target.value)}
-            className="h-10 w-full rounded-md border border-gray-300"
+            className="h-10 w-full rounded-md border border-gray-300 dark:border-gray-600 disabled:cursor-not-allowed disabled:opacity-60"
           />
         </div>
 
         <button
           type="submit"
-          disabled={saving}
-          className="w-full rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={saving || !canEdit}
+          className="w-full rounded-md bg-gray-900 dark:bg-gray-100 px-4 py-2 text-sm font-medium text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {saving ? 'Guardando…' : 'Guardar'}
         </button>

@@ -37,6 +37,13 @@ EXPECTED_TABLES = {
     "business_hours",
     # 0009_menu_scheduling_and_promos
     "promos",
+    # 0011_tables (M17)
+    "tables",
+    # 0012_staff_members (M18)
+    "staff_members",
+    # 0013_stock_and_suppliers (M19)
+    "suppliers",
+    "stock_items",
 }
 
 

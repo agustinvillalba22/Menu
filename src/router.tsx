@@ -10,8 +10,11 @@ import OverviewPage from './pages/dashboard/OverviewPage'
 import AppearancePage from './pages/dashboard/AppearancePage'
 import MenuEditorPage from './pages/dashboard/MenuEditorPage'
 import OrdersPage from './pages/dashboard/OrdersPage'
+import TablesPage from './pages/dashboard/TablesPage'
 import PromosPage from './pages/dashboard/PromosPage'
 import RestaurantInfoPage from './pages/dashboard/RestaurantInfoPage'
+import StaffPage from './pages/dashboard/StaffPage'
+import StockPage from './pages/dashboard/StockPage'
 import PublicMenuPage from './pages/public/PublicMenuPage'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
@@ -63,8 +66,11 @@ export default function AppRouter(): React.JSX.Element {
           <Route index element={<OverviewPage />} />
           <Route path="menu" element={<MenuEditorPage />} />
           <Route path="orders" element={<OrdersPage />} />
+          <Route path="tables" element={<TablesPage />} />
           <Route path="promos" element={<PromosPage />} />
           <Route path="info" element={<RestaurantInfoPage />} />
+          <Route path="staff" element={<StaffPage />} />
+          <Route path="stock" element={<StockPage />} />
           <Route path="appearance" element={<AppearancePage />} />
         </Route>
         <Route

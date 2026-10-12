@@ -34,6 +34,7 @@ async def get_public_menu(qr_token: str, session: AsyncSession) -> Restaurant:
             selectinload(Restaurant.style),
             selectinload(Restaurant.business_hours),
             selectinload(Restaurant.promos),
+            selectinload(Restaurant.tables),
             selectinload(Restaurant.menus)
             .selectinload(Menu.categories)
             .selectinload(Category.subcategories)

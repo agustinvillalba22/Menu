@@ -28,6 +28,7 @@ const menu: PublicMenuResponse = {
   },
   style: null,
   promo: null,
+  tables: [],
   categories: [
     {
       id: 'c1',
@@ -178,6 +179,7 @@ describe('PublicMenuPage — ordering enabled', () => {
       customer_name: 'Juan Pérez',
       order_type: 'mesa',
       table_or_address: 'Mesa 4',
+      table_id: null,
       notes: null,
       items: [
         {
@@ -188,6 +190,46 @@ describe('PublicMenuPage — ordering enabled', () => {
         },
       ],
     })
+  })
+
+  // M17 — when the restaurant has real tables configured, the "mesa" field
+  // is a <select> and the payload carries table_id instead of free text.
+  it('checks out with a real table: renders a <select> and POSTs table_id', async () => {
+    const menuWithTables: PublicMenuResponse = {
+      ...menu,
+      tables: [
+        { id: 't1', number: 1, capacity: 2 },
+        { id: 't2', number: 2, capacity: null },
+      ],
+    }
+    routeFetch([
+      { method: 'POST', match: '/orders', response: jsonResponse(createdOrder, 201) },
+      { method: 'GET', match: '/menu/', response: jsonResponse(menuWithTables) },
+    ])
+
+    renderMenu()
+    await screen.findByRole('heading', { name: 'Boulette', level: 1 })
+
+    await userEvent.click(screen.getByRole('button', { name: /agregar margherita/i }))
+    await screen.findByRole('dialog', { name: 'Margherita' })
+    await userEvent.click(screen.getByRole('button', { name: /añadir al pedido/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Ver carrito' }))
+    await userEvent.click(screen.getByRole('button', { name: /finalizar pedido/i }))
+
+    await userEvent.type(screen.getByLabelText(/tu nombre/i), 'Juan Pérez')
+    const select = screen.getByRole('combobox', { name: /número de mesa/i })
+    await userEvent.selectOptions(select, 't2')
+    await userEvent.click(screen.getByRole('button', { name: /confirmar pedido/i }))
+
+    await screen.findByTestId('order-confirmation')
+
+    const posts = vi
+      .mocked(fetch)
+      .mock.calls.map((c) => readCall(c as [unknown, unknown]))
+      .filter((c) => c.method === 'POST' && c.url.includes('/orders'))
+    const body = JSON.parse(posts[0].body as string)
+    expect(body.table_id).toBe('t2')
+    expect(body.table_or_address).toBeNull()
   })
 
   // P7 — when the restaurant has whatsapp_enabled and the order's response

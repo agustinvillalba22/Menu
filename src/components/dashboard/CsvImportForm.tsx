@@ -42,15 +42,15 @@ export default function CsvImportForm({
   }
 
   return (
-    <div className="rounded-xl bg-white p-6 shadow-sm">
-      <h2 className="mb-1 text-lg font-semibold text-gray-900">Importar CSV</h2>
-      <p className="mb-4 text-sm text-gray-500">
+    <div className="rounded-xl bg-white dark:bg-gray-900 p-6 shadow-sm">
+      <h2 className="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-100">Importar CSV</h2>
+      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
         Cargá ítems de forma masiva desde un archivo CSV.
       </p>
 
       <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3">
         <div>
-          <label htmlFor="csv-file" className="mb-1 block text-sm font-medium text-gray-700">
+          <label htmlFor="csv-file" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Archivo CSV
           </label>
           <input
@@ -59,7 +59,7 @@ export default function CsvImportForm({
             type="file"
             accept=".csv"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="text-sm text-gray-700"
+            className="text-sm text-gray-700 dark:text-gray-300"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -68,34 +68,34 @@ export default function CsvImportForm({
             type="checkbox"
             checked={createMissing}
             onChange={(e) => setCreateMissing(e.target.checked)}
-            className="h-4 w-4 rounded border-gray-300"
+            className="h-4 w-4 rounded border-gray-300 dark:border-gray-600"
           />
-          <label htmlFor="csv-create-missing" className="text-sm text-gray-700">
+          <label htmlFor="csv-create-missing" className="text-sm text-gray-700 dark:text-gray-300">
             Crear categorías/subcategorías que no existan
           </label>
         </div>
         <button
           type="submit"
           disabled={importing || file === null}
-          className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-md bg-gray-900 dark:bg-gray-100 px-4 py-2 text-sm font-medium text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {importing ? 'Importando…' : 'Importar'}
         </button>
       </form>
 
       {error && (
-        <div role="alert" className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div role="alert" className="mt-4 rounded-md bg-red-50 dark:bg-red-950 px-3 py-2 text-sm text-red-700 dark:text-red-400">
           {error}
         </div>
       )}
 
       {result && (
         <div className="mt-4 space-y-2">
-          <div role="status" className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+          <div role="status" className="rounded-md bg-green-50 dark:bg-green-950 px-3 py-2 text-sm text-green-700 dark:text-green-400">
             {result.imported} importado{result.imported === 1 ? '' : 's'}
           </div>
           {result.errors.length > 0 && (
-            <ul className="space-y-1 text-sm text-red-700">
+            <ul className="space-y-1 text-sm text-red-700 dark:text-red-400">
               {result.errors.map((err, idx) => (
                 <li key={`${err.row}-${idx}`}>
                   Fila {err.row}: {err.reason}

@@ -25,6 +25,7 @@ const order: OrderRead = {
   customer_name: 'Juan Pérez',
   order_type: 'mesa',
   table_or_address: 'Mesa 4',
+  table_id: null,
   notes: null,
   total: '23.00',
   created_at: '2026-07-07T10:00:00Z',

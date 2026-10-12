@@ -348,6 +348,7 @@ export default function PublicMenuPage(): React.JSX.Element {
               // are on `restaurant` — pass the flag down so the checkout can
               // render the "Confirmar por WhatsApp" button iff a phone is set.
               whatsappEnabled={restaurant.whatsapp_enabled === true}
+              tables={state.data.tables}
               onClose={() => setCheckoutOpen(false)}
               onSuccess={() => cart.clear()}
             />

@@ -16,3 +16,11 @@ export function updateRestaurant(id: string, data: RestaurantUpdate): Promise<Re
 export function getRestaurant(id: string): Promise<Restaurant> {
   return apiGet<Restaurant>(`/restaurants/${id}`)
 }
+
+/** M15 RF-03/RNF-05 — single source of truth for "can this user edit
+ * owner-only restaurant settings". Mirrors the backend's
+ * `require_role(RestaurantRole.owner)` split (restaurant/style/business_hours
+ * mutations and logo upload), so every page gates the same way. */
+export function isOwner(restaurant: Restaurant | null): boolean {
+  return restaurant?.role === 'owner'
+}

@@ -3,7 +3,7 @@ import { X, CheckCircle2, Loader2, AlertTriangle, MessageCircle } from 'lucide-r
 import { ApiError } from '../../lib/api'
 import { createOrder } from '../../lib/orders'
 import type { CartLine } from './cart'
-import type { OrderCreatePayload, OrderRead, OrderType } from '../../lib/types'
+import type { OrderCreatePayload, OrderRead, OrderType, Table } from '../../lib/types'
 
 interface PublicCheckoutModalProps {
   qrToken: string
@@ -14,6 +14,11 @@ interface PublicCheckoutModalProps {
   // When false, the button is omitted entirely — the local has not configured
   // a WhatsApp number.
   whatsappEnabled: boolean
+  // M17: the restaurant's configured tables. When non-empty and order_type
+  // is 'mesa', the table field becomes a <select> of real tables instead of
+  // free text. Empty array (restaurant hasn't adopted the feature) keeps
+  // today's free-text input unchanged.
+  tables: Table[]
   onClose: () => void
   onSuccess: () => void
 }
@@ -47,24 +52,29 @@ export default function PublicCheckoutModal({
   lines,
   total,
   whatsappEnabled,
+  tables,
   onClose,
   onSuccess,
 }: PublicCheckoutModalProps): React.JSX.Element {
   const [customerName, setCustomerName] = useState('')
   const [orderType, setOrderType] = useState<OrderType>('mesa')
   const [tableOrAddress, setTableOrAddress] = useState('')
+  const [tableId, setTableId] = useState('')
   const [notes, setNotes] = useState('')
   const [phase, setPhase] = useState<Phase>({ status: 'form' })
 
   const needsLocation = orderType === 'mesa' || orderType === 'envio'
   const locationLabel = orderType === 'mesa' ? 'Número de mesa' : 'Dirección de entrega'
+  // M17: real tables available → the "mesa" field becomes a <select>.
+  const useTableSelect = orderType === 'mesa' && tables.length > 0
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
     const payload: OrderCreatePayload = {
       customer_name: customerName.trim(),
       order_type: orderType,
-      table_or_address: tableOrAddress.trim() || null,
+      table_or_address: useTableSelect ? null : tableOrAddress.trim() || null,
+      table_id: useTableSelect ? tableId || null : null,
       notes: notes.trim() || null,
       items: lines.map((l) => ({
         item_id: l.item.id,
@@ -193,7 +203,32 @@ export default function PublicCheckoutModal({
               </div>
             </fieldset>
 
-            {needsLocation && (
+            {needsLocation && useTableSelect && (
+              <div className="space-y-1.5">
+                <label htmlFor="table-select" className="text-[11px] font-black uppercase tracking-widest text-gray-400">
+                  {locationLabel}
+                </label>
+                <select
+                  id="table-select"
+                  required
+                  value={tableId}
+                  onChange={(e) => setTableId(e.target.value)}
+                  className="w-full rounded-2xl border border-gray-150 bg-[#f5f5f0] px-4 py-3 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-primario"
+                >
+                  <option value="" disabled>
+                    Elegí tu mesa
+                  </option>
+                  {tables.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      Mesa {t.number}
+                      {t.capacity !== null ? ` (hasta ${t.capacity})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {needsLocation && !useTableSelect && (
               <div className="space-y-1.5">
                 <label htmlFor="table-or-address" className="text-[11px] font-black uppercase tracking-widest text-gray-400">
                   {locationLabel}

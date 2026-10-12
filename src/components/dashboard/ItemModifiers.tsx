@@ -111,12 +111,12 @@ export default function ItemModifiers({
   }
 
   return (
-    <div className="mt-3 border-t border-gray-100 pt-2">
-      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">
+    <div className="mt-3 border-t border-gray-100 dark:border-gray-800 pt-2">
+      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
         Modificadores
       </p>
 
-      {modifiers.length === 0 && <p className="text-xs text-gray-500">Sin modificadores.</p>}
+      {modifiers.length === 0 && <p className="text-xs text-gray-500 dark:text-gray-400">Sin modificadores.</p>}
 
       <ul className="space-y-1">
         {modifiers.map((modifier) =>
@@ -130,7 +130,7 @@ export default function ItemModifiers({
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="w-32 rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-gray-900 focus:outline-none"
+                className="w-32 rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
               />
               <label htmlFor={`mod-price-${modifier.id}`} className="sr-only">
                 Precio del modificador
@@ -141,7 +141,7 @@ export default function ItemModifiers({
                 inputMode="decimal"
                 value={editPriceDelta}
                 onChange={(e) => setEditPriceDelta(e.target.value)}
-                className="w-20 rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-gray-900 focus:outline-none"
+                className="w-20 rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
               />
               <label htmlFor={`mod-type-${modifier.id}`} className="sr-only">
                 Tipo del modificador
@@ -150,7 +150,7 @@ export default function ItemModifiers({
                 id={`mod-type-${modifier.id}`}
                 value={editType}
                 onChange={(e) => setEditType(e.target.value as ModifierType)}
-                className="rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-gray-900 focus:outline-none"
+                className="rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
               >
                 <option value="extra">Extra</option>
                 <option value="removal">Remoción</option>
@@ -159,7 +159,7 @@ export default function ItemModifiers({
                 type="button"
                 onClick={() => handleSaveEdit(modifier)}
                 disabled={busy}
-                className="rounded-md bg-gray-900 px-2 py-1 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-60"
+                className="rounded-md bg-gray-900 dark:bg-gray-100 px-2 py-1 text-xs font-medium text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-300 disabled:opacity-60"
               >
                 Guardar
               </button>
@@ -167,16 +167,16 @@ export default function ItemModifiers({
                 type="button"
                 onClick={() => setEditingId(null)}
                 disabled={busy}
-                className="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100"
+                className="rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 Cancelar
               </button>
             </li>
           ) : (
             <li key={modifier.id} className="flex items-center justify-between gap-2 text-xs">
-              <span className="min-w-0 text-gray-700">
+              <span className="min-w-0 text-gray-700 dark:text-gray-300">
                 <span className="font-medium">{modifier.name}</span>{' '}
-                <span className="text-gray-500">
+                <span className="text-gray-500 dark:text-gray-400">
                   ({TYPE_LABEL[modifier.type]}, {formatDelta(modifier.price_delta)})
                 </span>
               </span>
@@ -184,7 +184,7 @@ export default function ItemModifiers({
                 <button
                   type="button"
                   onClick={() => startEdit(modifier)}
-                  className="text-gray-500 hover:text-gray-900"
+                  className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
                 >
                   Editar
                 </button>
@@ -193,7 +193,7 @@ export default function ItemModifiers({
                   onClick={() => handleRemove(modifier.id)}
                   disabled={busy}
                   aria-label={`Eliminar modificador ${modifier.name}`}
-                  className="text-red-600 hover:text-red-800 disabled:opacity-50"
+                  className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-400 disabled:opacity-50"
                 >
                   Borrar
                 </button>
@@ -213,7 +213,7 @@ export default function ItemModifiers({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Nombre"
-          className="w-32 rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-gray-900 focus:outline-none"
+          className="w-32 rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
         />
         <label htmlFor={`new-mod-price-${itemId}`} className="sr-only">
           Precio del nuevo modificador
@@ -225,7 +225,7 @@ export default function ItemModifiers({
           value={priceDelta}
           onChange={(e) => setPriceDelta(e.target.value)}
           placeholder="+/- $"
-          className="w-20 rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-gray-900 focus:outline-none"
+          className="w-20 rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
         />
         <label htmlFor={`new-mod-type-${itemId}`} className="sr-only">
           Tipo del nuevo modificador
@@ -234,7 +234,7 @@ export default function ItemModifiers({
           id={`new-mod-type-${itemId}`}
           value={type}
           onChange={(e) => setType(e.target.value as ModifierType)}
-          className="rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-gray-900 focus:outline-none"
+          className="rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
         >
           <option value="extra">Extra</option>
           <option value="removal">Remoción</option>
@@ -242,14 +242,14 @@ export default function ItemModifiers({
         <button
           type="submit"
           disabled={busy}
-          className="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+          className="rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
         >
           Agregar
         </button>
       </form>
 
       {error && (
-        <div role="alert" className="mt-1 text-xs text-red-700">
+        <div role="alert" className="mt-1 text-xs text-red-700 dark:text-red-400">
           {error}
         </div>
       )}

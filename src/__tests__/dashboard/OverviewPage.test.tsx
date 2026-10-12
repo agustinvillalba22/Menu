@@ -189,4 +189,41 @@ describe('OverviewPage', () => {
       'false',
     )
   })
+
+  // M15 CA-03: PATCH /restaurants/{id} is owner-only on the backend — an
+  // editor sees the toggle disabled with an explanation instead of a 403.
+  it('disables the orders toggle for an editor, with an explanation', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse([{ ...restaurant, role: 'editor' }]))
+
+    renderPage()
+
+    const toggle = await screen.findByRole('switch', { name: /recepción de pedidos/i })
+    expect(toggle).toBeDisabled()
+    expect(
+      screen.getByText(/solo el administrador del restaurante puede modificar esto/i),
+    ).toBeInTheDocument()
+  })
+
+  // M15 CA-06: an owner sees the toggle enabled, same as today.
+  it('keeps the orders toggle enabled for an owner', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse([restaurant]))
+
+    renderPage()
+
+    const toggle = await screen.findByRole('switch', { name: /recepción de pedidos/i })
+    expect(toggle).not.toBeDisabled()
+    expect(
+      screen.queryByText(/solo el administrador del restaurante puede modificar esto/i),
+    ).not.toBeInTheDocument()
+  })
+
+  // M16 CA-06: representative sample — the page card carries a dark: variant.
+  it('carries a dark: variant on the page card', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse([restaurant]))
+
+    renderPage()
+
+    const heading = await screen.findByRole('heading', { name: 'Boulette' })
+    expect(heading.parentElement?.className).toContain('dark:bg-gray-900')
+  })
 })

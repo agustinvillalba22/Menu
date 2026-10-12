@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import AppearancePage from '../../pages/dashboard/AppearancePage'
 import type { Restaurant, Style } from '../../lib/types'
@@ -157,5 +157,46 @@ describe('AppearancePage', () => {
       primary_color: '#111827',
       secondary_color: '#fbbf24',
     })
+  })
+
+  // M15 CA-04: PATCH /style is owner-only on the backend — an editor sees
+  // the form disabled, but the current values stay visible.
+  it('disables the style form for an editor while keeping current values visible', async () => {
+    routeFetch([
+      { method: 'GET', match: '/style', response: jsonResponse(style) },
+      {
+        method: 'GET',
+        match: '/restaurants',
+        response: jsonResponse([{ ...restaurant, role: 'editor' }]),
+      },
+    ])
+
+    render(<AppearancePage />)
+
+    const primary = (await screen.findByLabelText(/color primario/i)) as HTMLInputElement
+    expect(primary).toBeDisabled()
+    // The field's value settles in a state update shortly after it first
+    // appears (same latent race as RestaurantInfoPage, M17) — wait for it
+    // explicitly instead of racing it.
+    await waitFor(() => expect(primary.value).toBe('#000000'))
+    expect(screen.getByLabelText(/tipografía/i)).toBeDisabled()
+    expect(screen.getByRole('button', { name: /guardar/i })).toBeDisabled()
+    expect(
+      screen.getByText(/solo el administrador del restaurante puede modificar la apariencia/i),
+    ).toBeInTheDocument()
+  })
+
+  // M15 CA-06: an owner sees the form enabled, same as today.
+  it('keeps the style form enabled for an owner', async () => {
+    routeFetch([
+      { method: 'GET', match: '/style', response: jsonResponse(style) },
+      { method: 'GET', match: '/restaurants', response: jsonResponse([restaurant]) },
+    ])
+
+    render(<AppearancePage />)
+
+    const primary = await screen.findByLabelText(/color primario/i)
+    expect(primary).not.toBeDisabled()
+    expect(screen.getByRole('button', { name: /guardar/i })).not.toBeDisabled()
   })
 })

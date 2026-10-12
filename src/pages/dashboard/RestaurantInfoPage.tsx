@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMyRestaurant } from '../../hooks/useMyRestaurant'
+import { isOwner } from '../../lib/restaurants'
 import {
   getRestaurantInfo,
   updateRestaurantInfo,
@@ -172,12 +173,12 @@ export default function RestaurantInfoPage(): React.JSX.Element {
   }
 
   if (restaurantLoading || loading) {
-    return <p className="text-sm text-gray-600">Cargando…</p>
+    return <p className="text-sm text-gray-600 dark:text-gray-300">Cargando…</p>
   }
 
   if (restaurantError || loadError) {
     return (
-      <div role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+      <div role="alert" className="rounded-md bg-red-50 dark:bg-red-950 px-3 py-2 text-sm text-red-700 dark:text-red-400">
         {restaurantError ?? loadError}
       </div>
     )
@@ -185,18 +186,22 @@ export default function RestaurantInfoPage(): React.JSX.Element {
 
   if (!restaurant) {
     return (
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-gray-600 dark:text-gray-300">
         Creá tu restaurante primero desde “Mi restaurante”.
       </p>
     )
   }
 
+  // M15 RF-03: PATCH /info, PUT /business-hours and the 3 logo endpoints are
+  // owner-only on the backend; the GET (what loads this page) is editor-visible.
+  const canEdit = isOwner(restaurant)
+
   return (
     <div className="space-y-6">
-      <div className="rounded-xl bg-white p-6 shadow-sm">
-        <h1 className="mb-1 text-xl font-semibold text-gray-900">Información del local</h1>
+      <div className="rounded-xl bg-white dark:bg-gray-900 p-6 shadow-sm">
+        <h1 className="mb-1 text-xl font-semibold text-gray-900 dark:text-gray-100">Información del local</h1>
         {info && (
-          <p className="mb-5 text-xs text-gray-500">
+          <p className="mb-5 text-xs text-gray-500 dark:text-gray-400">
             {info.is_open_now ? 'Abierto ahora' : 'Cerrado'}
             {schedulePreview !== '' && ` · ${schedulePreview}`}
           </p>
@@ -204,22 +209,36 @@ export default function RestaurantInfoPage(): React.JSX.Element {
 
         {/* Logo uploader sits above the contact form — it has its own save
             flow (presigned PUT + confirm) and doesn't share the form's submit. */}
-        <div className="mb-6 rounded-lg border border-gray-200 p-4">
-          <h2 className="mb-1 text-sm font-semibold text-gray-900">Logo</h2>
-          <p className="mb-3 text-xs text-gray-500">
+        <div className="mb-6 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <h2 className="mb-1 text-sm font-semibold text-gray-900 dark:text-gray-100">Logo</h2>
+          <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
             Se muestra en el encabezado del menú público. JPG, PNG o WEBP, hasta 5&nbsp;MB.
           </p>
           <LogoUpload
             restaurantId={restaurant.id}
             logoUrl={info?.logo_url ?? null}
             onLogoChange={() => void reloadInfo(restaurant.id)}
+            disabled={!canEdit}
           />
         </div>
 
         {/* Contact info form */}
-        <form onSubmit={handleInfoSubmit} className="space-y-4" noValidate>
+        {!canEdit && (
+          <p
+            id="info-owner-only"
+            className="mb-4 rounded-md bg-gray-50 dark:bg-gray-950 px-3 py-2 text-xs text-gray-500 dark:text-gray-400"
+          >
+            Solo el administrador del restaurante puede modificar esta información.
+          </p>
+        )}
+        <form
+          onSubmit={handleInfoSubmit}
+          className="space-y-4"
+          noValidate
+          aria-describedby={canEdit ? undefined : 'info-owner-only'}
+        >
           <div>
-            <label htmlFor="address" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="address" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Dirección
             </label>
             <input
@@ -228,12 +247,13 @@ export default function RestaurantInfoPage(): React.JSX.Element {
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               maxLength={300}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+              disabled={!canEdit}
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
             />
           </div>
 
           <div>
-            <label htmlFor="phone" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="phone" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Teléfono
             </label>
             <input
@@ -242,12 +262,13 @@ export default function RestaurantInfoPage(): React.JSX.Element {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               maxLength={60}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+              disabled={!canEdit}
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
             />
           </div>
 
           <div>
-            <label htmlFor="whatsapp_phone" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="whatsapp_phone" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
               WhatsApp (opcional)
             </label>
             <input
@@ -257,16 +278,17 @@ export default function RestaurantInfoPage(): React.JSX.Element {
               onChange={(e) => setWhatsappPhone(e.target.value)}
               placeholder="+54 9 11 1234-5678"
               maxLength={20}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+              disabled={!canEdit}
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Si lo seteás, el checkout del menú público ofrece un botón
               “Confirmar por WhatsApp”. Formato: 6 a 15 dígitos, con o sin <code>+</code>.
             </p>
           </div>
 
           <div>
-            <label htmlFor="timezone" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="timezone" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Zona horaria
             </label>
             <input
@@ -276,34 +298,35 @@ export default function RestaurantInfoPage(): React.JSX.Element {
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
               placeholder="America/Argentina/Buenos_Aires"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+              disabled={!canEdit}
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
             />
             <datalist id="tz-suggestions">
               {TZ_SUGGESTIONS.map((tz) => (
                 <option key={tz} value={tz} />
               ))}
             </datalist>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Nombre IANA. Vacío usa el default del servidor. Determina si el local
               aparece “Abierto” o “Cerrado” en el menú público.
             </p>
           </div>
 
           {infoStatus === 'success' && (
-            <div role="status" className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+            <div role="status" className="rounded-md bg-green-50 dark:bg-green-950 px-3 py-2 text-sm text-green-700 dark:text-green-400">
               Información guardada.
             </div>
           )}
           {infoStatus === 'error' && (
-            <div role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+            <div role="alert" className="rounded-md bg-red-50 dark:bg-red-950 px-3 py-2 text-sm text-red-700 dark:text-red-400">
               {infoError ?? 'No se pudieron guardar los cambios.'}
             </div>
           )}
 
           <button
             type="submit"
-            disabled={savingInfo}
-            className="w-full rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={savingInfo || !canEdit}
+            className="w-full rounded-md bg-gray-900 dark:bg-gray-100 px-4 py-2 text-sm font-medium text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {savingInfo ? 'Guardando…' : 'Guardar información'}
           </button>
@@ -311,22 +334,37 @@ export default function RestaurantInfoPage(): React.JSX.Element {
       </div>
 
       {/* Business hours grid */}
-      <div className="rounded-xl bg-white p-6 shadow-sm">
-        <h2 className="mb-1 text-base font-semibold text-gray-900">Horarios de atención</h2>
-        <p className="mb-4 text-xs text-gray-500">
+      <div className="rounded-xl bg-white dark:bg-gray-900 p-6 shadow-sm">
+        <h2 className="mb-1 text-base font-semibold text-gray-900 dark:text-gray-100">Horarios de atención</h2>
+        <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
           Activá los días que abrís y cargá el rango. Guardar reemplaza toda la semana.
         </p>
 
-        <form onSubmit={handleHoursSubmit} className="space-y-3" noValidate>
+        {!canEdit && (
+          <p
+            id="hours-owner-only"
+            className="mb-3 rounded-md bg-gray-50 dark:bg-gray-950 px-3 py-2 text-xs text-gray-500 dark:text-gray-400"
+          >
+            Solo el administrador del restaurante puede modificar los horarios.
+          </p>
+        )}
+
+        <form
+          onSubmit={handleHoursSubmit}
+          className="space-y-3"
+          noValidate
+          aria-describedby={canEdit ? undefined : 'hours-owner-only'}
+        >
           <ul className="space-y-2">
             {hoursRows.map((row, idx) => (
-              <li key={idx} className="flex flex-wrap items-center gap-3 rounded-md border border-gray-200 px-3 py-2">
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
+              <li key={idx} className="flex flex-wrap items-center gap-3 rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-gray-100">
                   <input
                     type="checkbox"
                     checked={row.enabled}
+                    disabled={!canEdit}
                     onChange={(e) => handleRowChange(idx, { enabled: e.target.checked })}
-                    className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                    className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 focus:ring-gray-900 dark:focus:ring-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
                   />
                   {WEEKDAY_LABELS[idx]}
                 </label>
@@ -337,17 +375,19 @@ export default function RestaurantInfoPage(): React.JSX.Element {
                       id={`open-${idx}`}
                       type="time"
                       value={row.open}
+                      disabled={!canEdit}
                       onChange={(e) => handleRowChange(idx, { open: e.target.value })}
-                      className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-gray-900 focus:outline-none"
+                      className="rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
                     />
-                    <span className="text-sm text-gray-500">a</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">a</span>
                     <label className="sr-only" htmlFor={`close-${idx}`}>Hasta</label>
                     <input
                       id={`close-${idx}`}
                       type="time"
                       value={row.close}
+                      disabled={!canEdit}
                       onChange={(e) => handleRowChange(idx, { close: e.target.value })}
-                      className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-gray-900 focus:outline-none"
+                      className="rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
                     />
                   </div>
                 )}
@@ -356,20 +396,20 @@ export default function RestaurantInfoPage(): React.JSX.Element {
           </ul>
 
           {hoursStatus === 'success' && (
-            <div role="status" className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+            <div role="status" className="rounded-md bg-green-50 dark:bg-green-950 px-3 py-2 text-sm text-green-700 dark:text-green-400">
               Horarios guardados.
             </div>
           )}
           {hoursStatus === 'error' && (
-            <div role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+            <div role="alert" className="rounded-md bg-red-50 dark:bg-red-950 px-3 py-2 text-sm text-red-700 dark:text-red-400">
               {hoursError ?? 'No se pudieron guardar los horarios.'}
             </div>
           )}
 
           <button
             type="submit"
-            disabled={savingHours}
-            className="w-full rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={savingHours || !canEdit}
+            className="w-full rounded-md bg-gray-900 dark:bg-gray-100 px-4 py-2 text-sm font-medium text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {savingHours ? 'Guardando…' : 'Guardar horarios'}
           </button>
