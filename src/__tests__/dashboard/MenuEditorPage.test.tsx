@@ -5,8 +5,29 @@ import MenuEditorPage from '../../pages/dashboard/MenuEditorPage'
 import type { Category, Restaurant } from '../../lib/types'
 import { jsonResponse, readCall, routeFetch } from '../helpers'
 
+// M21: the page now lists menus first. Only `listMenus` is stubbed (single
+// default menu); categories still go through the real request layer, now on
+// the v2 route of the active menu.
+vi.mock('../../lib/menus', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../lib/menus')>()),
+  listMenus: vi.fn(async () => [
+    {
+      id: 'm1',
+      name: 'Principal',
+      is_default: true,
+      start_time: null,
+      end_time: null,
+      weekday_mask: null,
+      categories_count: 0,
+    },
+  ]),
+}))
+
 global.fetch = vi.fn()
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  sessionStorage.clear()
+})
 
 const restaurant: Restaurant = {
   id: 'r1',
@@ -63,7 +84,7 @@ describe('MenuEditorPage', () => {
 
     const posts = callsMatching('/categories', 'POST')
     expect(posts).toHaveLength(1)
-    expect(posts[0].url).toBe('http://api.test/restaurants/r1/categories')
+    expect(posts[0].url).toBe('http://api.test/restaurants/r1/menus/m1/categories')
     expect(JSON.parse(posts[0].body as string)).toEqual({ name: 'Entradas', type: 'food' })
   })
 

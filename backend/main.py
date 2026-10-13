@@ -9,12 +9,14 @@ from app.routers.category import router as category_router
 from app.routers.health import router as health_router
 from app.routers.item import router as item_router
 from app.routers.order import router as order_router
+from app.routers.menu import router as menu_router
 from app.routers.public_menu import router as public_menu_router
 from app.routers.promo import router as promo_router
 from app.routers.restaurant import router as restaurant_router
 from app.routers.restaurant_logo import router as restaurant_logo_router
 from app.routers.style import router as style_router
 from app.routers.staff_member import router as staff_member_router
+from app.routers.cash_shift import router as cash_shift_router
 from app.routers.stock_item import router as stock_item_router
 from app.routers.subcategory import router as subcategory_router
 from app.routers.supplier import router as supplier_router
@@ -35,6 +37,7 @@ app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(admin_router, prefix="/admin", tags=["admin"])
 app.include_router(restaurant_router, prefix="/restaurants", tags=["restaurants"])
 app.include_router(category_router, prefix="/restaurants", tags=["categories"])
+app.include_router(menu_router, prefix="/restaurants", tags=["menus"])
 app.include_router(subcategory_router, prefix="/restaurants", tags=["subcategories"])
 app.include_router(item_router, prefix="/restaurants", tags=["items"])
 app.include_router(style_router, prefix="/restaurants", tags=["style"])
@@ -43,6 +46,7 @@ app.include_router(restaurant_logo_router, prefix="/restaurants", tags=["logo"])
 app.include_router(promo_router, prefix="/restaurants", tags=["promos"])
 app.include_router(table_router, prefix="/restaurants", tags=["tables"])
 app.include_router(staff_member_router, prefix="/restaurants", tags=["staff"])
+app.include_router(cash_shift_router, prefix="/restaurants", tags=["shifts"])
 app.include_router(supplier_router, prefix="/restaurants", tags=["suppliers"])
 app.include_router(stock_item_router, prefix="/restaurants", tags=["stock"])
 app.include_router(public_menu_router, tags=["public"])

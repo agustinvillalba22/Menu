@@ -625,3 +625,59 @@ export interface AdminRestaurant {
   orders_enabled: boolean
   owner_email: string | null
 }
+
+// --- Turnos de caja (M20) ---------------------------------------------------
+// Amounts are decimal strings, never floats. See .agents/specs/M20_cash_shifts.md.
+
+export interface CashShift {
+  id: string
+  opened_by_name: string
+  opened_at: string
+  opening_amount: string
+  closed_by_name: string | null
+  closed_at: string | null
+  counted_amount: string | null
+  expected_amount: string | null
+  difference: string | null
+  notes: string | null
+}
+
+export interface CashShiftOpenPayload {
+  staff_member_id: string
+  opening_amount: string
+  notes?: string | null
+}
+
+export interface CashShiftClosePayload {
+  staff_member_id: string
+  counted_amount: string
+  notes?: string | null
+}
+
+// --- Multiple menus (M21) --------------------------------------------------
+
+export interface Menu {
+  id: string
+  name: string
+  is_default: boolean
+  start_time: string | null // "HH:MM:SS"
+  end_time: string | null
+  weekday_mask: number | null // bit i = day i (0=Mon..6=Sun); null = every day
+  categories_count: number
+}
+
+export interface MenuCreate {
+  name: string
+  is_default?: boolean
+  start_time?: string | null
+  end_time?: string | null
+  weekday_mask?: number | null
+}
+
+export interface MenuUpdate {
+  name?: string
+  is_default?: boolean
+  start_time?: string | null
+  end_time?: string | null
+  weekday_mask?: number | null
+}

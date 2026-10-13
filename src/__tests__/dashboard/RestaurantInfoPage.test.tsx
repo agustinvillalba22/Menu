@@ -47,6 +47,14 @@ function putHoursCalls() {
     .filter((c) => c.method === 'PUT' && c.url.includes('/business-hours'))
 }
 
+/** Waits until GET /info has landed (weekday 0 comes back enabled). The page
+ * renders its form with empty defaults for one commit before the load effect
+ * flips `loading` on (form -> "Cargando…" -> form), so a `findBy*` alone can
+ * resolve on a transient, soon-unmounted form. Callers re-query afterwards. */
+async function infoLoaded(): Promise<void> {
+  await waitFor(() => expect(screen.getAllByRole('checkbox')[0]).toBeChecked())
+}
+
 describe('RestaurantInfoPage', () => {
   beforeEach(() => {
     // Default route set so any uncatched fetch throws loudly (mirrors the
@@ -65,6 +73,7 @@ describe('RestaurantInfoPage', () => {
   it('renders the loaded hours as enabled rows', async () => {
     render(<RestaurantInfoPage />)
 
+    await infoLoaded()
     const mondayOpen = (await screen.findByLabelText('Desde', { selector: '#open-0' })) as HTMLInputElement
     expect(mondayOpen.value).toBe('09:00')
     const mondayClose = screen.getByLabelText('Hasta', { selector: '#close-0' }) as HTMLInputElement
@@ -92,9 +101,11 @@ describe('RestaurantInfoPage', () => {
     ])
 
     render(<RestaurantInfoPage />)
-    const addressInput = (await screen.findByLabelText(/dirección/i)) as HTMLInputElement
+    await screen.findByLabelText(/dirección/i)
+    await infoLoaded()
+    const addressInput = screen.getByLabelText(/dirección/i) as HTMLInputElement
     await userEvent.type(addressInput, 'Av. X 123')
-    await userEvent.click(screen.getByRole('button', { name: /guardar información/i }))
+    await userEvent.click(await screen.findByRole('button', { name: /guardar información/i }))
 
     expect(await screen.findByRole('status')).toHaveTextContent(/guardada/i)
     const patches = patchInfoCalls()
@@ -115,9 +126,10 @@ describe('RestaurantInfoPage', () => {
     ])
 
     render(<RestaurantInfoPage />)
-    const whatsapp = await screen.findByLabelText(/whatsapp/i)
-    await userEvent.type(whatsapp, 'bad')
-    await userEvent.click(screen.getByRole('button', { name: /guardar información/i }))
+    await screen.findByLabelText(/whatsapp/i)
+    await infoLoaded()
+    await userEvent.type(screen.getByLabelText(/whatsapp/i), 'bad')
+    await userEvent.click(await screen.findByRole('button', { name: /guardar información/i }))
 
     expect(await screen.findByRole('alert')).toBeInTheDocument()
   })
@@ -140,11 +152,12 @@ describe('RestaurantInfoPage', () => {
     render(<RestaurantInfoPage />)
     // First GET /info lands → the page is interactive.
     await screen.findByLabelText(/dirección/i)
+    await infoLoaded()
 
     // Disable Friday by toggling its checkbox off; then save.
     const fridayCheckbox = screen.getAllByRole('checkbox')[4]
     await userEvent.click(fridayCheckbox)
-    await userEvent.click(screen.getByRole('button', { name: /guardar horarios/i }))
+    await userEvent.click(await screen.findByRole('button', { name: /guardar horarios/i }))
 
     expect(await screen.findByRole('status')).toBeInTheDocument()
     const puts = putHoursCalls()
@@ -171,18 +184,16 @@ describe('RestaurantInfoPage', () => {
 
     render(<RestaurantInfoPage />)
 
-    const address = (await screen.findByLabelText(/dirección/i)) as HTMLInputElement
-    expect(address).toBeDisabled()
+    await screen.findByLabelText(/dirección/i)
+    await infoLoaded()
+    expect(screen.getByLabelText(/dirección/i)).toBeDisabled()
     expect(screen.getByLabelText(/teléfono/i)).toBeDisabled()
     expect(screen.getByRole('button', { name: /guardar información/i })).toBeDisabled()
     expect(screen.getByRole('button', { name: /guardar horarios/i })).toBeDisabled()
     expect(screen.getAllByRole('checkbox')[0]).toBeDisabled()
 
-    // Current business hours are still rendered, not hidden. The hours grid
-    // settles in a state update after the address field first appears (same
-    // pattern as elsewhere in this file, which always interacts before
-    // asserting on it) — wait for it explicitly instead of racing it.
-    await waitFor(() => expect(screen.getAllByRole('checkbox')[0]).toBeChecked()) // weekday 0, from `info`
+    // Current business hours are still rendered, not hidden (settled above).
+    expect(screen.getAllByRole('checkbox')[0]).toBeChecked() // weekday 0, from `info`
 
     // Logo uploader shows the explanation instead of an upload action.
     expect(screen.queryByRole('button', { name: /subir logo/i })).not.toBeInTheDocument()
@@ -195,8 +206,9 @@ describe('RestaurantInfoPage', () => {
   it('keeps the info, hours and logo controls enabled for an owner', async () => {
     render(<RestaurantInfoPage />)
 
-    const address = await screen.findByLabelText(/dirección/i)
-    expect(address).not.toBeDisabled()
+    await screen.findByLabelText(/dirección/i)
+    await infoLoaded()
+    expect(screen.getByLabelText(/dirección/i)).not.toBeDisabled()
     expect(screen.getByRole('button', { name: /guardar información/i })).not.toBeDisabled()
     expect(screen.getByRole('button', { name: /guardar horarios/i })).not.toBeDisabled()
     expect(screen.getByRole('button', { name: /subir logo/i })).toBeInTheDocument()

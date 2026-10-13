@@ -44,6 +44,8 @@ EXPECTED_TABLES = {
     # 0013_stock_and_suppliers (M19)
     "suppliers",
     "stock_items",
+    # 0014_cash_shifts (M20)
+    "cash_shifts",
 }
 
 

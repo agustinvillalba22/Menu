@@ -32,6 +32,16 @@ function patchCall() {
   return readCall(call as [unknown, unknown])
 }
 
+/** Waits until the style GET has landed. AppearancePage renders the form with
+ * defaults (#fc462f) for one commit before its load effect flips `loading` on
+ * (form -> "Cargando…" -> form), so `findByLabelText` alone can resolve on a
+ * transient, soon-unmounted form. The loaded value is the settled signal;
+ * re-querying avoids holding a detached node. */
+async function findLoadedPrimary(): Promise<HTMLInputElement> {
+  await waitFor(() => expect(screen.getByLabelText(/color primario/i)).toHaveValue(style.primary_color))
+  return screen.getByLabelText(/color primario/i) as HTMLInputElement
+}
+
 describe('AppearancePage', () => {
   // CA-04: saving after changing only primary_color must PATCH with just that
   // field — unchanged font_family / secondary_color must not be resent.
@@ -45,10 +55,10 @@ describe('AppearancePage', () => {
 
     render(<AppearancePage />)
 
-    const primary = (await screen.findByLabelText(/color primario/i)) as HTMLInputElement
+    const primary = await findLoadedPrimary()
     fireEvent.change(primary, { target: { value: '#112233' } })
 
-    await userEvent.click(screen.getByRole('button', { name: /guardar/i }))
+    await userEvent.click(await screen.findByRole('button', { name: /guardar/i }))
 
     // Success feedback confirms the request resolved.
     expect(await screen.findByRole('status')).toHaveTextContent(/guardados/i)
@@ -67,11 +77,11 @@ describe('AppearancePage', () => {
 
     render(<AppearancePage />)
 
-    const primary = (await screen.findByLabelText(/color primario/i)) as HTMLInputElement
+    const primary = await findLoadedPrimary()
     fireEvent.change(primary, { target: { value: '#112233' } })
     await userEvent.selectOptions(screen.getByLabelText(/tipografía/i), 'Poppins')
 
-    await userEvent.click(screen.getByRole('button', { name: /guardar/i }))
+    await userEvent.click(await screen.findByRole('button', { name: /guardar/i }))
     await screen.findByRole('status')
 
     expect(JSON.parse(patchCall().body as string)).toEqual({
@@ -89,9 +99,9 @@ describe('AppearancePage', () => {
 
     render(<AppearancePage />)
 
-    const primary = (await screen.findByLabelText(/color primario/i)) as HTMLInputElement
+    const primary = await findLoadedPrimary()
     fireEvent.change(primary, { target: { value: '#112233' } })
-    await userEvent.click(screen.getByRole('button', { name: /guardar/i }))
+    await userEvent.click(await screen.findByRole('button', { name: /guardar/i }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/no se pudieron guardar/i)
   })
@@ -116,12 +126,12 @@ describe('AppearancePage', () => {
     render(<AppearancePage />)
 
     // Wait for the existing primary input to surface (proves the load landed).
-    await screen.findByLabelText(/color primario/i)
+    await findLoadedPrimary()
 
     const clasico = await screen.findByRole('button', { name: /clásico/i })
     await userEvent.click(clasico)
 
-    await userEvent.click(screen.getByRole('button', { name: /guardar/i }))
+    await userEvent.click(await screen.findByRole('button', { name: /guardar/i }))
     await screen.findByRole('status')
 
     expect(JSON.parse(patchCall().body as string)).toEqual({ primary_color: '#fc462f' })
@@ -145,11 +155,11 @@ describe('AppearancePage', () => {
 
     render(<AppearancePage />)
 
-    await screen.findByLabelText(/color primario/i)
+    await findLoadedPrimary()
     const elegante = await screen.findByRole('button', { name: /elegante/i })
     await userEvent.click(elegante)
 
-    await userEvent.click(screen.getByRole('button', { name: /guardar/i }))
+    await userEvent.click(await screen.findByRole('button', { name: /guardar/i }))
     await screen.findByRole('status')
 
     expect(JSON.parse(patchCall().body as string)).toEqual({
@@ -173,14 +183,10 @@ describe('AppearancePage', () => {
 
     render(<AppearancePage />)
 
-    const primary = (await screen.findByLabelText(/color primario/i)) as HTMLInputElement
+    const primary = await findLoadedPrimary()
     expect(primary).toBeDisabled()
-    // The field's value settles in a state update shortly after it first
-    // appears (same latent race as RestaurantInfoPage, M17) — wait for it
-    // explicitly instead of racing it.
-    await waitFor(() => expect(primary.value).toBe('#000000'))
     expect(screen.getByLabelText(/tipografía/i)).toBeDisabled()
-    expect(screen.getByRole('button', { name: /guardar/i })).toBeDisabled()
+    expect(await screen.findByRole('button', { name: /guardar/i })).toBeDisabled()
     expect(
       screen.getByText(/solo el administrador del restaurante puede modificar la apariencia/i),
     ).toBeInTheDocument()
@@ -195,8 +201,8 @@ describe('AppearancePage', () => {
 
     render(<AppearancePage />)
 
-    const primary = await screen.findByLabelText(/color primario/i)
+    const primary = await findLoadedPrimary()
     expect(primary).not.toBeDisabled()
-    expect(screen.getByRole('button', { name: /guardar/i })).not.toBeDisabled()
+    expect(await screen.findByRole('button', { name: /guardar/i })).not.toBeDisabled()
   })
 })

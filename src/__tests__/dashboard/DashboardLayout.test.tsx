@@ -90,6 +90,7 @@ describe('DashboardLayout sidebar', () => {
       ['Apariencia', '/dashboard/appearance'],
       ['Equipo', '/dashboard/staff'],
       ['Stock', '/dashboard/stock'],
+      ['Caja', '/dashboard/shifts'],
     ]
     for (const [label, href] of expected) {
       expect(screen.getByRole('link', { name: label })).toHaveAttribute('href', href)

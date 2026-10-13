@@ -10,6 +10,7 @@ import {
   Palette,
   Users2,
   Package,
+  Wallet,
   Sun,
   Moon,
   Monitor,
@@ -50,6 +51,7 @@ const CONFIG_GROUP: NavItem[] = [
   { to: '/dashboard/appearance', label: 'Apariencia', icon: Palette },
   { to: '/dashboard/staff', label: 'Equipo', icon: Users2 },
   { to: '/dashboard/stock', label: 'Stock', icon: Package },
+  { to: '/dashboard/shifts', label: 'Caja', icon: Wallet },
 ]
 
 function NavGroup({ title, items }: { title: string; items: NavItem[] }): React.JSX.Element {

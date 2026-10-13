@@ -1,7 +1,6 @@
 import React from 'react'
 import type { ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import App from './App'
 import { useAuth } from './hooks/useAuth'
 import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
@@ -15,6 +14,7 @@ import PromosPage from './pages/dashboard/PromosPage'
 import RestaurantInfoPage from './pages/dashboard/RestaurantInfoPage'
 import StaffPage from './pages/dashboard/StaffPage'
 import StockPage from './pages/dashboard/StockPage'
+import ShiftsPage from './pages/dashboard/ShiftsPage'
 import PublicMenuPage from './pages/public/PublicMenuPage'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
@@ -48,11 +48,21 @@ export function SuperadminRoute({ children }: { children: ReactNode }): React.JS
   return <>{children}</>
 }
 
+// M22: "/" (and, via "*", any unknown URL) sends the visitor to the dashboard
+// when signed in, otherwise to the login page. No landing page.
+function RootRedirect(): React.JSX.Element {
+  const { loading, isAuthenticated } = useAuth()
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center text-gray-600">Cargando…</div>
+  }
+  return <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />
+}
+
 export default function AppRouter(): React.JSX.Element {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<App />} />
+        <Route path="/" element={<RootRedirect />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route
@@ -71,6 +81,7 @@ export default function AppRouter(): React.JSX.Element {
           <Route path="info" element={<RestaurantInfoPage />} />
           <Route path="staff" element={<StaffPage />} />
           <Route path="stock" element={<StockPage />} />
+          <Route path="shifts" element={<ShiftsPage />} />
           <Route path="appearance" element={<AppearancePage />} />
         </Route>
         <Route
