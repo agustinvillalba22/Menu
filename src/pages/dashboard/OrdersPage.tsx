@@ -64,6 +64,10 @@ function formatDelta(priceDelta: string): string {
   return `${sign} $${Math.abs(value).toFixed(2)}`
 }
 
+function hasDiscount(pct: number | null | undefined): pct is number {
+  return typeof pct === 'number' && pct > 0
+}
+
 export default function OrdersPage(): React.JSX.Element {
   const { restaurant, loading: restaurantLoading, error: restaurantError } = useMyRestaurant()
   const restaurantId = restaurant?.id ?? null
@@ -208,8 +212,21 @@ export default function OrdersPage(): React.JSX.Element {
                   <div className="flex justify-between gap-3">
                     <span>
                       <span className="font-medium">{line.quantity}×</span> {line.name_snapshot}
+                      {hasDiscount(line.discount_pct) && (
+                        <span
+                          aria-label={`Descuento del ${line.discount_pct}%`}
+                          className="ml-2 inline-flex items-center rounded-full bg-green-100 dark:bg-green-950 px-2 py-0.5 text-xs font-medium text-green-800 dark:text-green-400"
+                        >
+                          -{line.discount_pct}%
+                        </span>
+                      )}
                     </span>
                     <span className="shrink-0 text-gray-900 dark:text-gray-100">
+                      {hasDiscount(line.discount_pct) && (
+                        <span className="mr-2 text-xs text-gray-400 dark:text-gray-500 line-through">
+                          ${(parseFloat(line.unit_price_snapshot) * line.quantity).toFixed(2)}
+                        </span>
+                      )}
                       ${parseFloat(line.subtotal).toFixed(2)}
                     </span>
                   </div>
