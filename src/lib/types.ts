@@ -603,6 +603,11 @@ export interface OrderRead {
   // comes from the dashboard side (list/patch), where the URL is irrelevant.
   // The checkout's "Confirmar por WhatsApp" button uses this verbatim.
   whatsapp_url: string | null
+  // M28: who handled the order (snapshot name survives staff deletion) and
+  // the cash shift it was completed in.
+  handled_by_id: string | null
+  handled_by_name: string | null
+  cash_shift_id: string | null
 }
 
 // --- Panel de administración (M13.2) ---------------------------------------
@@ -640,6 +645,7 @@ export interface CashShift {
   expected_amount: string | null
   difference: string | null
   notes: string | null
+  orders_count: number
 }
 
 export interface CashShiftOpenPayload {

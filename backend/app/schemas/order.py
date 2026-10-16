@@ -36,6 +36,8 @@ class OrderCreate(BaseModel):
 
 class OrderStatusUpdate(BaseModel):
     status: OrderStatus
+    # M28: optional attribution; omitted = leave previous value untouched.
+    staff_member_id: uuid.UUID | None = None
 
 
 class OrderItemModifierRead(BaseModel):
@@ -84,6 +86,9 @@ class OrderRead(BaseModel):
     total: Decimal
     created_at: datetime
     updated_at: datetime
+    cash_shift_id: uuid.UUID | None = None
+    handled_by_id: uuid.UUID | None = None
+    handled_by_name: str | None = None
     items: list[OrderItemRead]
     # P7: pre-built ``https://wa.me/...`` URL the customer's checkout UI opens
     # after the order is persisted. Null when the restaurant has no

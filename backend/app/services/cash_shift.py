@@ -9,9 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.cash_shift import CashShift
 from app.models.order import Order, OrderStatus
-from app.models.staff_member import StaffMember
 from app.schemas.cash_shift import CashShiftClose, CashShiftOpen
-from app.services.staff_member import get_staff_member
+from app.services.staff_member import get_active_staff_member
 
 CENTS = Decimal("0.01")
 
@@ -20,28 +19,42 @@ def _q(amount: Decimal) -> Decimal:
     return amount.quantize(CENTS)
 
 
-async def _active_staff(
-    restaurant_id: uuid.UUID, staff_member_id: uuid.UUID, session: AsyncSession
-) -> StaffMember:
-    member = await get_staff_member(restaurant_id, staff_member_id, session)
-    if not member.active:
-        raise HTTPException(status_code=422, detail="staff_member_inactive")
-    return member
-
-
 async def get_open_shift(restaurant_id: uuid.UUID, session: AsyncSession) -> CashShift | None:
     result = await session.execute(
         select(CashShift).where(
             CashShift.restaurant_id == restaurant_id, CashShift.closed_at.is_(None)
         )
     )
-    return result.scalar_one_or_none()
+    shift = result.scalar_one_or_none()
+    if shift is not None:
+        await attach_orders_count([shift], session)
+    return shift
+
+
+async def attach_orders_count(shifts: list[CashShift], session: AsyncSession) -> None:
+    """Set `orders_count` on each shift with ONE grouped query (no N+1).
+
+    Counts completed orders linked to the shift (M28 RF-06).
+    """
+    if not shifts:
+        return
+    result = await session.execute(
+        select(Order.cash_shift_id, func.count(Order.id))
+        .where(
+            Order.cash_shift_id.in_([s.id for s in shifts]),
+            Order.status == OrderStatus.completed,
+        )
+        .group_by(Order.cash_shift_id)
+    )
+    counts = dict(result.all())
+    for shift in shifts:
+        shift.orders_count = counts.get(shift.id, 0)  # type: ignore[attr-defined]
 
 
 async def open_shift(
     restaurant_id: uuid.UUID, data: CashShiftOpen, session: AsyncSession
 ) -> CashShift:
-    member = await _active_staff(restaurant_id, data.staff_member_id, session)
+    member = await get_active_staff_member(restaurant_id, data.staff_member_id, session)
     if await get_open_shift(restaurant_id, session) is not None:
         raise HTTPException(status_code=409, detail="shift_already_open")
     shift = CashShift(
@@ -61,17 +74,11 @@ async def open_shift(
     return shift
 
 
-async def _completed_total(
-    restaurant_id: uuid.UUID, start: datetime, end: datetime, session: AsyncSession
-) -> Decimal:
-    # Order has no completion timestamp; updated_at is the proxy (completed is
-    # terminal, so it no longer changes afterwards).
+async def _completed_total(shift_id: uuid.UUID, session: AsyncSession) -> Decimal:
     result = await session.execute(
         select(func.coalesce(func.sum(Order.total), 0)).where(
-            Order.restaurant_id == restaurant_id,
+            Order.cash_shift_id == shift_id,
             Order.status == OrderStatus.completed,
-            Order.updated_at >= start,
-            Order.updated_at <= end,
         )
     )
     return Decimal(str(result.scalar_one()))
@@ -91,12 +98,12 @@ async def close_shift(
     shift = result.scalar_one_or_none()
     if shift is None:
         raise HTTPException(status_code=404, detail="shift_not_found")
-    member = await _active_staff(restaurant_id, data.staff_member_id, session)
+    member = await get_active_staff_member(restaurant_id, data.staff_member_id, session)
     if shift.closed_at is not None:
         raise HTTPException(status_code=409, detail="shift_already_closed")
 
     now = datetime.now(timezone.utc)
-    total = await _completed_total(restaurant_id, shift.opened_at, now, session)
+    total = await _completed_total(shift.id, session)
     shift.expected_amount = _q(shift.opening_amount + total)
     shift.counted_amount = _q(data.counted_amount)
     shift.closed_by_id = member.id
@@ -106,6 +113,7 @@ async def close_shift(
         shift.notes = data.notes
     await session.commit()
     await session.refresh(shift)
+    await attach_orders_count([shift], session)
     return shift
 
 
@@ -119,4 +127,6 @@ async def list_shifts(
         .limit(limit)
         .offset(offset)
     )
-    return list(result.scalars().all())
+    shifts = list(result.scalars().all())
+    await attach_orders_count(shifts, session)
+    return shifts

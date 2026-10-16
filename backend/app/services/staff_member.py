@@ -78,3 +78,13 @@ async def delete_staff_member(
     member = await get_staff_member(restaurant_id, staff_member_id, session)
     await session.delete(member)
     await session.commit()
+
+
+async def get_active_staff_member(
+    restaurant_id: uuid.UUID, staff_member_id: uuid.UUID, session: AsyncSession
+) -> StaffMember:
+    """Like get_staff_member, but 422 staff_member_inactive if deactivated."""
+    member = await get_staff_member(restaurant_id, staff_member_id, session)
+    if not member.active:
+        raise HTTPException(status_code=422, detail="staff_member_inactive")
+    return member

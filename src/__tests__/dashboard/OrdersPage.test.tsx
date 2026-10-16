@@ -33,6 +33,9 @@ const order: OrderRead = {
   // P7: the dashboard list/patch side never receives a whatsapp_url (the
   // backend builds it only on POST public /orders) — null is the contract.
   whatsapp_url: null,
+  handled_by_id: null,
+  handled_by_name: null,
+  cash_shift_id: null,
   items: [
     {
       id: 'oi1',

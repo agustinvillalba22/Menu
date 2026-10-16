@@ -35,6 +35,7 @@ const openShiftData: CashShift = {
   expected_amount: null,
   difference: null,
   notes: null,
+  orders_count: 0,
 }
 
 function closed(id: string, expected: string, counted: string, difference: string): CashShift {

@@ -12,7 +12,9 @@ from app.models.order import Order, OrderItem, OrderItemModifier, OrderStatus, O
 from app.models.restaurant import Restaurant
 from app.models.table import Table
 from app.schemas.order import OrderCreate, OrderItemCreate
+from app.services.cash_shift import get_open_shift
 from app.services.menu import resolve_active_menu
+from app.services.staff_member import get_active_staff_member
 from app.services.promo import active_promo_for, promo_discount_pct
 from app.services.public_menu import get_public_menu
 
@@ -233,8 +235,15 @@ async def update_order_status(
     order_id: uuid.UUID,
     new_status: OrderStatus,
     session: AsyncSession,
+    staff_member_id: uuid.UUID | None = None,
 ) -> Order:
-    """Transition an order's status, enforcing the M11 state machine (RF-07)."""
+    """Transition an order's status, enforcing the M11 state machine (RF-07).
+
+    M28: an optional active ``staff_member_id`` is stamped as handler (last
+    one wins; omitted leaves the previous value), and completing the order
+    links it to the restaurant's open cash shift, if any. All validation
+    happens before any mutation.
+    """
     result = await session.execute(
         select(Order).where(
             Order.id == order_id,
@@ -246,6 +255,16 @@ async def update_order_status(
         raise HTTPException(status_code=404, detail="order_not_found")
     if new_status not in _VALID_TRANSITIONS[order.status]:
         raise HTTPException(status_code=409, detail="invalid_transition")
+    member = None
+    if staff_member_id is not None:
+        member = await get_active_staff_member(restaurant_id, staff_member_id, session)
+    if new_status == OrderStatus.completed:
+        shift = await get_open_shift(restaurant_id, session)
+        if shift is not None:
+            order.cash_shift_id = shift.id
+    if member is not None:
+        order.handled_by_id = member.id
+        order.handled_by_name = member.name
     order.status = new_status
     await session.commit()
     return await _load_order(order.id, session)

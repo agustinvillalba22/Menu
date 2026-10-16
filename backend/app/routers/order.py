@@ -65,5 +65,7 @@ async def patch_order_status(
     _: User = Depends(require_role(RestaurantRole.editor)),
     session: AsyncSession = Depends(get_db),
 ) -> OrderRead:
-    order = await update_order_status(restaurant_id, order_id, data.status, session)
+    order = await update_order_status(
+        restaurant_id, order_id, data.status, session, data.staff_member_id
+    )
     return OrderRead.model_validate(order)

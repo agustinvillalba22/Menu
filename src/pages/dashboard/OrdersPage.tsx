@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMyRestaurant } from '../../hooks/useMyRestaurant'
 import { listOrders, updateOrderStatus } from '../../lib/orders'
-import type { OrderRead, OrderStatus, OrderType } from '../../lib/types'
+import { listStaffMembers } from '../../lib/staff'
+import type { OrderRead, OrderStatus, OrderType, StaffMember } from '../../lib/types'
 
 const POLL_INTERVAL_MS = 10_000
 
@@ -78,6 +79,8 @@ export default function OrdersPage(): React.JSX.Element {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [staff, setStaff] = useState<StaffMember[]>([])
+  const [staffId, setStaffId] = useState('')
 
   const refresh = useCallback(
     async (id: string, showSpinner: boolean): Promise<void> => {
@@ -113,12 +116,28 @@ export default function OrdersPage(): React.JSX.Element {
     }
   }, [restaurantId, ordersEnabled, refresh])
 
+  useEffect(() => {
+    if (restaurantId === null || !ordersEnabled) return
+    let active = true
+    // Staff is optional: a failure here must not block the orders queue.
+    listStaffMembers(restaurantId)
+      .then((members) => {
+        if (active) setStaff(members.filter((m) => m.active))
+      })
+      .catch(() => {
+        if (active) setStaff([])
+      })
+    return () => {
+      active = false
+    }
+  }, [restaurantId, ordersEnabled])
+
   async function handleTransition(orderId: string, next: OrderStatus): Promise<void> {
     if (restaurantId === null) return
     setBusyId(orderId)
     setActionError(null)
     try {
-      const updated = await updateOrderStatus(restaurantId, orderId, next)
+      const updated = await updateOrderStatus(restaurantId, orderId, next, staffId || undefined)
       setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)))
     } catch {
       setActionError('No se pudo actualizar el pedido. Refrescá e intentá de nuevo.')
@@ -170,6 +189,30 @@ export default function OrdersPage(): React.JSX.Element {
           Se actualiza automáticamente cada {POLL_INTERVAL_MS / 1000} segundos.
         </p>
       </div>
+
+      {staff.length > 0 && (
+        <div className="rounded-xl bg-white dark:bg-gray-900 p-4 shadow-sm">
+          <label
+            htmlFor="orders-staff"
+            className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300"
+          >
+            Atiende
+          </label>
+          <select
+            id="orders-staff"
+            value={staffId}
+            onChange={(e) => setStaffId(e.target.value)}
+            className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1 text-sm text-gray-900 dark:text-gray-100 focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
+          >
+            <option value="">Sin asignar</option>
+            {staff.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {loadError && (
         <div role="alert" className="rounded-md bg-red-50 dark:bg-red-950 px-3 py-2 text-sm text-red-700 dark:text-red-400">
@@ -247,6 +290,12 @@ export default function OrdersPage(): React.JSX.Element {
                 </li>
               ))}
             </ul>
+
+            {order.handled_by_name && (
+              <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                Atendió: {order.handled_by_name}
+              </p>
+            )}
 
             {order.notes && (
               <p className="mt-3 rounded-md bg-gray-50 dark:bg-gray-950 px-3 py-2 text-xs text-gray-600 dark:text-gray-300">

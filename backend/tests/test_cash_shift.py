@@ -4,7 +4,6 @@ Tests for M20 — Cash shifts (open/close with arqueo), CA-01..CA-08.
 asyncio_mode=auto via pytest.ini — sin @pytest.mark.asyncio.
 """
 import uuid
-from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from httpx import AsyncClient
@@ -73,7 +72,7 @@ async def add_order(
     rid: str,
     total: str,
     status: OrderStatus = OrderStatus.completed,
-    updated_at: datetime | None = None,
+    cash_shift_id: str | None = None,
 ) -> None:
     order = Order(
         restaurant_id=uuid.UUID(rid),
@@ -81,7 +80,7 @@ async def add_order(
         customer_name="Cliente",
         order_type=OrderType.llevar,
         total=Decimal(total),
-        updated_at=updated_at or datetime.now(timezone.utc),
+        cash_shift_id=uuid.UUID(cash_shift_id) if cash_shift_id else None,
     )
     db.add(order)
     await db.commit()
@@ -160,9 +159,9 @@ async def test_partial_unique_index_maps_to_409(client: AsyncClient, db_session:
 async def test_close_expected_and_difference(client: AsyncClient, db_session: AsyncSession):
     headers, rid, staff = await setup(client)
     shift = (await open_shift(client, headers, rid, staff["id"])).json()
-    await add_order(db_session, rid, "50.00")
-    await add_order(db_session, rid, "30.00")
-    await add_order(db_session, rid, "999.00", status=OrderStatus.pending)
+    await add_order(db_session, rid, "50.00", cash_shift_id=shift["id"])
+    await add_order(db_session, rid, "30.00", cash_shift_id=shift["id"])
+    await add_order(db_session, rid, "999.00", status=OrderStatus.pending, cash_shift_id=shift["id"])
 
     res = await close_shift(client, headers, rid, shift["id"], staff["id"], "180.00")
     assert res.status_code == 200, res.text
@@ -177,8 +176,8 @@ async def test_close_expected_and_difference(client: AsyncClient, db_session: As
 async def test_close_negative_difference(client: AsyncClient, db_session: AsyncSession):
     headers, rid, staff = await setup(client)
     shift = (await open_shift(client, headers, rid, staff["id"])).json()
-    await add_order(db_session, rid, "50.00")
-    await add_order(db_session, rid, "30.00")
+    await add_order(db_session, rid, "50.00", cash_shift_id=shift["id"])
+    await add_order(db_session, rid, "30.00", cash_shift_id=shift["id"])
     res = await close_shift(client, headers, rid, shift["id"], staff["id"], "170.00")
     assert Decimal(res.json()["difference"]) == Decimal("-10.00")
 
@@ -195,11 +194,9 @@ async def test_other_restaurant_orders_not_counted(client: AsyncClient, db_sessi
 # CA-04
 async def test_order_before_open_not_counted(client: AsyncClient, db_session: AsyncSession):
     headers, rid, staff = await setup(client)
-    await add_order(
-        db_session, rid, "40.00", updated_at=datetime.now(timezone.utc) - timedelta(hours=1)
-    )
+    await add_order(db_session, rid, "40.00")  # completed outside any shift
     shift = (await open_shift(client, headers, rid, staff["id"])).json()
-    await add_order(db_session, rid, "30.00")
+    await add_order(db_session, rid, "30.00", cash_shift_id=shift["id"])
     res = await close_shift(client, headers, rid, shift["id"], staff["id"], "130.00")
     assert Decimal(res.json()["expected_amount"]) == Decimal("130.00")
 
@@ -355,7 +352,7 @@ async def test_history_order_and_pagination(client: AsyncClient):
 async def test_expected_amount_persisted_as_snapshot(client: AsyncClient, db_session: AsyncSession):
     headers, rid, staff = await setup(client)
     shift = (await open_shift(client, headers, rid, staff["id"])).json()
-    await add_order(db_session, rid, "20.00")
+    await add_order(db_session, rid, "20.00", cash_shift_id=shift["id"])
     await close_shift(client, headers, rid, shift["id"], staff["id"], "120.00")
     row = (
         await db_session.execute(select(CashShift).where(CashShift.id == uuid.UUID(shift["id"])))

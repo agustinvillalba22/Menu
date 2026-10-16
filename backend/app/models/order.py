@@ -66,6 +66,23 @@ class Order(Base, TimestampMixin):
         ForeignKey("tables.id", ondelete="SET NULL"),
         nullable=True,
     )
+    # M28 — set when the order is completed while a cash shift is open. SET
+    # NULL (not CASCADE): shifts are never deleted in practice, but order
+    # history must survive if one is.
+    cash_shift_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("cash_shifts.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    # M28 — who handled the order (attribution only, no auth). The name is a
+    # snapshot so history survives deleting the StaffMember (FK is SET NULL).
+    handled_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("staff_members.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    handled_by_name: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # relationships
     items: Mapped[list["OrderItem"]] = relationship(

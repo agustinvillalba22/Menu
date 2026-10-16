@@ -55,6 +55,9 @@ function orderWith(items: OrderItemRead[]): OrderRead {
     created_at: '2026-07-07T10:00:00Z',
     updated_at: '2026-07-07T10:00:00Z',
     whatsapp_url: null,
+    handled_by_id: null,
+    handled_by_name: null,
+    cash_shift_id: null,
     items,
   }
 }

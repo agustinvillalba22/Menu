@@ -26,6 +26,8 @@ export function updateOrderStatus(
   restaurantId: string,
   orderId: string,
   status: OrderStatus,
+  staffMemberId?: string,
 ): Promise<OrderRead> {
-  return apiPatch<OrderRead>(`/restaurants/${restaurantId}/orders/${orderId}`, { status })
+  const body = staffMemberId ? { status, staff_member_id: staffMemberId } : { status }
+  return apiPatch<OrderRead>(`/restaurants/${restaurantId}/orders/${orderId}`, body)
 }

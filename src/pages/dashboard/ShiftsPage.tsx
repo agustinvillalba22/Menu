@@ -32,6 +32,10 @@ function differenceClass(value: string): string {
   return 'text-gray-700 dark:text-gray-300'
 }
 
+function ordersLabel(count: number): string {
+  return `${count} ${count === 1 ? 'pedido' : 'pedidos'}`
+}
+
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })
 }
@@ -250,7 +254,8 @@ export default function ShiftsPage(): React.JSX.Element {
               <p className="font-semibold text-gray-900 dark:text-gray-100">Abierto por {current.opened_by_name}</p>
               <p>
                 Desde {formatDate(current.opened_at)} · Monto inicial{' '}
-                <span className="font-medium">{money(current.opening_amount)}</span>
+                <span className="font-medium">{money(current.opening_amount)}</span> ·{' '}
+                <span>{ordersLabel(current.orders_count)}</span>
               </p>
               {current.notes && <p className="text-xs text-gray-500 dark:text-gray-400">{current.notes}</p>}
             </div>
@@ -319,6 +324,7 @@ export default function ShiftsPage(): React.JSX.Element {
                   <th className="py-1 pr-3 font-medium">Cierre</th>
                   <th className="py-1 pr-3 font-medium">Responsable</th>
                   <th className="py-1 pr-3 font-medium">Esperado</th>
+                  <th className="py-1 pr-3 font-medium">Pedidos</th>
                   <th className="py-1 pr-3 font-medium">Contado</th>
                   <th className="py-1 font-medium">Diferencia</th>
                 </tr>
@@ -333,6 +339,7 @@ export default function ShiftsPage(): React.JSX.Element {
                       {s.closed_by_name && s.closed_by_name !== s.opened_by_name ? ` → ${s.closed_by_name}` : ''}
                     </td>
                     <td className="py-1.5 pr-3">{money(s.expected_amount)}</td>
+                    <td className="py-1.5 pr-3">{ordersLabel(s.orders_count)}</td>
                     <td className="py-1.5 pr-3">{money(s.counted_amount)}</td>
                     <td
                       data-testid={`difference-${s.id}`}
