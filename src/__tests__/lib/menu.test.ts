@@ -52,6 +52,19 @@ describe('importItemsCsv / apiUpload', () => {
     expect((init as RequestInit).body).toBeInstanceOf(FormData)
     expect(((init as RequestInit).body as FormData).get('file')).toBeInstanceOf(File)
     expect((init as RequestInit).headers).toBeUndefined()
+    expect(((init as RequestInit).body as FormData).has('menu_id')).toBe(false)
+  })
+
+  // M26 RF-05: menu_id is appended only when passed.
+  it('appends menu_id to the FormData when menuId is passed', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ imported: 1, errors: [] }))
+
+    await importItemsCsv('r1', csvFile(), true, 'm2')
+
+    const [, init] = vi.mocked(fetch).mock.calls[0]
+    const body = (init as RequestInit).body as FormData
+    expect(body.get('menu_id')).toBe('m2')
+    expect(body.get('create_missing')).toBe('true')
   })
 
   // CA-13: a 413 rejects with an ApiError carrying status 413 + detail.

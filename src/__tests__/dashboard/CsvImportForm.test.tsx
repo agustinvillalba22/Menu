@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import CsvImportForm from '../../components/dashboard/CsvImportForm'
+import type { Menu } from '../../lib/types'
 import { jsonResponse, routeFetch } from '../helpers'
 
 global.fetch = vi.fn()
@@ -163,5 +164,95 @@ describe('CsvImportForm', () => {
     await screen.findByRole('status')
     const { init } = importCall()
     expect((init.body as FormData).get('create_missing')).toBe('true')
+  })
+
+  // --- M26: target menu selector (RF-07, RF-09, CA-06) ---------------------
+  function menu(id: string, name: string, is_default: boolean): Menu {
+    return {
+      id,
+      name,
+      is_default,
+      start_time: null,
+      end_time: null,
+      weekday_mask: null,
+      categories_count: 0,
+    }
+  }
+  const twoMenus = [menu('m1', 'Carta', true), menu('m2', 'Brunch', false)]
+
+  async function submitImport() {
+    await userEvent.upload(screen.getByLabelText(/archivo csv/i), csvFile())
+    await userEvent.click(screen.getByRole('button', { name: /importar/i }))
+  }
+
+  it('shows the menu selector with the default preselected when there are 2+ menus', async () => {
+    const loadMenus = vi.fn().mockResolvedValue(twoMenus)
+    render(<CsvImportForm restaurantId="r1" loadMenus={loadMenus} />)
+
+    const select = await screen.findByRole('combobox', { name: /menú destino/i })
+    expect(select).toHaveValue('m1')
+    expect(screen.getByRole('option', { name: /carta \(principal\)/i })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Brunch' })).toBeInTheDocument()
+  })
+
+  it('sends menu_id of the chosen menu and mentions it in the result', async () => {
+    routeFetch([
+      { method: 'POST', match: '/import', response: jsonResponse({ imported: 2, errors: [] }) },
+    ])
+    const loadMenus = vi.fn().mockResolvedValue(twoMenus)
+    render(<CsvImportForm restaurantId="r1" loadMenus={loadMenus} />)
+
+    await userEvent.selectOptions(
+      await screen.findByRole('combobox', { name: /menú destino/i }),
+      'm2',
+    )
+    await submitImport()
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/2 importados en «Brunch»/)
+    expect((importCall().init.body as FormData).get('menu_id')).toBe('m2')
+  })
+
+  it('does not mention the menu in the result when the default is used', async () => {
+    routeFetch([
+      { method: 'POST', match: '/import', response: jsonResponse({ imported: 2, errors: [] }) },
+    ])
+    const loadMenus = vi.fn().mockResolvedValue(twoMenus)
+    render(<CsvImportForm restaurantId="r1" loadMenus={loadMenus} />)
+
+    await screen.findByRole('combobox', { name: /menú destino/i })
+    await submitImport()
+
+    expect(await screen.findByRole('status')).not.toHaveTextContent(/en «/)
+  })
+
+  it('shows no selector and sends no menu_id with a single menu', async () => {
+    routeFetch([
+      { method: 'POST', match: '/import', response: jsonResponse({ imported: 1, errors: [] }) },
+    ])
+    const loadMenus = vi.fn().mockResolvedValue([menu('m1', 'Carta', true)])
+    render(<CsvImportForm restaurantId="r1" loadMenus={loadMenus} />)
+
+    await waitFor(() => expect(loadMenus).toHaveBeenCalled())
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+    await submitImport()
+
+    await screen.findByRole('status')
+    expect((importCall().init.body as FormData).has('menu_id')).toBe(false)
+  })
+
+  it('stays operational without selector when loadMenus fails', async () => {
+    routeFetch([
+      { method: 'POST', match: '/import', response: jsonResponse({ imported: 1, errors: [] }) },
+    ])
+    const loadMenus = vi.fn().mockRejectedValue(new Error('boom'))
+    render(<CsvImportForm restaurantId="r1" loadMenus={loadMenus} />)
+
+    await waitFor(() => expect(loadMenus).toHaveBeenCalled())
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    await submitImport()
+
+    await screen.findByRole('status')
+    expect((importCall().init.body as FormData).has('menu_id')).toBe(false)
   })
 })

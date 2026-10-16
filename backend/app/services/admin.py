@@ -93,3 +93,14 @@ async def update_restaurant_active(
     await session.commit()
     await session.refresh(restaurant)
     return restaurant
+
+
+async def assert_restaurant_exists(
+    restaurant_id: uuid.UUID, session: AsyncSession
+) -> None:
+    """404 ``restaurant_not_found`` if the restaurant doesn't exist."""
+    result = await session.execute(
+        select(Restaurant.id).where(Restaurant.id == restaurant_id)
+    )
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(status_code=404, detail="restaurant_not_found")

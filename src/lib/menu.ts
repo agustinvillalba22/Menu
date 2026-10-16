@@ -255,6 +255,7 @@ export function importItemsCsv(
   restaurantId: string,
   file: File,
   createMissing?: boolean,
+  menuId?: string,
 ): Promise<ImportResult> {
   const formData = new FormData()
   formData.append('file', file)
@@ -262,6 +263,10 @@ export function importItemsCsv(
   // flag existed when the caller doesn't opt in (RNF-01/CA-07).
   if (createMissing) {
     formData.append('create_missing', 'true')
+  }
+  // Only append when provided: omitted means the restaurant's default menu.
+  if (menuId) {
+    formData.append('menu_id', menuId)
   }
   return apiUpload<ImportResult>(`/restaurants/${restaurantId}/items/import`, formData)
 }

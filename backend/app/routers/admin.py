@@ -13,7 +13,9 @@ from app.schemas.admin import (
     AdminUserRead,
     AdminUserUpdate,
 )
+from app.schemas.menu import MenuRead
 from app.services import admin as admin_service
+from app.services.menu import list_menus
 
 router = APIRouter()
 
@@ -79,3 +81,17 @@ async def patch_restaurant(
     )
     owner_email = await admin_service.get_owner_email(restaurant_id, session)
     return _restaurant_to_read(restaurant, owner_email)
+
+
+@router.get(
+    "/restaurants/{restaurant_id}/menus",
+    response_model=list[MenuRead],
+    status_code=200,
+)
+async def list_restaurant_menus(
+    restaurant_id: uuid.UUID,
+    _: User = Depends(require_superadmin),
+    session: AsyncSession = Depends(get_db),
+) -> list[MenuRead]:
+    await admin_service.assert_restaurant_exists(restaurant_id, session)
+    return await list_menus(restaurant_id, session)
