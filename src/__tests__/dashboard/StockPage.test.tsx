@@ -105,28 +105,18 @@ describe('StockPage', () => {
     })
   })
 
-  it('creates a supplier', async () => {
+  it('no longer renders the suppliers section (moved to /dashboard/suppliers)', async () => {
     routeFetch([
       { method: 'GET', match: '/stock-items', response: jsonResponse([]) },
-      { method: 'GET', match: '/suppliers', response: jsonResponse([]) },
+      { method: 'GET', match: '/suppliers', response: jsonResponse([supplier]) },
       { method: 'GET', match: '/restaurants', response: jsonResponse([restaurant]) },
-      {
-        method: 'POST',
-        match: '/suppliers',
-        response: jsonResponse({ ...supplier, id: 'sup9', name: 'Proveedor Nuevo' }, 201),
-      },
     ])
 
     render(<StockPage />)
-    await screen.findByText('Todavía no cargaste ningún proveedor.')
+    await screen.findByText('Todavía no cargaste ningún insumo.')
 
-    // There are two "Nombre" fields on the page (insumo + proveedor) — the
-    // supplier one lives inside the "Proveedores" section.
-    const nameInputs = screen.getAllByLabelText(/^nombre$/i)
-    await userEvent.type(nameInputs[1], 'Proveedor Nuevo')
-    await userEvent.click(screen.getByRole('button', { name: /agregar proveedor/i }))
-
-    expect(await screen.findByText('Proveedor Nuevo')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /agregar proveedor/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Proveedores' })).not.toBeInTheDocument()
   })
 
   it('shows the linked supplier name on a stock item row', async () => {

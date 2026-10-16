@@ -2,16 +2,15 @@ import React, { useState } from 'react'
 import { updateStockItem, deleteStockItem } from '../../lib/stockItems'
 import { ApiError } from '../../lib/api'
 import type { StockItem, StockUnit, Supplier } from '../../lib/types'
+import { isCriticalStock, isLowStock } from '../../lib/stockStatus'
 import RowActions from './RowActions'
 
 // M19 RF-06: client-side status badge — no backend endpoint for this.
 function statusFor(item: StockItem): { label: string; className: string } {
-  const quantity = parseFloat(item.quantity)
-  const minThreshold = parseFloat(item.min_threshold)
-  if (quantity <= 0) {
+  if (isCriticalStock(item)) {
     return { label: 'Crítico', className: 'bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-400' }
   }
-  if (quantity <= minThreshold) {
+  if (isLowStock(item)) {
     return { label: 'Bajo', className: 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-400' }
   }
   return { label: 'Óptimo', className: 'bg-green-100 dark:bg-green-950 text-green-800 dark:text-green-400' }

@@ -2,11 +2,10 @@ import React, { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMyRestaurant } from '../../hooks/useMyRestaurant'
 import { createStockItem, listStockItems } from '../../lib/stockItems'
-import { createSupplier, listSuppliers } from '../../lib/suppliers'
+import { listSuppliers } from '../../lib/suppliers'
 import { ApiError } from '../../lib/api'
 import type { StockCategory, StockItem, StockUnit, Supplier } from '../../lib/types'
 import StockItemRow from '../../components/dashboard/StockItemRow'
-import SupplierRow from '../../components/dashboard/SupplierRow'
 
 const CATEGORY_OPTIONS: { value: StockCategory; label: string }[] = [
   { value: 'carnes_pescados', label: 'Carnes y pescados' },
@@ -83,11 +82,6 @@ export default function StockPage(): React.JSX.Element {
         suppliers={suppliers}
         onItemsChange={setItems}
         loadError={loadError}
-      />
-      <SuppliersSection
-        restaurantId={restaurant.id}
-        suppliers={suppliers}
-        onSuppliersChange={setSuppliers}
       />
     </div>
   )
@@ -229,96 +223,6 @@ function StockItemsSection({
                 )
               }
               onDeleted={(id) => onItemsChange((prev) => prev.filter((i) => i.id !== id))}
-            />
-          </React.Fragment>
-        ))}
-      </ul>
-    </div>
-  )
-}
-
-interface SuppliersSectionProps {
-  restaurantId: string
-  suppliers: Supplier[]
-  onSuppliersChange: (updater: (prev: Supplier[]) => Supplier[]) => void
-}
-
-function SuppliersSection({
-  restaurantId,
-  suppliers,
-  onSuppliersChange,
-}: SuppliersSectionProps): React.JSX.Element {
-  const [newName, setNewName] = useState('')
-  const [creating, setCreating] = useState(false)
-  const [createError, setCreateError] = useState<string | null>(null)
-
-  async function handleCreate(e: FormEvent<HTMLFormElement>): Promise<void> {
-    e.preventDefault()
-    setCreating(true)
-    setCreateError(null)
-    try {
-      const supplier = await createSupplier(restaurantId, { name: newName.trim() })
-      onSuppliersChange((prev) => [...prev, supplier].sort((a, b) => a.name.localeCompare(b.name)))
-      setNewName('')
-    } catch (err) {
-      setCreateError(err instanceof ApiError ? err.message : 'No se pudo crear el proveedor.')
-    } finally {
-      setCreating(false)
-    }
-  }
-
-  return (
-    <div>
-      <div className="rounded-xl bg-white dark:bg-gray-900 p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Proveedores</h2>
-
-        <form onSubmit={handleCreate} className="mt-4 flex flex-wrap items-end gap-2" noValidate>
-          <div>
-            <label htmlFor="new-supplier-name" className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
-              Nombre
-            </label>
-            <input
-              id="new-supplier-name"
-              type="text"
-              required
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              className="w-48 rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={creating || newName.trim() === ''}
-            className="rounded-md bg-gray-900 dark:bg-gray-100 px-3 py-1.5 text-sm font-medium text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {creating ? 'Agregando…' : 'Agregar proveedor'}
-          </button>
-        </form>
-        {createError && (
-          <div role="alert" className="mt-2 text-xs text-red-700 dark:text-red-400">
-            {createError}
-          </div>
-        )}
-      </div>
-
-      {suppliers.length === 0 && (
-        <div className="mt-4 rounded-xl bg-white dark:bg-gray-900 p-6 text-sm text-gray-500 dark:text-gray-400 shadow-sm">
-          Todavía no cargaste ningún proveedor.
-        </div>
-      )}
-
-      <ul className="mt-4 space-y-2">
-        {suppliers.map((supplier) => (
-          <React.Fragment key={supplier.id}>
-            <SupplierRow
-              restaurantId={restaurantId}
-              supplier={supplier}
-              onUpdated={(updated) =>
-                onSuppliersChange((prev) =>
-                  prev.map((s) => (s.id === updated.id ? updated : s)).sort((a, b) => a.name.localeCompare(b.name)),
-                )
-              }
-              onDeleted={(id) => onSuppliersChange((prev) => prev.filter((s) => s.id !== id))}
             />
           </React.Fragment>
         ))}

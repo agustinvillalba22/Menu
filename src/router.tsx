@@ -14,6 +14,7 @@ import PromosPage from './pages/dashboard/PromosPage'
 import RestaurantInfoPage from './pages/dashboard/RestaurantInfoPage'
 import StaffPage from './pages/dashboard/StaffPage'
 import StockPage from './pages/dashboard/StockPage'
+import SuppliersPage from './pages/dashboard/SuppliersPage'
 import ShiftsPage from './pages/dashboard/ShiftsPage'
 import PublicMenuPage from './pages/public/PublicMenuPage'
 import AdminLayout from './pages/admin/AdminLayout'
@@ -81,6 +82,7 @@ export default function AppRouter(): React.JSX.Element {
           <Route path="info" element={<RestaurantInfoPage />} />
           <Route path="staff" element={<StaffPage />} />
           <Route path="stock" element={<StockPage />} />
+          <Route path="suppliers" element={<SuppliersPage />} />
           <Route path="shifts" element={<ShiftsPage />} />
           <Route path="appearance" element={<AppearancePage />} />
         </Route>
