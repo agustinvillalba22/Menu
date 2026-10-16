@@ -172,7 +172,7 @@ export default function RestaurantInfoPage(): React.JSX.Element {
     )
   }
 
-  if (restaurantLoading || loading) {
+  if (restaurantLoading || loading || (restaurantId !== null && info === null && loadError === null)) {
     return <p className="text-sm text-gray-600 dark:text-gray-300">Cargando…</p>
   }
 

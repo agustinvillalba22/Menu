@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import AppearancePage from '../../pages/dashboard/AppearancePage'
 import type { Restaurant, Style } from '../../lib/types'
-import { jsonResponse, readCall, routeFetch } from '../helpers'
+import { errorResponse, jsonResponse, readCall, routeFetch } from '../helpers'
 
 global.fetch = vi.fn()
 beforeEach(() => vi.clearAllMocks())
@@ -204,5 +204,62 @@ describe('AppearancePage', () => {
     const primary = await findLoadedPrimary()
     expect(primary).not.toBeDisabled()
     expect(await screen.findByRole('button', { name: /guardar/i })).not.toBeDisabled()
+  })
+
+  // M25 CA-01: once the restaurant resolves but the style GET is pending, the
+  // form must never be on screen (not even for one transient commit).
+  it('shows "Cargando…" and never the form while the style GET is pending', async () => {
+    vi.mocked(fetch).mockImplementation(async (input) => {
+      const url = String(input)
+      if (url.includes('/style')) return new Promise<Response>(() => {})
+      return jsonResponse([restaurant])
+    })
+
+    const { container } = render(<AppearancePage />)
+    let formEverSeen = false
+    const observer = new MutationObserver((records) => {
+      for (const r of records) {
+        r.addedNodes.forEach((n) => {
+          if (n instanceof Element && (n.matches('#primary_color') || n.querySelector('#primary_color'))) {
+            formEverSeen = true
+          }
+        })
+      }
+    })
+    observer.observe(container, { childList: true, subtree: true })
+
+    await waitFor(() =>
+      expect(vi.mocked(fetch).mock.calls.some((c) => String(c[0]).includes('/style'))).toBe(true),
+    )
+    // Let any pending commits flush.
+    await new Promise((r) => setTimeout(r, 20))
+    observer.disconnect()
+
+    expect(screen.getByText(/cargando…/i)).toBeInTheDocument()
+    expect(screen.queryByLabelText(/color primario/i)).toBeNull()
+    expect(formEverSeen).toBe(false)
+  })
+
+  // M25 CA-02: no restaurant -> create-restaurant message, not "Cargando…".
+  it('shows the create-restaurant message when the user has no restaurant', async () => {
+    routeFetch([{ method: 'GET', match: '/restaurants', response: jsonResponse([]) }])
+
+    render(<AppearancePage />)
+
+    expect(await screen.findByText(/creá tu restaurante primero/i)).toBeInTheDocument()
+    expect(screen.queryByText(/cargando…/i)).toBeNull()
+  })
+
+  // M25 CA-03: a rejected style GET surfaces the alert, not a stuck "Cargando…".
+  it('shows an error alert when the style GET fails', async () => {
+    routeFetch([
+      { method: 'GET', match: '/style', response: errorResponse('boom', 500) },
+      { method: 'GET', match: '/restaurants', response: jsonResponse([restaurant]) },
+    ])
+
+    render(<AppearancePage />)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/no se pudo cargar la apariencia/i)
+    expect(screen.queryByText(/cargando…/i)).toBeNull()
   })
 })
