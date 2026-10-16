@@ -1,3 +1,6 @@
+from typing import Literal
+
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,6 +14,9 @@ class Settings(BaseSettings):
     JWT_EXPIRE_MINUTES: int = 60
     AUTH_COOKIE_NAME: str = "access_token"
     COOKIE_SECURE: bool = False
+    # Browsers reject SameSite=None without Secure; enforced in the validator.
+    COOKIE_SAMESITE: Literal["lax", "strict", "none"] = "lax"
+    LOG_LEVEL: str = "INFO"
 
     # Fase 0a — tz fallback for restaurants whose `timezone` is null and for
     # flows without a restaurant context. IANA name; UTC is a safe no-op.
@@ -34,6 +40,15 @@ class Settings(BaseSettings):
     R2_PUBLIC_URL: str
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    @model_validator(mode="after")
+    def _samesite_none_requires_secure(self) -> "Settings":
+        if self.COOKIE_SAMESITE == "none" and not self.COOKIE_SECURE:
+            raise ValueError(
+                "COOKIE_SAMESITE=none requires COOKIE_SECURE=true "
+                "(browsers reject SameSite=None cookies without Secure)"
+            )
+        return self
 
 
 settings = Settings()

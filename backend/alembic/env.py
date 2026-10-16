@@ -36,7 +36,9 @@ target_metadata = Base.metadata
 def _get_sync_url() -> str:
     """Convert asyncpg URL to psycopg2 URL for Alembic's sync engine."""
     url = os.environ["DATABASE_URL"]
-    return url.replace("postgresql+asyncpg://", "postgresql://").replace(
+    # Explicit driver: SQLAlchemy 2.1 made bare "postgresql://" default to
+    # psycopg (v3), which is not installed; requirements ship psycopg2-binary.
+    return url.replace("postgresql+asyncpg://", "postgresql+psycopg2://").replace(
         "postgresql+asyncpg+", "postgresql+"
     )
 

@@ -111,6 +111,13 @@ Las imágenes de ítem se suben directo del navegador a R2 vía presigned URL (e
 
 Después de cambiar `backend/.env`, recreá el contenedor (`docker compose up -d backend`) para que tome los valores nuevos.
 
+### Logging y cookie de sesión
+
+Variables opcionales en `backend/.env`:
+
+- `LOG_LEVEL` (default `INFO`): nivel de logging del backend. Cada request se loguea en una línea (método, ruta, status, duración y `request_id`) y la respuesta incluye el header `X-Request-ID`.
+- `COOKIE_SAMESITE` (`lax` por defecto, también `strict` o `none`): atributo SameSite de la cookie de sesión. `none` exige `COOKIE_SECURE=true`; si no, el backend no arranca.
+
 ## Tests
 
 **Backend** (pytest, corre contra SQLite in-memory, no necesita Postgres levantado):

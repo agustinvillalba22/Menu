@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.core.logging import configure_logging
+from app.middleware.request_logging import request_logging_middleware
 from app.routers.admin import router as admin_router
 from app.routers.auth import router as auth_router
 from app.routers.business_hours import router as business_hours_router
@@ -22,7 +24,13 @@ from app.routers.subcategory import router as subcategory_router
 from app.routers.supplier import router as supplier_router
 from app.routers.table import router as table_router
 
+configure_logging(settings.LOG_LEVEL)
+
 app = FastAPI(title=settings.APP_NAME)
+
+# Registered before CORS so CORS stays outermost and its headers also land on
+# the 500 produced for unhandled exceptions.
+app.middleware("http")(request_logging_middleware)
 
 app.add_middleware(
     CORSMiddleware,

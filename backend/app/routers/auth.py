@@ -19,7 +19,7 @@ def _set_auth_cookie(response: Response, token: str) -> None:
         key=settings.AUTH_COOKIE_NAME,
         value=token,
         httponly=True,
-        samesite="lax",
+        samesite=settings.COOKIE_SAMESITE,
         path="/",
         max_age=settings.JWT_EXPIRE_MINUTES * _SECONDS_PER_MINUTE,
         secure=settings.COOKIE_SECURE,
@@ -36,7 +36,7 @@ def _clear_auth_cookie(response: Response) -> None:
         key=settings.AUTH_COOKIE_NAME,
         path="/",
         httponly=True,
-        samesite="lax",
+        samesite=settings.COOKIE_SAMESITE,
         secure=settings.COOKIE_SECURE,
     )
 
