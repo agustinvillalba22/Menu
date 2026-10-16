@@ -50,6 +50,8 @@ jobs:
           alembic upgrade head
           alembic downgrade base
           alembic upgrade head
+      - name: Models match migrations (alembic check)
+        run: alembic check
 
   frontend:
     runs-on: ubuntu-latest
