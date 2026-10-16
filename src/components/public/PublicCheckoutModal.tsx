@@ -19,6 +19,8 @@ interface PublicCheckoutModalProps {
   // free text. Empty array (restaurant hasn't adopted the feature) keeps
   // today's free-text input unchanged.
   tables: Table[]
+  // M35: id of the table preselected via the table QR (?mesa=N), if any.
+  initialTableId?: string
   onClose: () => void
   onSuccess: () => void
 }
@@ -53,13 +55,14 @@ export default function PublicCheckoutModal({
   total,
   whatsappEnabled,
   tables,
+  initialTableId,
   onClose,
   onSuccess,
 }: PublicCheckoutModalProps): React.JSX.Element {
   const [customerName, setCustomerName] = useState('')
   const [orderType, setOrderType] = useState<OrderType>('mesa')
   const [tableOrAddress, setTableOrAddress] = useState('')
-  const [tableId, setTableId] = useState('')
+  const [tableId, setTableId] = useState(initialTableId ?? '')
   const [notes, setNotes] = useState('')
   const [phase, setPhase] = useState<Phase>({ status: 'form' })
 

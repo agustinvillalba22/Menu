@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { Search, ShoppingBag, ChevronRight, MapPin, Phone, Clock } from 'lucide-react'
 import { ApiError } from '../../lib/api'
 import { getPublicMenu } from '../../lib/publicMenu'
 import { getCategoryIcon } from '../../lib/categoryIcons'
+import { resolvePreselectedTable } from '../../lib/tableQr'
 import { formatSchedule } from '../../lib/businessHours'
 import type {
   CategoryIcon,
@@ -52,6 +53,8 @@ function matchesSearch(item: PublicItem, query: string): boolean {
 
 export default function PublicMenuPage(): React.JSX.Element {
   const { qrToken } = useParams<{ qrToken: string }>()
+  const [searchParams] = useSearchParams()
+  const mesaParam = searchParams.get('mesa')
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [search, setSearch] = useState('')
@@ -136,6 +139,12 @@ export default function PublicMenuPage(): React.JSX.Element {
 
   const { restaurant, style } = state.data
   const orderingEnabled = restaurant.orders_enabled === true
+  // M35: table preselected by the table QR (?mesa=N) or the session; only ever
+  // a real published table, never the raw query text.
+  const preselectedTable =
+    orderingEnabled && qrToken !== undefined
+      ? resolvePreselectedTable(qrToken, mesaParam, state.data.tables)
+      : null
 
   // P4 — resolve the promo's linked item (if any) so the banner can open
   // its detail modal straight from the categories tree already in memory.
@@ -162,6 +171,12 @@ export default function PublicMenuPage(): React.JSX.Element {
               <h1 className="font-headings text-3xl font-bold uppercase leading-none tracking-tight text-white lg:order-1 lg:shrink-0">
                 {restaurant.name}
               </h1>
+
+              {preselectedTable !== null && (
+                <span className="rounded-full border border-white/50 px-3 py-1 text-xs font-bold text-white lg:order-3">
+                  Mesa {preselectedTable.number}
+                </span>
+              )}
 
               {orderingEnabled && (
                 <button
@@ -349,6 +364,7 @@ export default function PublicMenuPage(): React.JSX.Element {
               // render the "Confirmar por WhatsApp" button iff a phone is set.
               whatsappEnabled={restaurant.whatsapp_enabled === true}
               tables={state.data.tables}
+              initialTableId={preselectedTable?.id}
               onClose={() => setCheckoutOpen(false)}
               onSuccess={() => cart.clear()}
             />
