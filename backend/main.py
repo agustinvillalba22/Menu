@@ -11,6 +11,7 @@ from app.routers.category import router as category_router
 from app.routers.health import router as health_router
 from app.routers.item import router as item_router
 from app.routers.order import router as order_router
+from app.routers.payments import router as payments_router
 from app.routers.menu import router as menu_router
 from app.routers.public_menu import router as public_menu_router
 from app.routers.promo import router as promo_router
@@ -61,3 +62,6 @@ app.include_router(public_menu_router, tags=["public"])
 # order_router owns full paths (public /menu/... and authenticated
 # /restaurants/... routes), so it is registered without a shared prefix.
 app.include_router(order_router, tags=["orders"])
+# payments_router also owns full paths (dashboard, OAuth callback, webhook,
+# public payment status).
+app.include_router(payments_router, tags=["payments"])

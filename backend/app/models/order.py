@@ -24,6 +24,20 @@ class OrderType(str, enum.Enum):
     envio = "envio"
 
 
+class PaymentMethod(str, enum.Enum):
+    cash = "cash"
+    mercadopago = "mercadopago"
+
+
+class PaymentStatus(str, enum.Enum):
+    # `none` = cash orders (nothing to track online).
+    none = "none"
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
+    cancelled = "cancelled"
+
+
 class Order(Base, TimestampMixin):
     __tablename__ = "orders"
 
@@ -83,6 +97,21 @@ class Order(Base, TimestampMixin):
         nullable=True,
     )
     handled_by_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    # M36 — online payment tracking. Cash orders keep none/cash forever.
+    payment_method: Mapped[PaymentMethod] = mapped_column(
+        Enum(PaymentMethod, native_enum=False),
+        nullable=False,
+        default=PaymentMethod.cash,
+        server_default=PaymentMethod.cash.value,
+    )
+    payment_status: Mapped[PaymentStatus] = mapped_column(
+        Enum(PaymentStatus, native_enum=False),
+        nullable=False,
+        default=PaymentStatus.none,
+        server_default=PaymentStatus.none.value,
+    )
+    mp_preference_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    mp_payment_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
 
     # relationships
     items: Mapped[list["OrderItem"]] = relationship(

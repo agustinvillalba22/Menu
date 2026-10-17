@@ -165,6 +165,13 @@ class Restaurant(Base):
         cascade="all, delete-orphan",
         order_by="app.models.stock_item.StockItem.name",
     )
+    # M36 — connected payment account (at most one). Tokens stay encrypted.
+    payment_account: Mapped["app.models.payment_account.PaymentAccount | None"] = relationship(  # type: ignore[name-defined]
+        "PaymentAccount",
+        back_populates="restaurant",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
 
 
 class UserRestaurantRole(Base):

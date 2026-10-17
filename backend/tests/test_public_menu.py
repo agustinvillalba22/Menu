@@ -134,6 +134,7 @@ async def test_ca01_full_menu_tree(client: AsyncClient):
         "business_hours": [],
         "is_open_now": False,
         "whatsapp_enabled": False,
+        "accepts_mercadopago": False,
     }
     assert len(body["categories"]) == 1
     cat = body["categories"][0]

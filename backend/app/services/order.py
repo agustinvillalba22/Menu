@@ -1,18 +1,36 @@
 import uuid
 from decimal import Decimal, ROUND_HALF_UP
 
+import httpx
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.item import Item
 from app.models.item_modifier import ItemModifier
-from app.models.order import Order, OrderItem, OrderItemModifier, OrderStatus, OrderType
+from app.models.order import (
+    Order,
+    OrderItem,
+    OrderItemModifier,
+    OrderStatus,
+    OrderType,
+    PaymentMethod,
+    PaymentStatus,
+)
+from app.models.payment_account import PaymentAccount, PaymentAccountStatus
 from app.models.restaurant import Restaurant
 from app.models.table import Table
 from app.schemas.order import OrderCreate, OrderItemCreate
+from app.core.config import settings
 from app.services.cash_shift import get_open_shift
+from app.services.mercadopago import (
+    MercadoPagoError,
+    PaymentAccountDisconnected,
+    create_preference,
+    get_account,
+    get_seller_token,
+)
 from app.services.menu import resolve_active_menu
 from app.services.staff_member import get_active_staff_member
 from app.services.promo import active_promo_for, promo_discount_pct
@@ -131,8 +149,60 @@ def _build_line(item: Item, line: OrderItemCreate, promo=None) -> OrderItem:
     )
 
 
+async def _require_seller_account(
+    restaurant_id: uuid.UUID, session: AsyncSession
+) -> PaymentAccount:
+    """M36 RF-11: a connected account on a configured server, else 409."""
+    account = await get_account(restaurant_id, session)
+    if (
+        not settings.mercadopago_configured
+        or account is None
+        or account.status != PaymentAccountStatus.connected
+    ):
+        raise HTTPException(status_code=409, detail="mercadopago_unavailable")
+    return account
+
+
+async def _seller_token_or_409(
+    account: PaymentAccount, session: AsyncSession, mp_client: httpx.AsyncClient
+) -> str:
+    try:
+        return await get_seller_token(account, session, mp_client)
+    except PaymentAccountDisconnected:
+        raise HTTPException(status_code=409, detail="mercadopago_unavailable")
+
+
+async def _start_checkout(
+    order: Order,
+    restaurant: Restaurant,
+    token: str,
+    mp_client: httpx.AsyncClient,
+    session: AsyncSession,
+) -> str:
+    """Create the MP preference for a just-persisted order (M36 RF-12/RF-13).
+
+    On any provider failure the order is marked ``cancelled`` so it can never
+    linger as a ``pending`` payment without a preference, and 502 is raised.
+    Returns the preference ``init_point``.
+    """
+    try:
+        preference_id, init_point = await create_preference(
+            order, restaurant, token, mp_client
+        )
+    except MercadoPagoError:
+        order.payment_status = PaymentStatus.cancelled
+        await session.commit()
+        raise HTTPException(status_code=502, detail="payment_provider_error")
+    order.mp_preference_id = preference_id
+    await session.commit()
+    return init_point
+
+
 async def create_order(
-    qr_token: str, data: OrderCreate, session: AsyncSession
+    qr_token: str,
+    data: OrderCreate,
+    session: AsyncSession,
+    mp_client: httpx.AsyncClient | None = None,
 ) -> tuple[Order, Restaurant]:
     """Create a public order for the restaurant resolved by ``qr_token``.
 
@@ -141,6 +211,11 @@ async def create_order(
       2. 404 orders_disabled — restaurant.orders_enabled is False.
       3. 404 item_not_found  — an item_id is missing or belongs elsewhere.
       4. 404 modifier_not_found — a modifier_id does not belong to its line item.
+    M36: with ``payment_method=mercadopago`` a 409 mercadopago_unavailable is
+    checked right after (2) and nothing is created if the seller account is
+    missing/unusable; after persisting, the Checkout Pro preference is created
+    (502 payment_provider_error + order cancelled on failure) and the
+    ``init_point`` is exposed on the returned order as ``payment_url``.
     Total is recomputed entirely server-side.
 
     Returns ``(order, restaurant)`` because the public router needs the
@@ -151,6 +226,10 @@ async def create_order(
     restaurant = await get_public_menu(qr_token, session)
     if not restaurant.orders_enabled:
         raise HTTPException(status_code=404, detail="orders_disabled")
+    pay_online = data.payment_method == PaymentMethod.mercadopago
+    seller_account = (
+        await _require_seller_account(restaurant.id, session) if pay_online else None
+    )
 
     # M17: a real Table takes precedence over free-text table_or_address —
     # server-stamps the display text so a spoofed client value can never show
@@ -189,6 +268,12 @@ async def create_order(
     )
     _check_amount(total)
 
+    seller_token: str | None = None
+    if seller_account is not None:
+        if mp_client is None:
+            raise RuntimeError("mp_client is required for mercadopago orders")
+        seller_token = await _seller_token_or_409(seller_account, session, mp_client)
+
     # P2 (Fase 2b): stamp which menu the guest was browsing. Items are still
     # collected across ALL menus (a cart can outlive a menu switch mid-meal);
     # menu_id is provenance, not an integrity constraint.
@@ -205,10 +290,18 @@ async def create_order(
         total=total,
         menu_id=active_menu.id if active_menu is not None else None,
         items=order_items,
+        payment_method=data.payment_method,
+        payment_status=PaymentStatus.pending if pay_online else PaymentStatus.none,
     )
     session.add(order)
     await session.commit()
+    init_point = None
+    if seller_token is not None:
+        init_point = await _start_checkout(
+            order, restaurant, seller_token, mp_client, session
+        )
     order = await _load_order(order.id, session)
+    order.payment_url = init_point  # type: ignore[attr-defined]  # transient, not a column
     return order, restaurant
 
 
@@ -217,10 +310,20 @@ async def list_orders(
     status_filter: OrderStatus | None,
     session: AsyncSession,
 ) -> list[Order]:
-    """List a restaurant's orders (newest first), optionally filtered by status."""
+    """List a restaurant's orders (newest first), optionally filtered by status.
+
+    M36 RF-21: mercadopago orders only appear once their payment is approved
+    (the kitchen must not cook unpaid orders); cash orders are unaffected.
+    """
     query = (
         select(Order)
-        .where(Order.restaurant_id == restaurant_id)
+        .where(
+            Order.restaurant_id == restaurant_id,
+            or_(
+                Order.payment_method == PaymentMethod.cash,
+                Order.payment_status == PaymentStatus.approved,
+            ),
+        )
         .options(selectinload(Order.items).selectinload(OrderItem.modifiers))
         .order_by(Order.created_at.desc())
     )

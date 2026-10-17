@@ -117,6 +117,9 @@ class PublicRestaurantRead(BaseModel):
     # page-source scrapers; the deep link URL is minted server-side in the
     # POST /orders response and that's the only place the real wa.me URL lives.
     whatsapp_enabled: bool
+    # M36 — true only when the restaurant has a connected Mercado Pago account
+    # AND the server is configured; drives the checkout's payment selector.
+    accepts_mercadopago: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 

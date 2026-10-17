@@ -39,7 +39,34 @@ class Settings(BaseSettings):
     R2_BUCKET_NAME: str
     R2_PUBLIC_URL: str
 
+    # M36 — Mercado Pago (Checkout Pro, marketplace model). All optional with
+    # empty defaults: a missing value must never break startup or tests; the
+    # integration simply reports itself as not configured (see
+    # `mercadopago_configured`).
+    MP_CLIENT_ID: str = ""
+    MP_CLIENT_SECRET: str = ""
+    MP_WEBHOOK_SECRET: str = ""
+    # Fernet key (urlsafe base64, 32 bytes) used to encrypt sellers' tokens.
+    MP_TOKEN_ENCRYPTION_KEY: str = ""
+    # Public base URL of this backend (OAuth redirect_uri, webhook URL).
+    PUBLIC_API_URL: str = ""
+    # Base URL of the frontend (payment back_urls, OAuth result redirect).
+    FRONTEND_URL: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    @property
+    def mercadopago_configured(self) -> bool:
+        return all(
+            (
+                self.MP_CLIENT_ID,
+                self.MP_CLIENT_SECRET,
+                self.MP_WEBHOOK_SECRET,
+                self.MP_TOKEN_ENCRYPTION_KEY,
+                self.PUBLIC_API_URL,
+                self.FRONTEND_URL,
+            )
+        )
 
     @model_validator(mode="after")
     def _samesite_none_requires_secure(self) -> "Settings":

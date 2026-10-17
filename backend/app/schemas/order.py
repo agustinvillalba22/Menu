@@ -5,7 +5,7 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from app.models.item_modifier import ModifierType
-from app.models.order import OrderStatus, OrderType
+from app.models.order import OrderStatus, OrderType, PaymentMethod, PaymentStatus
 
 
 class OrderItemCreate(BaseModel):
@@ -29,6 +29,8 @@ class OrderCreate(BaseModel):
     # text — the server stamps table_or_address itself (see create_order).
     table_id: uuid.UUID | None = None
     notes: str | None = Field(default=None, max_length=500)
+    # M36: omitted/cash = pay at the venue (pre-M36 behavior, untouched).
+    payment_method: PaymentMethod = PaymentMethod.cash
     # max_length caps request size / DB writes for this public, unauthenticated
     # endpoint (M11 review CRIT-01).
     items: list[OrderItemCreate] = Field(min_length=1, max_length=100)
@@ -89,6 +91,11 @@ class OrderRead(BaseModel):
     cash_shift_id: uuid.UUID | None = None
     handled_by_id: uuid.UUID | None = None
     handled_by_name: str | None = None
+    # M36: online-payment state. ``payment_url`` (the Checkout Pro init_point)
+    # is only set by the public POST for mercadopago orders.
+    payment_method: PaymentMethod = PaymentMethod.cash
+    payment_status: PaymentStatus = PaymentStatus.none
+    payment_url: str | None = None
     items: list[OrderItemRead]
     # P7: pre-built ``https://wa.me/...`` URL the customer's checkout UI opens
     # after the order is persisted. Null when the restaurant has no

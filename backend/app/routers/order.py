@@ -1,10 +1,12 @@
 import uuid
 
+import httpx
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.dependencies.auth import require_role
+from app.dependencies.mercadopago import get_mp_client
 from app.models.order import OrderStatus
 from app.models.restaurant import RestaurantRole
 from app.models.user import User
@@ -24,6 +26,7 @@ async def create_public_order(
     qr_token: str,
     data: OrderCreate,
     session: AsyncSession = Depends(get_db),
+    mp_client: httpx.AsyncClient = Depends(get_mp_client),
 ) -> OrderRead:
     """Public (no-auth) order creation. Total is recomputed server-side.
 
@@ -32,7 +35,7 @@ async def create_public_order(
     WhatsApp" deep link without re-fetching anything. Null when the
     restaurant hasn't set a WhatsApp number.
     """
-    order, restaurant = await create_order(qr_token, data, session)
+    order, restaurant = await create_order(qr_token, data, session, mp_client)
     read = OrderRead.model_validate(order)
     read.whatsapp_url = build_whatsapp_url(order, restaurant)
     return read

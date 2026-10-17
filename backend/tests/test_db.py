@@ -46,6 +46,8 @@ EXPECTED_TABLES = {
     "stock_items",
     # 0014_cash_shifts (M20)
     "cash_shifts",
+    # 0018_mercadopago_payments (M36)
+    "payment_accounts",
 }
 
 

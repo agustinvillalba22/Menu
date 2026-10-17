@@ -10,3 +10,6 @@ def configure_logging(level: str) -> None:
     (e.g. under uvicorn --reload) never duplicates output.
     """
     logging.basicConfig(level=level.upper(), format=LOG_FORMAT, force=True)
+    # httpx logs every request URL at INFO; keep outbound calls to payment
+    # providers out of the logs unless something is wrong.
+    logging.getLogger("httpx").setLevel(logging.WARNING)

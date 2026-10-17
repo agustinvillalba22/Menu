@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.cash_shift import CashShift
-from app.models.order import Order, OrderStatus
+from app.models.order import Order, OrderStatus, PaymentMethod
 from app.schemas.cash_shift import CashShiftClose, CashShiftOpen
 from app.services.staff_member import get_active_staff_member
 
@@ -79,6 +79,8 @@ async def _completed_total(shift_id: uuid.UUID, session: AsyncSession) -> Decima
         select(func.coalesce(func.sum(Order.total), 0)).where(
             Order.cash_shift_id == shift_id,
             Order.status == OrderStatus.completed,
+            # M36: money collected through Mercado Pago never enters the till.
+            Order.payment_method == PaymentMethod.cash,
         )
     )
     return Decimal(str(result.scalar_one()))
