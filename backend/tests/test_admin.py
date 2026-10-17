@@ -13,6 +13,7 @@ asyncio_mode=auto via pytest.ini — no @pytest.mark.asyncio needed.
 import subprocess
 import sys
 import uuid
+from pathlib import Path
 
 from httpx import AsyncClient
 from sqlalchemy import select
@@ -409,7 +410,7 @@ def _run_script(*args: str) -> subprocess.CompletedProcess:
         [sys.executable, "scripts/promote_superadmin.py", *args],
         capture_output=True,
         text=True,
-        cwd="/home/pablo/projects/Menu/backend",
+        cwd=Path(__file__).resolve().parent.parent,
     )
 
 
