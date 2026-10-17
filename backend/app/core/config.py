@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     # back-compat). On = menus with `start_time` are filtered by the current
     # time in the restaurant's tz, falling back to `is_default` when none
     # matches. Per-restaurant gating arrives with the Fase 3 CRUD.
-    MENU_SCHEDULING_ENABLED: bool = False
+    MENU_SCHEDULING_ENABLED: bool = True
 
     # Cloudflare R2 (S3-compatible object storage) — M4 item images.
     # No defaults: missing any of these fails app startup (fail-fast, same
