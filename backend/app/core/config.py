@@ -42,13 +42,16 @@ class Settings(BaseSettings):
     # M36 — Mercado Pago (Checkout Pro, marketplace model). All optional with
     # empty defaults: a missing value must never break startup or tests; the
     # integration simply reports itself as not configured (see
-    # `mercadopago_configured`).
+    # `mercadopago_configured` / `mercadopago_oauth_configured`).
     MP_CLIENT_ID: str = ""
     MP_CLIENT_SECRET: str = ""
     MP_WEBHOOK_SECRET: str = ""
     # Fernet key (urlsafe base64, 32 bytes) used to encrypt sellers' tokens.
     MP_TOKEN_ENCRYPTION_KEY: str = ""
     # Public base URL of this backend (OAuth redirect_uri, webhook URL).
+    # Development only: access token of a Mercado Pago *test* seller, used by
+    # scripts/connect_test_seller.py to skip the OAuth step. Never set in prod.
+    MP_TEST_SELLER_ACCESS_TOKEN: str = ""
     PUBLIC_API_URL: str = ""
     # Base URL of the frontend (payment back_urls, OAuth result redirect).
     FRONTEND_URL: str = ""
@@ -57,15 +60,23 @@ class Settings(BaseSettings):
 
     @property
     def mercadopago_configured(self) -> bool:
+        """Enough to charge and confirm payments with an already-stored seller
+        token (preference, webhook, public flag). Needs no client credentials."""
         return all(
             (
-                self.MP_CLIENT_ID,
-                self.MP_CLIENT_SECRET,
                 self.MP_WEBHOOK_SECRET,
                 self.MP_TOKEN_ENCRYPTION_KEY,
                 self.PUBLIC_API_URL,
                 self.FRONTEND_URL,
             )
+        )
+
+    @property
+    def mercadopago_oauth_configured(self) -> bool:
+        """Additionally needed to connect a restaurant by OAuth (and to refresh
+        its token): the application's client id and secret."""
+        return bool(
+            self.mercadopago_configured and self.MP_CLIENT_ID and self.MP_CLIENT_SECRET
         )
 
     @model_validator(mode="after")

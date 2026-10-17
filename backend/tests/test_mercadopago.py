@@ -240,12 +240,10 @@ async def mp_order(client, db, mp, s) -> str:
 # ---------------------------------------------------------------------------
 
 
-def test_mercadopago_configured_requires_every_variable(monkeypatch):
+def test_mercadopago_configured_requires_payment_variables(monkeypatch):
     _configure(monkeypatch)
     assert settings.mercadopago_configured is True
     for name in (
-        "MP_CLIENT_ID",
-        "MP_CLIENT_SECRET",
         "MP_WEBHOOK_SECRET",
         "MP_TOKEN_ENCRYPTION_KEY",
         "PUBLIC_API_URL",
@@ -254,6 +252,17 @@ def test_mercadopago_configured_requires_every_variable(monkeypatch):
         with monkeypatch.context() as m:
             m.setattr(settings, name, "")
             assert settings.mercadopago_configured is False, name
+            assert settings.mercadopago_oauth_configured is False, name
+
+
+def test_charging_does_not_need_client_credentials_but_oauth_does(monkeypatch):
+    _configure(monkeypatch)
+    assert settings.mercadopago_oauth_configured is True
+    for name in ("MP_CLIENT_ID", "MP_CLIENT_SECRET"):
+        with monkeypatch.context() as m:
+            m.setattr(settings, name, "")
+            assert settings.mercadopago_configured is True, name
+            assert settings.mercadopago_oauth_configured is False, name
 
 
 def test_mp_settings_default_to_empty_string():
@@ -567,7 +576,7 @@ async def test_status_disconnected_account(client, db_session, mp):
 
 
 async def test_status_reports_unconfigured_server(client, mp, monkeypatch):
-    monkeypatch.setattr(settings, "MP_CLIENT_SECRET", "")
+    monkeypatch.setattr(settings, "MP_WEBHOOK_SECRET", "")
     headers = await as_user(client)
     rid = (await make_restaurant(client, headers))["id"]
     res = await client.get(f"/restaurants/{rid}/payments/mercadopago", headers=headers)
@@ -710,6 +719,18 @@ async def test_explicit_cash_order_is_unchanged_even_with_account(client, db_ses
     assert res.json()["payment_status"] == "none"
     assert res.json()["payment_url"] is None
     assert mp.calls == []
+
+
+async def test_local_http_frontend_omits_auto_return(client, db_session, mp, monkeypatch):
+    """MP answers 400 invalid_auto_return for non-https back_urls (local dev)."""
+    s = await seed(client, db_session)
+    monkeypatch.setattr(settings, "FRONTEND_URL", "http://localhost:3000")
+    res = await place(client, s)
+    assert res.status_code == 201, res.text
+    (req,) = mp.calls_to("/checkout/preferences")
+    pref = mp.body(req)
+    assert "auto_return" not in pref
+    assert pref["back_urls"]["success"].startswith("http://localhost:3000/menu/")
 
 
 async def test_invalid_payment_method_is_422(client, db_session, mp):
@@ -1312,7 +1333,7 @@ async def test_public_menu_accepts_mercadopago_false_when_server_unconfigured(
     client, db_session, mp, monkeypatch
 ):
     s = await seed(client, db_session)
-    monkeypatch.setattr(settings, "MP_CLIENT_SECRET", "")
+    monkeypatch.setattr(settings, "MP_WEBHOOK_SECRET", "")
     res = await client.get(f"/menu/{s.qr}")
     assert res.json()["restaurant"]["accepts_mercadopago"] is False
     assert ACCESS not in res.text

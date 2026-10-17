@@ -253,7 +253,7 @@ def _preference_body(order: Order, restaurant: Restaurant) -> dict:
     front = settings.FRONTEND_URL.rstrip("/")
     back = f"{front}/menu/{restaurant.qr_token}"
     ref = f"order={order.id}"
-    return {
+    body = {
         "items": [
             {
                 "title": f"Pedido en {restaurant.name}",
@@ -269,8 +269,13 @@ def _preference_body(order: Order, restaurant: Restaurant) -> dict:
             "failure": f"{back}?pago=error&{ref}",
             "pending": f"{back}?pago=pendiente&{ref}",
         },
-        "auto_return": "approved",
     }
+    # MP rejects auto_return (400 invalid_auto_return) when the back_urls are
+    # not public https, e.g. a local http://localhost frontend; the buyer then
+    # returns with the "volver al sitio" button instead of automatically.
+    if front.startswith("https://"):
+        body["auto_return"] = "approved"
+    return body
 
 
 async def create_preference(

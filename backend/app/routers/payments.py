@@ -50,7 +50,7 @@ async def connect_mercadopago(
     restaurant_id: uuid.UUID,
     _: User = Depends(require_role(RestaurantRole.owner)),
 ) -> MercadoPagoConnectRead:
-    if not settings.mercadopago_configured:
+    if not settings.mercadopago_oauth_configured:
         raise HTTPException(status_code=503, detail="payments_not_configured")
     return MercadoPagoConnectRead(
         authorization_url=build_authorization_url(restaurant_id)
@@ -100,7 +100,7 @@ async def mercadopago_callback(
     Always answers 302 to the dashboard; the outcome is only ``connected`` or
     ``error`` — no token nor provider detail ever reaches the URL.
     """
-    if not settings.mercadopago_configured or not code or not state:
+    if not settings.mercadopago_oauth_configured or not code or not state:
         return _result_redirect("error")
     try:
         restaurant_id = decode_state(state)
