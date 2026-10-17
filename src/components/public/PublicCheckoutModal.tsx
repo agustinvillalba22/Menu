@@ -3,7 +3,7 @@ import { X, CheckCircle2, Loader2, AlertTriangle, MessageCircle } from 'lucide-r
 import { ApiError } from '../../lib/api'
 import { createOrder } from '../../lib/orders'
 import type { CartLine } from './cart'
-import type { OrderCreatePayload, OrderRead, OrderType, Table } from '../../lib/types'
+import type { OrderCreatePayload, OrderRead, OrderType, PaymentMethod, Table } from '../../lib/types'
 
 interface PublicCheckoutModalProps {
   qrToken: string
@@ -21,6 +21,9 @@ interface PublicCheckoutModalProps {
   tables: Table[]
   // M35: id of the table preselected via the table QR (?mesa=N), if any.
   initialTableId?: string
+  // M36: when true the guest can choose between paying at the local and paying
+  // with Mercado Pago. Absent/false → no selector, payload unchanged.
+  acceptsMercadoPago?: boolean
   onClose: () => void
   onSuccess: () => void
 }
@@ -28,8 +31,14 @@ interface PublicCheckoutModalProps {
 type Phase =
   | { status: 'form' }
   | { status: 'submitting' }
+  | { status: 'redirecting' }
   | { status: 'error'; message: string }
   | { status: 'done'; order: OrderRead }
+
+const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
+  { value: 'cash', label: 'Pagar en el local' },
+  { value: 'mercadopago', label: 'Pagar con Mercado Pago' },
+]
 
 const ORDER_TYPES: { value: OrderType; label: string }[] = [
   { value: 'mesa', label: 'En mesa' },
@@ -42,6 +51,12 @@ function errorMessage(err: unknown): string {
     if (err.code === 'orders_disabled') return 'El local dejó de aceptar pedidos.'
     if (err.code === 'item_not_found' || err.code === 'modifier_not_found') {
       return 'Algún producto de tu pedido ya no está disponible. Revisá tu carrito.'
+    }
+    if (err.code === 'mercadopago_unavailable') {
+      return 'Mercado Pago no está disponible en este momento. Elegí pagar en el local.'
+    }
+    if (err.code === 'payment_provider_error') {
+      return 'No pudimos iniciar el pago con Mercado Pago. Intentá de nuevo.'
     }
     if (err.status === 422) return 'Revisá los datos del pedido e intentá de nuevo.'
   }
@@ -56,6 +71,7 @@ export default function PublicCheckoutModal({
   whatsappEnabled,
   tables,
   initialTableId,
+  acceptsMercadoPago = false,
   onClose,
   onSuccess,
 }: PublicCheckoutModalProps): React.JSX.Element {
@@ -64,12 +80,16 @@ export default function PublicCheckoutModal({
   const [tableOrAddress, setTableOrAddress] = useState('')
   const [tableId, setTableId] = useState(initialTableId ?? '')
   const [notes, setNotes] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash')
   const [phase, setPhase] = useState<Phase>({ status: 'form' })
 
   const needsLocation = orderType === 'mesa' || orderType === 'envio'
   const locationLabel = orderType === 'mesa' ? 'Número de mesa' : 'Dirección de entrega'
   // M17: real tables available → the "mesa" field becomes a <select>.
   const useTableSelect = orderType === 'mesa' && tables.length > 0
+
+  const payWithMercadoPago = acceptsMercadoPago && paymentMethod === 'mercadopago'
+  const busy = phase.status === 'submitting' || phase.status === 'redirecting'
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
@@ -86,9 +106,20 @@ export default function PublicCheckoutModal({
         special_instructions: l.specialInstructions ?? null,
       })),
     }
+    if (payWithMercadoPago) payload.payment_method = 'mercadopago'
     setPhase({ status: 'submitting' })
     try {
       const order = await createOrder(qrToken, payload)
+      if (payWithMercadoPago) {
+        // The cart stays intact until the payment is confirmed on return.
+        if (!order.payment_url) {
+          setPhase({ status: 'error', message: errorMessage(null) })
+          return
+        }
+        setPhase({ status: 'redirecting' })
+        window.location.assign(order.payment_url)
+        return
+      }
       onSuccess()
       setPhase({ status: 'done', order })
     } catch (err) {
@@ -206,6 +237,31 @@ export default function PublicCheckoutModal({
               </div>
             </fieldset>
 
+            {acceptsMercadoPago && (
+              <fieldset className="space-y-1.5">
+                <legend className="text-[11px] font-black uppercase tracking-widest text-gray-400">
+                  Método de pago
+                </legend>
+                <div className="flex gap-2">
+                  {PAYMENT_METHODS.map((opt) => (
+                    <button
+                      type="button"
+                      key={opt.value}
+                      aria-pressed={paymentMethod === opt.value}
+                      onClick={() => setPaymentMethod(opt.value)}
+                      className={`flex-1 rounded-xl border px-2 py-2.5 text-xs font-black transition-all ${
+                        paymentMethod === opt.value
+                          ? 'border-primario bg-secundario text-primario'
+                          : 'border-gray-200 bg-white text-gray-500 hover:text-gray-800'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+            )}
+
             {needsLocation && useTableSelect && (
               <div className="space-y-1.5">
                 <label htmlFor="table-select" className="text-[11px] font-black uppercase tracking-widest text-gray-400">
@@ -277,13 +333,13 @@ export default function PublicCheckoutModal({
             <button
               type="submit"
               id="btn-submit-order"
-              disabled={phase.status === 'submitting'}
+              disabled={busy}
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primario py-4 text-base font-bold text-white shadow-lg transition-all hover:opacity-95 active:scale-[0.98] disabled:opacity-60"
             >
-              {phase.status === 'submitting' ? (
+              {busy ? (
                 <>
                   <Loader2 className="h-4.5 w-4.5 animate-spin" />
-                  <span>Enviando…</span>
+                  <span>{phase.status === 'redirecting' ? 'Redirigiendo a Mercado Pago…' : 'Enviando…'}</span>
                 </>
               ) : (
                 <span>Confirmar pedido • ${total.toFixed(2)}</span>

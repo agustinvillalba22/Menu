@@ -19,6 +19,8 @@ import PublicItemModal from '../../components/public/PublicItemModal'
 import PublicCartDrawer from '../../components/public/PublicCartDrawer'
 import PublicCheckoutModal from '../../components/public/PublicCheckoutModal'
 import PublicPromoBanner from '../../components/public/PublicPromoBanner'
+import PaymentReturnBanner from '../../components/public/PaymentReturnBanner'
+import { usePaymentReturn } from '../../components/public/usePaymentReturn'
 
 type LoadState =
   | { status: 'loading' }
@@ -66,6 +68,9 @@ export default function PublicMenuPage(): React.JSX.Element {
   // same rule the server recomputes at POST (server authoritative).
   const activePromo = state.status === 'ready' ? state.data.promo : null
   const cart = usePublicCart(qrToken, activePromo)
+  // M36: return from Mercado Pago (?pago=…&order=…). The cart is only emptied
+  // once the payment is confirmed as approved.
+  const paymentReturn = usePaymentReturn(qrToken, cart.clear)
 
   useEffect(() => {
     if (qrToken === undefined) {
@@ -139,6 +144,9 @@ export default function PublicMenuPage(): React.JSX.Element {
 
   const { restaurant, style } = state.data
   const orderingEnabled = restaurant.orders_enabled === true
+  // M36: tolerate the flag on the restaurant block or at the top level.
+  const acceptsMercadoPago =
+    (restaurant.accepts_mercadopago ?? state.data.accepts_mercadopago) === true
   // M35: table preselected by the table QR (?mesa=N) or the session; only ever
   // a real published table, never the raw query text.
   const preselectedTable =
@@ -227,6 +235,10 @@ export default function PublicMenuPage(): React.JSX.Element {
             />
           </div>
         </header>
+
+        {paymentReturn.state !== null && (
+          <PaymentReturnBanner state={paymentReturn.state} onClose={paymentReturn.dismiss} />
+        )}
 
         {/* P4 — active promo banner (server-resolved; null renders nothing) */}
         {state.data.promo && (
@@ -365,6 +377,7 @@ export default function PublicMenuPage(): React.JSX.Element {
               whatsappEnabled={restaurant.whatsapp_enabled === true}
               tables={state.data.tables}
               initialTableId={preselectedTable?.id}
+              acceptsMercadoPago={acceptsMercadoPago}
               onClose={() => setCheckoutOpen(false)}
               onSuccess={() => cart.clear()}
             />

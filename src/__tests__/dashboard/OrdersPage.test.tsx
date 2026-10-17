@@ -36,6 +36,9 @@ const order: OrderRead = {
   handled_by_id: null,
   handled_by_name: null,
   cash_shift_id: null,
+  payment_method: 'cash',
+  payment_status: 'none',
+  payment_url: null,
   items: [
     {
       id: 'oi1',

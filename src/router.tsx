@@ -16,6 +16,7 @@ import StaffPage from './pages/dashboard/StaffPage'
 import StockPage from './pages/dashboard/StockPage'
 import SuppliersPage from './pages/dashboard/SuppliersPage'
 import ShiftsPage from './pages/dashboard/ShiftsPage'
+import PaymentsPage from './pages/dashboard/PaymentsPage'
 import PublicMenuPage from './pages/public/PublicMenuPage'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
@@ -84,6 +85,7 @@ export default function AppRouter(): React.JSX.Element {
           <Route path="stock" element={<StockPage />} />
           <Route path="suppliers" element={<SuppliersPage />} />
           <Route path="shifts" element={<ShiftsPage />} />
+          <Route path="payments" element={<PaymentsPage />} />
           <Route path="appearance" element={<AppearancePage />} />
         </Route>
         <Route

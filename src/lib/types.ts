@@ -281,6 +281,8 @@ export interface PublicRestaurant {
   // without a second round trip. Boolean only: the raw phone never leaves the
   // server (the deep link URL is minted server-side in POST /orders).
   whatsapp_enabled: boolean
+  // M36 — true only with a connected Mercado Pago account + server configured.
+  accepts_mercadopago?: boolean
 }
 
 export interface PublicMenuResponse {
@@ -292,6 +294,8 @@ export interface PublicMenuResponse {
   // M17 — the restaurant's configured tables (empty if none set up yet).
   tables: Table[]
   categories: PublicCategory[]
+  // M36 — also accepted at the top level of the response (see PublicMenuPage).
+  accepts_mercadopago?: boolean
 }
 
 // --- Promos (P4/P5, Fase 2c/2d) ---------------------------------------------
@@ -545,6 +549,25 @@ export type StockItemUpdatePayload = Partial<StockItemCreatePayload>
 export type OrderType = 'mesa' | 'llevar' | 'envio'
 export type OrderStatus = 'pending' | 'accepted' | 'ready' | 'completed' | 'cancelled'
 
+// --- Pagos con Mercado Pago (M36) -------------------------------------------
+
+export type PaymentMethod = 'cash' | 'mercadopago'
+export type PaymentStatus = 'none' | 'pending' | 'approved' | 'rejected' | 'cancelled'
+
+/** Dashboard view of the restaurant's Mercado Pago account — never carries tokens. */
+export interface MercadoPagoStatus {
+  configured: boolean
+  connected: boolean
+  status: 'connected' | 'disconnected' | null
+  mp_user_id: string | null
+}
+
+/** Public polling response for the post-payment return screen. */
+export interface PublicPaymentStatus {
+  payment_status: PaymentStatus
+  status: OrderStatus
+}
+
 export interface OrderItemCreate {
   item_id: string
   quantity: number
@@ -560,6 +583,9 @@ export interface OrderCreatePayload {
   // configured, the client sends the picked table's id instead of free text.
   table_id?: string | null
   notes?: string | null
+  // M36 — omitted for cash (server default); 'mercadopago' only when the menu
+  // reports `accepts_mercadopago`.
+  payment_method?: PaymentMethod
   items: OrderItemCreate[]
 }
 
@@ -608,6 +634,11 @@ export interface OrderRead {
   handled_by_id: string | null
   handled_by_name: string | null
   cash_shift_id: string | null
+  // M36: how the order is paid. `payment_url` is the Checkout Pro `init_point`,
+  // only set on the POST /menu/{qr}/orders response for mercadopago orders.
+  payment_method: PaymentMethod
+  payment_status: PaymentStatus
+  payment_url: string | null
 }
 
 // --- Panel de administración (M13.2) ---------------------------------------

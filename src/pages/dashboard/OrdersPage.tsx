@@ -242,11 +242,18 @@ export default function OrdersPage(): React.JSX.Element {
                   {order.table_or_address ? ` · ${order.table_or_address}` : ''}
                 </p>
               </div>
-              <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_BADGE[order.status]}`}
-              >
-                {STATUS_LABEL[order.status]}
-              </span>
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {order.payment_method === 'mercadopago' && (
+                  <span className="inline-flex items-center rounded-full bg-sky-100 dark:bg-sky-950 px-2.5 py-0.5 text-xs font-medium text-sky-800 dark:text-sky-400">
+                    Pagado · Mercado Pago
+                  </span>
+                )}
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_BADGE[order.status]}`}
+                >
+                  {STATUS_LABEL[order.status]}
+                </span>
+              </div>
             </div>
 
             <ul className="mt-4 space-y-2">

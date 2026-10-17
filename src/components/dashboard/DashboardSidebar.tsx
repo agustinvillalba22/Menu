@@ -149,7 +149,7 @@ export default function DashboardSidebar({
               }
             />
             <SidebarNavItem to="/dashboard/suppliers" label="Proveedores" icon={Truck} onNavigate={onNavigate} />
-            <SidebarSoonItem label="Pasarela de pagos" icon={CreditCard} />
+            <SidebarNavItem to="/dashboard/payments" label="Pasarela de pagos" icon={CreditCard} onNavigate={onNavigate} />
             <SidebarNavItem to="/dashboard/staff" label="Usuarios y roles" icon={Users2} onNavigate={onNavigate} />
           </SidebarGroup>
 

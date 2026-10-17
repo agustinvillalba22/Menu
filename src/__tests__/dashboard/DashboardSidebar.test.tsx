@@ -64,6 +64,7 @@ describe('DashboardSidebar', () => {
       ['Turnos', '/dashboard/shifts'],
       ['Stock de mercadería', '/dashboard/stock'],
       ['Proveedores', '/dashboard/suppliers'],
+      ['Pasarela de pagos', '/dashboard/payments'],
       ['Usuarios y roles', '/dashboard/staff'],
     ]
     for (const [label, href] of expected) {
@@ -82,7 +83,6 @@ describe('DashboardSidebar', () => {
     renderSidebar()
     for (const label of [
       'Distribución del local',
-      'Pasarela de pagos',
       'Estadísticas de pedidos',
       'Perfil y turno',
     ]) {
