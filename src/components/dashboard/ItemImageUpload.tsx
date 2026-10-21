@@ -4,7 +4,7 @@ import {
   getItemImageUploadUrl,
   confirmItemImageUpload,
   deleteItemImage,
-} from '../../lib/menu'
+} from '../../lib/catalog'
 import { ApiError } from '../../lib/api'
 import { uploadImageToR2 } from '../../lib/r2'
 

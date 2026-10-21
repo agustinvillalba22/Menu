@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { importItemsCsv } from '../../lib/menu'
+import { importItemsCsv } from '../../lib/catalog'
 import { ApiError } from '../../lib/api'
 import type { ImportResult, Menu } from '../../lib/types'
 

@@ -17,7 +17,7 @@ import {
   listCategories,
   listSubcategories,
   listItems,
-} from '../../lib/menu'
+} from '../../lib/catalog'
 import type { Item, Promo, PromoScope, PromoUpdate } from '../../lib/types'
 
 // The dashboard "Promos" page: list + create/edit form
