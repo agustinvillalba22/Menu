@@ -22,12 +22,8 @@ from app.models.item import Item
 from app.models.menu import Category, Menu, Subcategory
 from app.models.promo import Promo, PromoScope
 from app.models.restaurant import Restaurant
-from app.schemas.promo import (
-    PromoCreate,
-    PromoImageConfirmRequest,
-    PromoImageUploadRequest,
-    PromoUpdate,
-)
+from app.schemas.image_upload import ImageConfirmRequest, ImageUploadRequest, ImageUploadResponse
+from app.schemas.promo import PromoCreate, PromoUpdate
 from app.services import image_upload
 from app.services.datetime import now_in
 from app.services.crud import apply_patch
@@ -325,40 +321,29 @@ def _image_prefix(restaurant_id: uuid.UUID, promo_id: uuid.UUID) -> str:
 async def create_promo_image_upload_url(
     restaurant_id: uuid.UUID,
     promo_id: uuid.UUID,
-    data: PromoImageUploadRequest,
+    data: ImageUploadRequest,
     session: AsyncSession,
-) -> tuple[str, str, int]:
+) -> ImageUploadResponse:
     """Validate content type/size and sign a presigned PUT URL.
 
-    Returns ``(upload_url, object_key, expires_in)``; persistence happens on
-    confirm so a signed-but-never-uploaded URL leaves no trace.
+    Persistence happens on confirm, so a signed-but-never-uploaded URL leaves
+    no trace.
     """
     await get_promo(restaurant_id, promo_id, session)
-    return await image_upload.sign_upload(
-        data.content_type,
-        data.file_size,
-        _image_prefix(restaurant_id, promo_id),
-    )
+    return await image_upload.request_upload(data, _image_prefix(restaurant_id, promo_id))
 
 
 async def confirm_promo_image_upload(
     restaurant_id: uuid.UUID,
     promo_id: uuid.UUID,
-    data: PromoImageConfirmRequest,
+    data: ImageConfirmRequest,
     session: AsyncSession,
 ) -> Promo:
     """Verify the R2 object and persist its public URL on the promo."""
     promo = await get_promo(restaurant_id, promo_id, session)
-    public_url = await image_upload.verify_upload(
-        data.object_key, _image_prefix(restaurant_id, promo_id)
+    await image_upload.replace_image(
+        session, promo, "image_url", data.object_key, _image_prefix(restaurant_id, promo_id)
     )
-    if promo.image_url:
-        await image_upload.delete_object_best_effort(
-            image_upload.object_key_from_url(promo.image_url)
-        )
-    promo.image_url = public_url
-    await session.commit()
-    await session.refresh(promo)
     return promo
 
 
@@ -367,12 +352,6 @@ async def delete_promo_image(
 ) -> Promo:
     """Remove the promo image from R2 (best-effort) and clear image_url."""
     promo = await get_promo(restaurant_id, promo_id, session)
-    if not promo.image_url:
-        raise HTTPException(status_code=404, detail="promo_image_not_found")
-    await image_upload.delete_object_best_effort(
-        image_upload.object_key_from_url(promo.image_url)
-    )
-    promo.image_url = None
-    await session.commit()
+    await image_upload.clear_image(session, promo, "image_url", "promo_image_not_found")
     await session.refresh(promo)
     return promo
