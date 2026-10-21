@@ -170,7 +170,6 @@ export default function PromosPage(): React.JSX.Element {
   useEffect(() => {
     if (restaurantId === null) return
     void reload(restaurantId)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurantId])
 
   const editingPromo =

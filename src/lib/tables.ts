@@ -1,10 +1,6 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from './api'
 import type { Table, TableCreatePayload, TableOccupancy, TableUpdatePayload } from './types'
 
-export function listTables(restaurantId: string): Promise<Table[]> {
-  return apiGet<Table[]>(`/restaurants/${restaurantId}/tables`)
-}
-
 export function createTable(restaurantId: string, data: TableCreatePayload): Promise<Table> {
   return apiPost<Table>(`/restaurants/${restaurantId}/tables`, data)
 }

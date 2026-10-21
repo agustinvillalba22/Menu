@@ -1,7 +1,6 @@
 import { apiGet, apiPost, apiPatch, apiDelete, apiUpload } from './api'
 import type {
   Category,
-  CategoryCreate,
   CategoryUpdate,
   Subcategory,
   SubcategoryCreate,
@@ -23,10 +22,6 @@ import type {
 
 export function listCategories(restaurantId: string): Promise<Category[]> {
   return apiGet<Category[]>(`/restaurants/${restaurantId}/categories`)
-}
-
-export function createCategory(restaurantId: string, data: CategoryCreate): Promise<Category> {
-  return apiPost<Category>(`/restaurants/${restaurantId}/categories`, data)
 }
 
 export function updateCategory(

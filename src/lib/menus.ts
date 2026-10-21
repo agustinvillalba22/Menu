@@ -1,12 +1,8 @@
 import { apiGet, apiPost, apiPatch, apiDelete } from './api'
-import type { Category, CategoryCreate, CategoryUpdate, Menu, MenuCreate, MenuUpdate, Subcategory } from './types'
+import type { Category, CategoryCreate, Menu, MenuCreate, MenuUpdate } from './types'
 
 // Menus (M21). Categories-by-menu use the v2 routes; the legacy
 // `/restaurants/{id}/categories` routes keep targeting the default menu.
-
-export interface CategoryTree extends Category {
-  subcategories: Subcategory[]
-}
 
 export function listMenus(restaurantId: string): Promise<Menu[]> {
   return apiGet<Menu[]>(`/restaurants/${restaurantId}/menus`)
@@ -24,10 +20,6 @@ export function deleteMenu(restaurantId: string, menuId: string): Promise<void> 
   return apiDelete<void>(`/restaurants/${restaurantId}/menus/${menuId}`)
 }
 
-export function getMenuTree(restaurantId: string, menuId: string): Promise<CategoryTree[]> {
-  return apiGet<CategoryTree[]>(`/restaurants/${restaurantId}/menus/${menuId}/tree`)
-}
-
 export function listCategoriesForMenu(restaurantId: string, menuId: string): Promise<Category[]> {
   return apiGet<Category[]>(`/restaurants/${restaurantId}/menus/${menuId}/categories`)
 }
@@ -40,22 +32,3 @@ export function createCategoryForMenu(
   return apiPost<Category>(`/restaurants/${restaurantId}/menus/${menuId}/categories`, data)
 }
 
-export function updateCategoryForMenu(
-  restaurantId: string,
-  menuId: string,
-  categoryId: string,
-  data: CategoryUpdate,
-): Promise<Category> {
-  return apiPatch<Category>(
-    `/restaurants/${restaurantId}/menus/${menuId}/categories/${categoryId}`,
-    data,
-  )
-}
-
-export function deleteCategoryForMenu(
-  restaurantId: string,
-  menuId: string,
-  categoryId: string,
-): Promise<void> {
-  return apiDelete<void>(`/restaurants/${restaurantId}/menus/${menuId}/categories/${categoryId}`)
-}

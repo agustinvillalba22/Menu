@@ -7,11 +7,9 @@ ACs covered:
   - All 9 expected tables are created via Base.metadata
   - Session rollback isolates test state (write in test A does not persist in test B)
 """
-import pytest
 from sqlalchemy import inspect, text
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from app.models.base import Base
 from app.models.user import User
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -108,7 +106,6 @@ async def test_db_session_rollback_part_b(test_engine):
     did NOT persist (each test_engine fixture is function-scoped and fresh,
     this test demonstrates that without commit nothing survives).
     """
-    import uuid
     session_maker = async_sessionmaker(test_engine, expire_on_commit=False)
     async with session_maker() as session:
         from sqlalchemy import select

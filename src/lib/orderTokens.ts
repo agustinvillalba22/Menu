@@ -2,8 +2,8 @@
 // Every storage access is guarded: if storage is unavailable the feature
 // degrades to "no bill" without breaking the menu or the checkout.
 
-export const ORDER_TOKEN_TTL_MS = 12 * 60 * 60 * 1000
-export const MAX_ORDER_TOKENS = 20
+const ORDER_TOKEN_TTL_MS = 12 * 60 * 60 * 1000
+const MAX_ORDER_TOKENS = 20
 
 interface StoredOrder {
   token: string

@@ -8,3 +8,6 @@ select = ["E4", "E7", "E9", "F"]
 [tool.ruff.lint.per-file-ignores]
 # env.py must import the models after sys.path/config setup.
 "alembic/env.py" = ["E402"]
+# Relationships are annotated with forward-reference strings; typed imports
+# (TYPE_CHECKING) are pending in the backend cleanup.
+"app/models/*.py" = ["F821"]

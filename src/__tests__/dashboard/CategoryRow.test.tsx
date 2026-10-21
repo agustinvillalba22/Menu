@@ -97,7 +97,6 @@ describe('CategoryRow', () => {
 
   // CA-02: cancelling the confirmation never calls DELETE.
   it('cancelling the delete confirmation does not call DELETE', async () => {
-    const onDeleted = vi.fn()
     renderRow()
 
     await userEvent.click(screen.getByRole('button', { name: /^borrar$/i }))

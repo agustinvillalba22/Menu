@@ -491,7 +491,7 @@ async def test_callback_invalid_input_redirects_to_error(client, db_session, mp,
 
 async def test_callback_with_normal_auth_token_as_state_is_error(client, db_session, mp):
     headers = await as_user(client)
-    rid = (await make_restaurant(client, headers))["id"]
+    await make_restaurant(client, headers)
     auth_token = headers["Authorization"].split()[1]
     res = await callback(client, auth_token)
     assert res.headers["location"].endswith("?mp=error")
@@ -629,7 +629,7 @@ def http_client(fake: FakeMP) -> httpx.AsyncClient:
 
 
 async def test_seller_token_not_refreshed_when_valid_for_long(client, db_session, mp):
-    s = await seed(client, db_session, expires_in=timedelta(days=30))
+    await seed(client, db_session, expires_in=timedelta(days=30))
     acc = (await db_session.execute(select(PaymentAccount))).scalar_one()
     async with http_client(mp) as c:
         token = await get_seller_token(acc, db_session, c)
@@ -1003,7 +1003,7 @@ async def test_webhook_decimal_amount_matches_without_float_noise(client, db_ses
 
 
 async def test_webhook_order_of_another_restaurant_has_no_effect(client, db_session, mp):
-    a = await seed(client, db_session)
+    await seed(client, db_session)
     b = await seed(client, db_session, email="b@example.com", mp_user_id="777")
     oid_b = await mp_order(client, db_session, mp, b)
     # El pago llega por la cuenta de A (user_id 555) pero referencia una orden de B.
@@ -1149,7 +1149,7 @@ async def test_webhook_with_disconnected_account_is_502_so_mp_retries(client, db
 
 
 async def test_webhook_works_when_two_restaurants_share_the_mp_user(client, db_session, mp):
-    a = await seed(client, db_session)
+    await seed(client, db_session)
     b = await seed(client, db_session, email="b@example.com")
     oid_b = await mp_order(client, db_session, mp, b)
     mp.payments["111"] = payment_json(oid_b)

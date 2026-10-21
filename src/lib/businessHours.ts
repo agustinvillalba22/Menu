@@ -27,7 +27,7 @@ const WEEKDAY_ABBR = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
  * Drop the seconds part of "HH:MM:SS" so the schedule reads naturally.
  * Returns the input untouched if it doesn't match the expected shape.
  */
-export function formatTimeOfDay(value: string): string {
+function formatTimeOfDay(value: string): string {
   // The backend ships the time as `HH:MM:SS` (Pydantic's default for
   // `datetime.time`). Trimming to `HH:MM` keeps remote-menu readers from
   // parsing ":00" as odd — and is a no-op if the backend ever drops seconds.
