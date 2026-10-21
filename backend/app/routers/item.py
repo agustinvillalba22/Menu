@@ -16,12 +16,14 @@ from app.core.database import get_db
 from app.dependencies.auth import require_role, require_superadmin
 from app.models.restaurant import RestaurantRole
 from app.models.user import User
+from app.schemas.image_upload import (
+    ImageConfirmRequest,
+    ImageUploadRequest,
+    ImageUploadResponse,
+)
 from app.schemas.item import (
     ImportResult,
     ItemCreate,
-    ItemImageConfirmRequest,
-    ItemImageUploadRequest,
-    ItemImageUploadResponse,
     ItemRead,
     ItemUpdate,
     TagCreate,
@@ -151,17 +153,17 @@ _IMAGE_PREFIX = _PREFIX + "/{item_id}/image"
 
 @router.post(
     _IMAGE_PREFIX + "/upload-url",
-    response_model=ItemImageUploadResponse,
+    response_model=ImageUploadResponse,
     status_code=200,
 )
 async def create_image_upload_url(
     restaurant_id: uuid.UUID,
     subcategory_id: uuid.UUID,
     item_id: uuid.UUID,
-    data: ItemImageUploadRequest,
+    data: ImageUploadRequest,
     _: User = Depends(require_role(RestaurantRole.editor)),
     session: AsyncSession = Depends(get_db),
-) -> ItemImageUploadResponse:
+) -> ImageUploadResponse:
     return await create_upload_url(
         restaurant_id, subcategory_id, item_id, data, session
     )
@@ -172,7 +174,7 @@ async def confirm_image_upload(
     restaurant_id: uuid.UUID,
     subcategory_id: uuid.UUID,
     item_id: uuid.UUID,
-    data: ItemImageConfirmRequest,
+    data: ImageConfirmRequest,
     _: User = Depends(require_role(RestaurantRole.editor)),
     session: AsyncSession = Depends(get_db),
 ) -> ItemRead:

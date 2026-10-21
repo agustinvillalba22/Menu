@@ -23,8 +23,14 @@ import uuid
 
 from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.models.base import Base
+from app.schemas.image_upload import (
+    ImageUploadRequest,
+    ImageUploadResponse,
+)
 from app.services import storage
 
 logger = logging.getLogger(__name__)
@@ -126,3 +132,47 @@ async def verify_upload(object_key: str, expected_prefix: str) -> str:
         raise HTTPException(status_code=422, detail="upload_verification_failed")
 
     return f"{settings.R2_PUBLIC_URL}/{object_key}"
+
+
+async def request_upload(data: ImageUploadRequest, object_key_prefix: str) -> ImageUploadResponse:
+    """`sign_upload` for a validated request body, shaped as the API response."""
+    upload_url, object_key, expires_in = await sign_upload(
+        data.content_type, data.file_size, object_key_prefix
+    )
+    return ImageUploadResponse(
+        upload_url=upload_url, object_key=object_key, expires_in=expires_in
+    )
+
+
+async def replace_image(
+    session: AsyncSession,
+    row: Base,
+    column: str,
+    object_key: str,
+    expected_prefix: str,
+) -> None:
+    """Verify the uploaded object and store its public URL in ``row.<column>``.
+
+    The previous object, if any, is deleted best-effort so R2 isn't left with
+    orphans. Commits and refreshes ``row``.
+    """
+    public_url = await verify_upload(object_key, expected_prefix)
+    previous = getattr(row, column)
+    if previous:
+        await delete_object_best_effort(object_key_from_url(previous))
+    setattr(row, column, public_url)
+    await session.commit()
+    await session.refresh(row)
+
+
+async def clear_image(session: AsyncSession, row: Base, column: str, not_found: str) -> None:
+    """Delete the object behind ``row.<column>`` (best-effort) and null the column.
+
+    404 ``not_found`` when the row has no image. Commits.
+    """
+    current = getattr(row, column)
+    if not current:
+        raise HTTPException(status_code=404, detail=not_found)
+    await delete_object_best_effort(object_key_from_url(current))
+    setattr(row, column, None)
+    await session.commit()

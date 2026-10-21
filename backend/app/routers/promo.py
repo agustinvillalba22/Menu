@@ -26,14 +26,12 @@ from app.dependencies.auth import require_role
 from app.models.promo import Promo
 from app.models.restaurant import RestaurantRole
 from app.models.user import User
-from app.schemas.promo import (
-    PromoCreate,
-    PromoImageConfirmRequest,
-    PromoImageUploadRequest,
-    PromoImageUploadResponse,
-    PromoRead,
-    PromoUpdate,
+from app.schemas.image_upload import (
+    ImageConfirmRequest,
+    ImageUploadRequest,
+    ImageUploadResponse,
 )
+from app.schemas.promo import PromoCreate, PromoRead, PromoUpdate
 from app.services.promo import (
     confirm_promo_image_upload,
     create_promo,
@@ -114,21 +112,16 @@ async def delete(
 
 @router.post(
     "/{restaurant_id}/promos/{promo_id}/image/upload-url",
-    response_model=PromoImageUploadResponse,
+    response_model=ImageUploadResponse,
 )
 async def upload_url(
     restaurant_id: uuid.UUID,
     promo_id: uuid.UUID,
-    data: PromoImageUploadRequest,
+    data: ImageUploadRequest,
     _: User = Depends(require_role(RestaurantRole.editor)),
     session: AsyncSession = Depends(get_db),
-) -> PromoImageUploadResponse:
-    upload_url, object_key, expires_in = await create_promo_image_upload_url(
-        restaurant_id, promo_id, data, session
-    )
-    return PromoImageUploadResponse(
-        upload_url=upload_url, object_key=object_key, expires_in=expires_in
-    )
+) -> ImageUploadResponse:
+    return await create_promo_image_upload_url(restaurant_id, promo_id, data, session)
 
 
 @router.post(
@@ -138,7 +131,7 @@ async def upload_url(
 async def confirm_image(
     restaurant_id: uuid.UUID,
     promo_id: uuid.UUID,
-    data: PromoImageConfirmRequest,
+    data: ImageConfirmRequest,
     _: User = Depends(require_role(RestaurantRole.editor)),
     session: AsyncSession = Depends(get_db),
 ) -> PromoRead:
