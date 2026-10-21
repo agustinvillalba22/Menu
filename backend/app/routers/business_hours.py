@@ -53,7 +53,6 @@ def _build_info_read(restaurant) -> RestaurantInfoRead:
         address=restaurant.address,
         phone=restaurant.phone,
         whatsapp_phone=restaurant.whatsapp_phone,
-        whatsapp_enabled=bool(restaurant.whatsapp_phone),
         logo_url=restaurant.logo_url,
         timezone=restaurant.timezone,
         business_hours=[hours_to_read(bh) for bh in restaurant.business_hours],

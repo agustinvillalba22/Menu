@@ -37,7 +37,6 @@ const baseMenu: PublicMenuResponse = {
     timezone: '',
     business_hours: [],
     is_open_now: false,
-    whatsapp_enabled: false,
   },
   style: null,
   promo: null,

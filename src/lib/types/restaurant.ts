@@ -53,7 +53,6 @@ export interface RestaurantInfo {
   address: string
   phone: string
   whatsapp_phone: string | null
-  whatsapp_enabled: boolean
   logo_url: string | null
   timezone: string
   business_hours: BusinessHours[]

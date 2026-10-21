@@ -15,7 +15,7 @@ const TOKEN_B = 'b'.repeat(43)
 const menu: PublicMenuResponse = {
   restaurant: {
     name: 'Boulette', slug: 'boulette', orders_enabled: true, address: '', phone: '',
-    logo_url: null, timezone: '', business_hours: [], is_open_now: false, whatsapp_enabled: false,
+    logo_url: null, timezone: '', business_hours: [], is_open_now: false,
   },
   style: null,
   promo: null,

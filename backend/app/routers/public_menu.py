@@ -73,15 +73,13 @@ def _build_category(category: Category) -> PublicCategoryRead:
 
 
 def _build_restaurant(restaurant: Restaurant) -> PublicRestaurantRead:
-    """Compose the public restaurant shape with info + hours + open/closed
-    and whatsapp_enabled flag fields.
+    """Compose the public restaurant shape with info + hours + open/closed.
 
     ``is_open_now`` is computed here (not in the service layer) so the
     response shape is the only place that decides what the public sees — the
     service returns the ORM row and stays free of response-shaping concerns.
-    ``whatsapp_enabled`` is a boolean only: never leak the raw phone number
-    to page-source scrapers (the deep link is minted server-side in the POST
-    /orders response).
+    The WhatsApp phone is never exposed: the deep link is minted server-side
+    in the POST /orders response.
     """
     return PublicRestaurantRead(
         name=restaurant.name,
@@ -100,7 +98,6 @@ def _build_restaurant(restaurant: Restaurant) -> PublicRestaurantRead:
             for bh in restaurant.business_hours
         ],
         is_open_now=compute_is_open_now(restaurant),
-        whatsapp_enabled=bool(restaurant.whatsapp_phone),
         accepts_mercadopago=(
             settings.mercadopago_configured
             and restaurant.payment_account is not None

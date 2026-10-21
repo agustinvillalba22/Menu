@@ -21,7 +21,6 @@ const info: RestaurantInfo = {
   address: '',
   phone: '',
   whatsapp_phone: null,
-  whatsapp_enabled: false,
   logo_url: null,
   timezone: '',
   business_hours: [

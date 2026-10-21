@@ -63,7 +63,6 @@ async def test_info_defaults_for_brand_new_restaurant(client: AsyncClient):
     assert body["timezone"] == ""
     assert body["business_hours"] == []
     assert body["is_open_now"] is False
-    assert body["whatsapp_enabled"] is False
 
 
 # ---------------------------------------------------------------------------
@@ -104,7 +103,6 @@ async def test_patch_info_whatsapp_phone_strips_leading_plus(client: AsyncClient
     # And a follow-up read reflects the persisted value.
     again = await client.get(f"/restaurants/{r['id']}/info", headers=headers)
     assert again.json()["whatsapp_phone"] == "5491112345678"
-    assert again.json()["whatsapp_enabled"] is True
 
 
 async def test_patch_info_empty_string_clears_whatsapp(client: AsyncClient):
@@ -124,7 +122,6 @@ async def test_patch_info_empty_string_clears_whatsapp(client: AsyncClient):
     assert res.status_code == 200
     body = res.json()
     assert body["whatsapp_phone"] is None
-    assert body["whatsapp_enabled"] is False
 
 
 @pytest.mark.parametrize(

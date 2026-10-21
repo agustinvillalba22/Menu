@@ -10,11 +10,6 @@ interface PublicCheckoutModalProps {
   qrToken: string
   lines: CartLine[]
   total: number
-  // When true, the confirmation screen offers a "Confirmar por WhatsApp"
-  // button that opens `order.whatsapp_url` (a server-minted wa.me deep link).
-  // When false, the button is omitted entirely — the local has not configured
-  // a WhatsApp number.
-  whatsappEnabled: boolean
   // The restaurant's configured tables. When non-empty and order_type
   // is 'mesa', the table field becomes a <select> of real tables instead of
   // free text. Empty array (restaurant hasn't adopted the feature) keeps
@@ -70,7 +65,6 @@ export default function PublicCheckoutModal({
   qrToken,
   lines,
   total,
-  whatsappEnabled,
   tables,
   initialTableId,
   acceptsMercadoPago = false,
@@ -175,14 +169,13 @@ export default function PublicCheckoutModal({
                 <span className="font-mono font-black text-primario">${phase.order.total}</span>
               </div>
             </div>
-            {/* "Confirmar por WhatsApp". Only rendered when the local has
-                a WhatsApp number (the public-menu flag is async-derived and the
-                per-order `whatsapp_url` is built server-side from the order's
-                snapshots on POST /orders). Opening is a plain anchor with
+            {/* "Confirmar por WhatsApp". Only rendered when the server returned a
+                `whatsapp_url` (built from the order's snapshots on POST /orders,
+                and null when the local has no WhatsApp number). A plain anchor with
                 `target=_blank` and `rel=noopener` — no JS window.open — so it
                 works on mobile where popups are blocked and the wa.me deep link
                 hands off to the WhatsApp app via the OS. */}
-            {whatsappEnabled && phase.order.whatsapp_url && (
+            {phase.order.whatsapp_url && (
               <a
                 href={phase.order.whatsapp_url}
                 target="_blank"
