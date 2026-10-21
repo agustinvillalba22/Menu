@@ -31,7 +31,7 @@ from app.models.restaurant import (
     BusinessHours,
 )
 from app.models.menu import Menu, Category, Subcategory, CategoryType, CategoryIcon
-from app.models.item import Item, ItemTag
+from app.models.item import Item
 from app.models.style import MenuStyle, FontFamily
 
 
@@ -161,7 +161,6 @@ async def test_item_price_is_decimal(db_session):
 
 async def test_item_price_not_float(db_session):
     """Item.price column type must be Numeric(10,2), not Float."""
-    from sqlalchemy import inspect as sa_inspect
     from sqlalchemy import Numeric
 
     # Inspect the Item table column type
@@ -286,7 +285,6 @@ async def test_cascade_delete_menu(db_session):
     db_session.add(subcategory)
     await db_session.flush()
 
-    menu_id = menu.id
     category_id = category.id
     subcategory_id = subcategory.id
 

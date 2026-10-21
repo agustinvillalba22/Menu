@@ -21,7 +21,7 @@ class StockCategory(str, enum.Enum):
 class StockUnit(str, enum.Enum):
     kg = "kg"
     g = "g"
-    l = "l"
+    l = "l"  # noqa: E741 - unit symbol for litres
     unidades = "unidades"
     botellas = "botellas"
 

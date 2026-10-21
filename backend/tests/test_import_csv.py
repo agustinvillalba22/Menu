@@ -8,7 +8,6 @@ issued at the end. ``row`` is 1-based over the DATA rows (header excluded).
 
 CSVs are built in-memory as strings — no file on disk is needed.
 """
-import uuid
 
 from httpx import AsyncClient
 from sqlalchemy import func, select

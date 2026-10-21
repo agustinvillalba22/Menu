@@ -116,7 +116,10 @@ export default function PublicMenuPage(): React.JSX.Element {
     if (tableBill.orders.length === 0) setConsumoOpen(false)
   }, [tableBill.orders.length])
 
-  const categories: PublicCategory[] = state.status === 'ready' ? state.data.categories : []
+  const categories: PublicCategory[] = useMemo(
+    () => (state.status === 'ready' ? state.data.categories : []),
+    [state],
+  )
   const visibleCategories = useMemo(
     () =>
       categories

@@ -245,9 +245,9 @@ async def test_ca06_alphabetical_ordering(client: AsyncClient):
     restaurant = await make_restaurant(client, headers)
     rid, qr = restaurant["id"], restaurant["qr_token"]
 
-    cid_b = await make_category(client, headers, rid, "Bebidas", "drink")
+    await make_category(client, headers, rid, "Bebidas", "drink")
     cid_a = await make_category(client, headers, rid, "Aperitivos", "food")
-    sid_z = await make_subcategory(client, headers, rid, cid_a, "Zapallo")
+    await make_subcategory(client, headers, rid, cid_a, "Zapallo")
     sid_a = await make_subcategory(client, headers, rid, cid_a, "Aceitunas")
     await make_item(client, headers, rid, sid_a, "Verdes")
     await make_item(client, headers, rid, sid_a, "Negras")

@@ -14,7 +14,7 @@ from httpx import AsyncClient
 
 from app.core.config import settings
 
-from tests.test_auth_cookie import login, register, parse_set_cookie, get_me
+from tests.test_auth_cookie import register, parse_set_cookie
 
 COOKIE_NAME = settings.AUTH_COOKIE_NAME  # "access_token"
 

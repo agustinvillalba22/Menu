@@ -4,7 +4,6 @@ Test infrastructure for MenuQR backend.
 Uses SQLite in-memory — no PostgreSQL required.
 asyncio_mode = auto via pytest.ini — no @pytest.mark.asyncio needed.
 """
-import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker

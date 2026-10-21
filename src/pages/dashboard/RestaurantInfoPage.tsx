@@ -9,10 +9,7 @@ import {
 } from '../../lib/restaurantInfo'
 import { ApiError } from '../../lib/api'
 import { formatSchedule } from '../../lib/businessHours'
-import type {
-  BusinessHours,
-  RestaurantInfo,
-} from '../../lib/types'
+import type { RestaurantInfo } from '../../lib/types'
 import LogoUpload from '../../components/dashboard/LogoUpload'
 
 // The dashboard "Información del local" page (P6) — contact info editor +

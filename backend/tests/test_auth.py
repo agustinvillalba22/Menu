@@ -9,7 +9,6 @@ asyncio_mode=auto via pytest.ini — sin @pytest.mark.asyncio.
 import uuid
 from datetime import datetime, timedelta
 
-import pytest
 from httpx import AsyncClient
 from jose import jwt
 from sqlalchemy.ext.asyncio import AsyncSession

@@ -15,7 +15,7 @@ export function parseTableParam(raw: string | null): number | null {
 
 const storageKey = (qrToken: string): string => `menu_table_${qrToken}`
 
-export function readStoredTable(qrToken: string): number | null {
+function readStoredTable(qrToken: string): number | null {
   try {
     return parseTableParam(sessionStorage.getItem(storageKey(qrToken)))
   } catch {
@@ -23,7 +23,7 @@ export function readStoredTable(qrToken: string): number | null {
   }
 }
 
-export function storeTable(qrToken: string, tableNumber: number): void {
+function storeTable(qrToken: string, tableNumber: number): void {
   try {
     sessionStorage.setItem(storageKey(qrToken), String(tableNumber))
   } catch {

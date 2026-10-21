@@ -15,7 +15,6 @@ from unittest.mock import AsyncMock, patch
 
 from freezegun import freeze_time
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 STORAGE = "app.services.storage"
 VALID_CONTENT_TYPE = "image/jpeg"
@@ -390,7 +389,7 @@ async def test_public_promo_open_ended_window(client: AsyncClient):
     )
 
     with freeze_time(f"{_MON}T12:00:00Z"):
-        assert public_promo(client, qr) is not None
+        assert await public_promo(client, qr) is not None
 
 
 # ---------------------------------------------------------------------------
@@ -684,8 +683,8 @@ async def test_discount_scope_item_spares_other_items(client: AsyncClient):
     )
     assert res.status_code == 201, res.text
     lines = res.json()["items"]
-    discounted = next(l for l in lines if l["item_id"] == promo_item)
-    full = next(l for l in lines if l["item_id"] == other_item)
+    discounted = next(line for line in lines if line["item_id"] == promo_item)
+    full = next(line for line in lines if line["item_id"] == other_item)
     assert discounted["subtotal"] == "8.00"
     assert discounted["discount_pct"] == 20
     assert full["subtotal"] == "10.00"
@@ -725,8 +724,8 @@ async def test_discount_applied_scope_category(client: AsyncClient):
     )
     assert res.status_code == 201, res.text
     lines = res.json()["items"]
-    pizza = next(l for l in lines if l["item_id"] == pizza_item)
-    drink = next(l for l in lines if l["item_id"] == drink_item)
+    pizza = next(line for line in lines if line["item_id"] == pizza_item)
+    drink = next(line for line in lines if line["item_id"] == drink_item)
     assert pizza["discount_pct"] == 25
     assert pizza["subtotal"] == "15.00"  # (10.00 * 0.75) * 2
     assert drink["discount_pct"] is None

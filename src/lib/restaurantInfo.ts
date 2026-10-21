@@ -23,10 +23,6 @@ export function updateRestaurantInfo(
 
 // --- Business hours (P6) -------------------------------------------------
 
-export function listBusinessHours(restaurantId: string): Promise<BusinessHours[]> {
-  return apiGet<BusinessHours[]>(`/restaurants/${restaurantId}/business-hours`)
-}
-
 /** Atomically replaces the whole week's schedule. `hours` is the full set. */
 export function replaceBusinessHours(
   restaurantId: string,

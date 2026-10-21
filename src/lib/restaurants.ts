@@ -13,10 +13,6 @@ export function updateRestaurant(id: string, data: RestaurantUpdate): Promise<Re
   return apiPatch<Restaurant>(`/restaurants/${id}`, data)
 }
 
-export function getRestaurant(id: string): Promise<Restaurant> {
-  return apiGet<Restaurant>(`/restaurants/${id}`)
-}
-
 /** M15 RF-03/RNF-05 — single source of truth for "can this user edit
  * owner-only restaurant settings". Mirrors the backend's
  * `require_role(RestaurantRole.owner)` split (restaurant/style/business_hours

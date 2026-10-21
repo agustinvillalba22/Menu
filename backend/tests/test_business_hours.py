@@ -18,7 +18,6 @@ import uuid
 from datetime import time
 
 import pytest
-from freezegun import freeze_time
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
