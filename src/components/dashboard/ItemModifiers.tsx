@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import type { FormEvent } from 'react'
-import { addModifier, updateModifier, removeModifier } from '../../lib/menu'
+import { addModifier, updateModifier, removeModifier } from '../../lib/catalog'
 import { ApiError } from '../../lib/api'
 import type { Modifier, ModifierType, ModifierUpdate } from '../../lib/types'
 

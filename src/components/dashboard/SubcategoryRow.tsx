@@ -4,7 +4,7 @@ import {
   createItem,
   updateSubcategory,
   deleteSubcategory,
-} from '../../lib/menu'
+} from '../../lib/catalog'
 import { ApiError } from '../../lib/api'
 import type { Item, ItemCreate, Subcategory } from '../../lib/types'
 import ItemRow from './ItemRow'

@@ -3,13 +3,13 @@ import type { FormEvent } from 'react'
 import { Megaphone, Trash2, Pencil, X } from 'lucide-react'
 import { useMyRestaurant } from '../../hooks/useMyRestaurant'
 import { ApiError } from '../../lib/api'
+import { uploadImageToR2 } from '../../lib/r2'
 import {
   listPromos,
   createPromo,
   updatePromo,
   deletePromo,
   getPromoImageUploadUrl,
-  uploadPromoImageToR2,
   confirmPromoImage,
   deletePromoImage,
 } from '../../lib/promos'
@@ -17,7 +17,7 @@ import {
   listCategories,
   listSubcategories,
   listItems,
-} from '../../lib/menu'
+} from '../../lib/catalog'
 import type { Item, Promo, PromoScope, PromoUpdate } from '../../lib/types'
 
 // The dashboard "Promos" page: list + create/edit form
@@ -313,7 +313,7 @@ export default function PromosPage(): React.JSX.Element {
         content_type: file.type,
         file_size: file.size,
       })
-      await uploadPromoImageToR2(res.upload_url, file)
+      await uploadImageToR2(res.upload_url, file)
       await confirmPromoImage(restaurantId, editing, res.object_key)
       await reload(restaurantId)
     } catch (err) {

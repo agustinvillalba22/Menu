@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import type { FormEvent } from 'react'
-import { useMyRestaurant } from '../../hooks/useMyRestaurant'
+import { useRestaurantData } from '../../hooks/useRestaurantData'
 import { createStaffMember, deleteStaffMember, listStaffMembers, updateStaffMember } from '../../lib/staff'
 import { ApiError } from '../../lib/api'
 import type { StaffMember, StaffPosition } from '../../lib/types'
 import RowActions from '../../components/dashboard/RowActions'
+import RestaurantGate from '../../components/dashboard/RestaurantGate'
 
 const POSITION_OPTIONS: { value: StaffPosition; label: string }[] = [
   { value: 'mozo', label: 'Mozo' },
@@ -22,13 +23,19 @@ const POSITION_LABEL: Record<StaffPosition, string> = {
   gerente: 'Gerente',
 }
 
-export default function StaffPage(): React.JSX.Element {
-  const { restaurant, loading: restaurantLoading, error: restaurantError } = useMyRestaurant()
-  const restaurantId = restaurant?.id ?? null
+const NO_MEMBERS: StaffMember[] = []
 
-  const [members, setMembers] = useState<StaffMember[]>([])
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState<string | null>(null)
+export default function StaffPage(): React.JSX.Element {
+  return <RestaurantGate>{(restaurant) => <StaffSection restaurantId={restaurant.id} />}</RestaurantGate>
+}
+
+function StaffSection({ restaurantId }: { restaurantId: string }): React.JSX.Element {
+  const {
+    data: members,
+    setData: setMembers,
+    loading,
+    error: loadError,
+  } = useRestaurantData(restaurantId, listStaffMembers, NO_MEMBERS, 'No se pudo cargar el equipo.')
 
   const [newName, setNewName] = useState('')
   const [newPosition, setNewPosition] = useState<StaffPosition>('mozo')
@@ -36,35 +43,8 @@ export default function StaffPage(): React.JSX.Element {
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (restaurantId === null) {
-      setLoading(false)
-      return
-    }
-    let cancelled = false
-
-    async function load(id: string): Promise<void> {
-      setLoading(true)
-      setLoadError(null)
-      try {
-        const list = await listStaffMembers(id)
-        if (!cancelled) setMembers(list)
-      } catch {
-        if (!cancelled) setLoadError('No se pudo cargar el equipo.')
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-
-    void load(restaurantId)
-    return () => {
-      cancelled = true
-    }
-  }, [restaurantId])
-
   async function handleCreate(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault()
-    if (restaurantId === null) return
     setCreating(true)
     setCreateError(null)
     try {
@@ -88,24 +68,8 @@ export default function StaffPage(): React.JSX.Element {
     }
   }
 
-  if (restaurantLoading || loading) {
+  if (loading) {
     return <p className="text-sm text-gray-600 dark:text-gray-300">Cargando…</p>
-  }
-
-  if (restaurantError) {
-    return (
-      <div role="alert" className="rounded-md bg-red-50 dark:bg-red-950 px-3 py-2 text-sm text-red-700 dark:text-red-400">
-        {restaurantError}
-      </div>
-    )
-  }
-
-  if (!restaurant) {
-    return (
-      <p className="text-sm text-gray-600 dark:text-gray-300">
-        Creá tu restaurante primero desde “Mi restaurante”.
-      </p>
-    )
   }
 
   return (
@@ -195,7 +159,7 @@ export default function StaffPage(): React.JSX.Element {
         {members.map((member) => (
           <React.Fragment key={member.id}>
             <StaffRow
-              restaurantId={restaurant.id}
+              restaurantId={restaurantId}
               member={member}
               onUpdated={(updated) =>
                 setMembers((prev) =>

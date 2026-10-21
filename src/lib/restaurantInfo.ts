@@ -57,20 +57,3 @@ export function confirmLogoUpload(restaurantId: string, objectKey: string): Prom
 export function deleteRestaurantLogo(restaurantId: string): Promise<void> {
   return apiDelete<void>(`/restaurants/${restaurantId}/logo`)
 }
-
-/**
- * PUTs the raw image straight to the presigned R2 URL. Mirrors the
- * `uploadImageToR2` helper from `lib/menu.ts` for items: deliberately does
- * not go through apiFetch (no VITE_API_URL prefix, no JSON content-type, no
- * credentials to the third-party origin).
- */
-export async function uploadLogoToR2(uploadUrl: string, file: File): Promise<void> {
-  const res = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': file.type },
-    body: file,
-  })
-  if (!res.ok) {
-    throw new Error(`R2 logo upload failed with status ${res.status}`)
-  }
-}

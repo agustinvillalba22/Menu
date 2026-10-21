@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import type { FormEvent } from 'react'
-import { addTag, removeTag } from '../../lib/menu'
+import { addTag, removeTag } from '../../lib/catalog'
 import { ApiError } from '../../lib/api'
 import { badgeInfo } from '../public/badges'
 import type { Tag } from '../../lib/types'

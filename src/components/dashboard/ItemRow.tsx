@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { updateItem, deleteItem, listModifiers } from '../../lib/menu'
+import { updateItem, deleteItem, listModifiers } from '../../lib/catalog'
 import { ApiError } from '../../lib/api'
 import type { Item, ItemUpdate, Modifier, Tag } from '../../lib/types'
 import ItemTags from './ItemTags'

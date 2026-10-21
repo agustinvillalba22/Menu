@@ -2,11 +2,11 @@ import React, { useEffect, useRef, useState } from 'react'
 import { ImageOff } from 'lucide-react'
 import {
   getItemImageUploadUrl,
-  uploadImageToR2,
   confirmItemImageUpload,
   deleteItemImage,
-} from '../../lib/menu'
+} from '../../lib/catalog'
 import { ApiError } from '../../lib/api'
+import { uploadImageToR2 } from '../../lib/r2'
 
 interface ItemImageUploadProps {
   restaurantId: string
