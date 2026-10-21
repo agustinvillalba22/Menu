@@ -30,7 +30,8 @@ from pydantic import TypeAdapter, ValidationError
 from app.models.item import Item, ItemTag
 from app.models.menu import Category, CategoryType, Subcategory
 from app.schemas.item import ImportResult, ImportRowError, Price
-from app.services.menu import _resolve_menu, list_categories_with_subcategories
+from app.services.category import list_categories_with_subcategories
+from app.services.menu import _resolve_menu
 
 MAX_FILE_BYTES = 5 * 1024 * 1024
 MAX_ROWS = 2000

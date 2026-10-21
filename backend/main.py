@@ -10,6 +10,9 @@ from app.routers.business_hours import router as business_hours_router
 from app.routers.category import router as category_router
 from app.routers.health import router as health_router
 from app.routers.item import router as item_router
+from app.routers.item_image import router as item_image_router
+from app.routers.item_modifier import router as item_modifier_router
+from app.routers.item_tag import router as item_tag_router
 from app.routers.order import router as order_router
 from app.routers.payments import router as payments_router
 from app.routers.menu import router as menu_router
@@ -50,6 +53,9 @@ app.include_router(category_router, prefix="/restaurants", tags=["categories"])
 app.include_router(menu_router, prefix="/restaurants", tags=["menus"])
 app.include_router(subcategory_router, prefix="/restaurants", tags=["subcategories"])
 app.include_router(item_router, prefix="/restaurants", tags=["items"])
+app.include_router(item_image_router, prefix="/restaurants", tags=["items"])
+app.include_router(item_tag_router, prefix="/restaurants", tags=["items"])
+app.include_router(item_modifier_router, prefix="/restaurants", tags=["items"])
 app.include_router(style_router, prefix="/restaurants", tags=["style"])
 app.include_router(restaurant_info_router, prefix="/restaurants", tags=["restaurant_info"])
 app.include_router(business_hours_router, prefix="/restaurants", tags=["business_hours"])
