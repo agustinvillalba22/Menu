@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import type { FormEvent } from 'react'
-import { useMyRestaurant } from '../../hooks/useMyRestaurant'
+import { useRestaurantData } from '../../hooks/useRestaurantData'
 import { createStockItem, listStockItems } from '../../lib/stockItems'
 import { listSuppliers } from '../../lib/suppliers'
 import { ApiError } from '../../lib/api'
 import type { StockCategory, StockItem, StockUnit, Supplier } from '../../lib/types'
 import StockItemRow from '../../components/dashboard/StockItemRow'
+import RestaurantGate from '../../components/dashboard/RestaurantGate'
 
 const CATEGORY_OPTIONS: { value: StockCategory; label: string }[] = [
   { value: 'carnes_pescados', label: 'Carnes y pescados' },
@@ -17,71 +18,42 @@ const CATEGORY_OPTIONS: { value: StockCategory; label: string }[] = [
 
 const UNIT_OPTIONS: StockUnit[] = ['kg', 'g', 'l', 'unidades', 'botellas']
 
+interface StockData {
+  items: StockItem[]
+  suppliers: Supplier[]
+}
+
+const NO_STOCK: StockData = { items: [], suppliers: [] }
+
+async function loadStock(restaurantId: string): Promise<StockData> {
+  const [items, suppliers] = await Promise.all([listStockItems(restaurantId), listSuppliers(restaurantId)])
+  return { items, suppliers }
+}
+
 export default function StockPage(): React.JSX.Element {
-  const { restaurant, loading: restaurantLoading, error: restaurantError } = useMyRestaurant()
-  const restaurantId = restaurant?.id ?? null
+  return <RestaurantGate>{(restaurant) => <StockContent restaurantId={restaurant.id} />}</RestaurantGate>
+}
 
-  const [items, setItems] = useState<StockItem[]>([])
-  const [suppliers, setSuppliers] = useState<Supplier[]>([])
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState<string | null>(null)
+function StockContent({ restaurantId }: { restaurantId: string }): React.JSX.Element {
+  const { data, setData, loading, error } = useRestaurantData(
+    restaurantId,
+    loadStock,
+    NO_STOCK,
+    'No se pudo cargar el stock.',
+  )
 
-  useEffect(() => {
-    if (restaurantId === null) {
-      setLoading(false)
-      return
-    }
-    let cancelled = false
-
-    async function load(id: string): Promise<void> {
-      setLoading(true)
-      setLoadError(null)
-      try {
-        const [itemList, supplierList] = await Promise.all([listStockItems(id), listSuppliers(id)])
-        if (cancelled) return
-        setItems(itemList)
-        setSuppliers(supplierList)
-      } catch {
-        if (!cancelled) setLoadError('No se pudo cargar el stock.')
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-
-    void load(restaurantId)
-    return () => {
-      cancelled = true
-    }
-  }, [restaurantId])
-
-  if (restaurantLoading || loading) {
+  if (loading) {
     return <p className="text-sm text-gray-600 dark:text-gray-300">Cargando…</p>
-  }
-
-  if (restaurantError) {
-    return (
-      <div role="alert" className="rounded-md bg-red-50 dark:bg-red-950 px-3 py-2 text-sm text-red-700 dark:text-red-400">
-        {restaurantError}
-      </div>
-    )
-  }
-
-  if (!restaurant) {
-    return (
-      <p className="text-sm text-gray-600 dark:text-gray-300">
-        Creá tu restaurante primero desde “Mi restaurante”.
-      </p>
-    )
   }
 
   return (
     <div className="space-y-6">
       <StockItemsSection
-        restaurantId={restaurant.id}
-        items={items}
-        suppliers={suppliers}
-        onItemsChange={setItems}
-        loadError={loadError}
+        restaurantId={restaurantId}
+        items={data.items}
+        suppliers={data.suppliers}
+        onItemsChange={(update) => setData((prev) => ({ ...prev, items: update(prev.items) }))}
+        loadError={error}
       />
     </div>
   )
