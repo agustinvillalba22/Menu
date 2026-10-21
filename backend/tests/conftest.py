@@ -6,13 +6,24 @@ asyncio_mode = auto via pytest.ini — no @pytest.mark.asyncio needed.
 """
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy.ext.compiler import compiles
 
 from main import app
 from app.core.database import get_db
 from app.models.base import Base
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+
+
+@compiles(UUID, "sqlite")
+def _uuid_as_char_on_sqlite(type_, compiler, **kw) -> str:
+    # Left as "UUID", SQLite gives the column NUMERIC affinity and turns a
+    # random id made only of digits and one "e" (e.g. 12345678e123...) into a
+    # float, which then fails to load. CHAR(32) keeps TEXT affinity and is what
+    # SQLAlchemy stores for non-native UUIDs anyway.
+    return "CHAR(32)"
 
 
 @pytest_asyncio.fixture(scope="function")
