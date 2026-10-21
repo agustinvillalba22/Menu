@@ -12,7 +12,7 @@ from app.schemas.menu import (
     SubcategoryRead,
     SubcategoryUpdate,
 )
-from app.services.menu import (
+from app.services.subcategory import (
     create_subcategory,
     delete_subcategory,
     get_subcategory,

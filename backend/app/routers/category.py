@@ -8,7 +8,7 @@ from app.dependencies.auth import require_role
 from app.models.restaurant import RestaurantRole
 from app.models.user import User
 from app.schemas.menu import CategoryCreate, CategoryRead, CategoryUpdate
-from app.services.menu import (
+from app.services.category import (
     create_category,
     delete_category,
     get_category,

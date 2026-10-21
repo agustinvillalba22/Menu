@@ -16,17 +16,19 @@ from app.schemas.menu import (
     MenuRead,
     MenuUpdate,
 )
-from app.services.menu import (
+from app.services.category import (
     create_category,
-    create_menu,
     delete_category,
-    delete_menu,
     get_category,
-    get_menu,
     list_categories,
     list_categories_with_subcategories,
-    list_menus,
     update_category,
+)
+from app.services.menu import (
+    create_menu,
+    delete_menu,
+    get_menu,
+    list_menus,
     update_menu,
 )
 

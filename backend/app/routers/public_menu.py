@@ -21,7 +21,7 @@ from app.schemas.public_menu import (
     PublicTagRead,
 )
 from app.services.business_hours import compute_is_open_now
-from app.services.menu import resolve_active_menu
+from app.services.menu_scheduling import resolve_active_menu
 from app.services.promo import active_promo_for
 from app.services.public_menu import get_public_menu
 
