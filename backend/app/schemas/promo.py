@@ -73,28 +73,10 @@ class PromoRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class PromoImageUploadRequest(BaseModel):
-    content_type: str
-    file_size: int = Field(gt=0)
-
-
-class PromoImageUploadResponse(BaseModel):
-    upload_url: str
-    object_key: str
-    expires_in: int
-
-
-class PromoImageConfirmRequest(BaseModel):
-    object_key: str = Field(min_length=1)
-
-
 __all__ = [
     "Promo",
     "PromoBase",
     "PromoCreate",
     "PromoUpdate",
     "PromoRead",
-    "PromoImageUploadRequest",
-    "PromoImageUploadResponse",
-    "PromoImageConfirmRequest",
 ]

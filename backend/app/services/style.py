@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.style import MenuStyle
 from app.schemas.style import StyleUpdate
+from app.services.crud import apply_patch
 
 
 async def get_style(restaurant_id: uuid.UUID, session: AsyncSession) -> MenuStyle:
@@ -34,8 +35,7 @@ async def update_style(
     color) is distinguished from an omitted field (leave the value untouched).
     """
     style = await get_style(restaurant_id, session)
-    for field, value in data.model_dump(exclude_unset=True).items():
-        setattr(style, field, value)
+    apply_patch(style, data.model_dump(exclude_unset=True))
     await session.commit()
     await session.refresh(style)
     return style

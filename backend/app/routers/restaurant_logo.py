@@ -20,12 +20,14 @@ from app.core.database import get_db
 from app.dependencies.auth import require_role
 from app.models.restaurant import RestaurantRole
 from app.models.user import User
+from app.schemas.image_upload import (
+    ImageConfirmRequest,
+    ImageUploadRequest,
+    ImageUploadResponse,
+)
 from app.schemas.restaurant import RestaurantRead
 from app.services.restaurant import get_user_role
 from app.services.restaurant_logo import (
-    LogoConfirmRequest,
-    LogoUploadRequest,
-    LogoUploadResponse,
     confirm_logo_upload,
     create_logo_upload_url,
     delete_logo,
@@ -42,15 +44,15 @@ def _to_read(restaurant, role: RestaurantRole) -> RestaurantRead:
 
 @router.post(
     "/{restaurant_id}/logo/upload-url",
-    response_model=LogoUploadResponse,
+    response_model=ImageUploadResponse,
     status_code=200,
 )
 async def create_upload_url(
     restaurant_id: uuid.UUID,
-    data: LogoUploadRequest,
+    data: ImageUploadRequest,
     _: User = Depends(require_role(RestaurantRole.owner)),
     session: AsyncSession = Depends(get_db),
-) -> LogoUploadResponse:
+) -> ImageUploadResponse:
     return await create_logo_upload_url(restaurant_id, data, session)
 
 
@@ -61,7 +63,7 @@ async def create_upload_url(
 )
 async def confirm_upload(
     restaurant_id: uuid.UUID,
-    data: LogoConfirmRequest,
+    data: ImageConfirmRequest,
     current_user: User = Depends(require_role(RestaurantRole.owner)),
     session: AsyncSession = Depends(get_db),
 ) -> RestaurantRead:
