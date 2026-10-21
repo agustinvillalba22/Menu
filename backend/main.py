@@ -16,6 +16,7 @@ from app.routers.menu import router as menu_router
 from app.routers.public_menu import router as public_menu_router
 from app.routers.promo import router as promo_router
 from app.routers.restaurant import router as restaurant_router
+from app.routers.restaurant_info import router as restaurant_info_router
 from app.routers.restaurant_logo import router as restaurant_logo_router
 from app.routers.style import router as style_router
 from app.routers.staff_member import router as staff_member_router
@@ -50,6 +51,7 @@ app.include_router(menu_router, prefix="/restaurants", tags=["menus"])
 app.include_router(subcategory_router, prefix="/restaurants", tags=["subcategories"])
 app.include_router(item_router, prefix="/restaurants", tags=["items"])
 app.include_router(style_router, prefix="/restaurants", tags=["style"])
+app.include_router(restaurant_info_router, prefix="/restaurants", tags=["restaurant_info"])
 app.include_router(business_hours_router, prefix="/restaurants", tags=["business_hours"])
 app.include_router(restaurant_logo_router, prefix="/restaurants", tags=["logo"])
 app.include_router(promo_router, prefix="/restaurants", tags=["promos"])
