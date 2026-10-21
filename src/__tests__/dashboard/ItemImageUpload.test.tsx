@@ -6,8 +6,8 @@ import {
   getItemImageUploadUrl,
   confirmItemImageUpload,
   deleteItemImage,
-  uploadImageToR2,
 } from '../../lib/menu'
+import { uploadImageToR2 } from '../../lib/r2'
 import type { Item, ItemImageUploadResponse } from '../../lib/types'
 
 // The whole menu client is mocked: this is a component test and must never do a
@@ -17,8 +17,8 @@ vi.mock('../../lib/menu', () => ({
   getItemImageUploadUrl: vi.fn(),
   confirmItemImageUpload: vi.fn(),
   deleteItemImage: vi.fn(),
-  uploadImageToR2: vi.fn(),
 }))
+vi.mock('../../lib/r2', () => ({ uploadImageToR2: vi.fn() }))
 
 beforeEach(() => vi.clearAllMocks())
 

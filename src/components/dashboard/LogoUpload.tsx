@@ -2,11 +2,11 @@ import React, { useEffect, useRef, useState } from 'react'
 import { ImageOff } from 'lucide-react'
 import {
   getLogoUploadUrl,
-  uploadLogoToR2,
   confirmLogoUpload,
   deleteRestaurantLogo,
 } from '../../lib/restaurantInfo'
 import { ApiError } from '../../lib/api'
+import { uploadImageToR2 } from '../../lib/r2'
 
 interface LogoUploadProps {
   restaurantId: string
@@ -76,7 +76,7 @@ export default function LogoUpload({
         content_type: file.type,
         file_size: file.size,
       })
-      await uploadLogoToR2(res.upload_url, file)
+      await uploadImageToR2(res.upload_url, file)
       await confirmLogoUpload(restaurantId, res.object_key)
       // Don't invent a public URL on the client (we don't know R2_PUBLIC_URL).
       // The parent re-fetches /info and passes the new logo_url back through

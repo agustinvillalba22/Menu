@@ -4,7 +4,6 @@ import {
   getItemImageUploadUrl,
   confirmItemImageUpload,
   deleteItemImage,
-  uploadImageToR2,
 } from '../../lib/menu'
 import { ApiError } from '../../lib/api'
 import { errorResponse, jsonResponse } from '../helpers'
@@ -15,10 +14,6 @@ beforeEach(() => vi.clearAllMocks())
 
 function csvFile() {
   return new File(['a,b'], 'menu.csv', { type: 'text/csv' })
-}
-
-function imageFile(type = 'image/jpeg') {
-  return new File(['binary'], 'photo.jpg', { type })
 }
 
 const uploadResponse: ItemImageUploadResponse = {
@@ -137,36 +132,5 @@ describe('deleteItemImage (RF-03)', () => {
     const [url, init] = vi.mocked(fetch).mock.calls[0]
     expect(String(url)).toBe('http://api.test/restaurants/r1/subcategories/s1/items/i1/image')
     expect((init as RequestInit).method).toBe('DELETE')
-  })
-})
-
-describe('uploadImageToR2 (RF-04)', () => {
-  it('PUTs the raw file to the presigned URL with the file Content-Type, no API prefix, no credentials', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(undefined, 200))
-    const file = imageFile('image/png')
-
-    await expect(uploadImageToR2(uploadResponse.upload_url, file)).resolves.toBeUndefined()
-
-    const [url, init] = vi.mocked(fetch).mock.calls[0]
-    // The URL is used verbatim — NOT prefixed with VITE_API_URL.
-    expect(String(url)).toBe(uploadResponse.upload_url)
-    const request = init as RequestInit
-    expect(request.method).toBe('PUT')
-    expect(request.body).toBe(file)
-    expect((request.headers as Record<string, string>)['Content-Type']).toBe('image/png')
-    // RNF-02: the session cookie must never be sent to the external R2 origin.
-    expect(request.credentials).toBeUndefined()
-  })
-
-  it('throws a plain Error (not ApiError) when R2 responds non-ok', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(undefined, 403))
-    await expect(uploadImageToR2(uploadResponse.upload_url, imageFile())).rejects.toBeInstanceOf(
-      Error,
-    )
-
-    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(undefined, 403))
-    await expect(uploadImageToR2(uploadResponse.upload_url, imageFile())).rejects.not.toBeInstanceOf(
-      ApiError,
-    )
   })
 })
