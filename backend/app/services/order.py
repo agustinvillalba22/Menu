@@ -1,3 +1,4 @@
+import secrets
 import uuid
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -20,6 +21,8 @@ from app.models.order import (
 )
 from app.models.payment_account import PaymentAccount, PaymentAccountStatus
 from app.models.restaurant import Restaurant
+from app.models.cash_shift import CashShift
+from app.models.staff_member import StaffMember
 from app.models.table import Table
 from app.schemas.order import OrderCreate, OrderItemCreate
 from app.core.config import settings
@@ -43,6 +46,8 @@ from app.services.public_menu import get_public_menu
 # that explicitly with a 422 instead of letting Postgres raise an unhandled
 # DataError on INSERT (SQLite's lax NUMERIC affinity would silently accept
 # it, masking the bug in tests).
+# M37: 32 random bytes -> 43-char urlsafe token (256 bits of entropy).
+PUBLIC_TOKEN_BYTES = 32
 _MAX_AMOUNT = Decimal("99999999.99")
 
 
@@ -292,6 +297,7 @@ async def create_order(
         items=order_items,
         payment_method=data.payment_method,
         payment_status=PaymentStatus.pending if pay_online else PaymentStatus.none,
+        public_token=secrets.token_urlsafe(PUBLIC_TOKEN_BYTES),
     )
     session.add(order)
     await session.commit()
@@ -333,6 +339,31 @@ async def list_orders(
     return list(result.scalars().all())
 
 
+def check_transition(order: Order, new_status: OrderStatus) -> None:
+    """Raise 409 invalid_transition unless the M11 state machine allows it."""
+    if new_status not in _VALID_TRANSITIONS[order.status]:
+        raise HTTPException(status_code=409, detail="invalid_transition")
+
+
+def apply_status_change(
+    order: Order,
+    new_status: OrderStatus,
+    shift: CashShift | None,
+    member: StaffMember | None,
+) -> None:
+    """Mutate ``order`` for an already-validated transition (no commit).
+
+    Completing links the open cash shift (if any); a staff member, if given,
+    is stamped as handler. Shared by PATCH /orders and the table checkout.
+    """
+    if new_status == OrderStatus.completed and shift is not None:
+        order.cash_shift_id = shift.id
+    if member is not None:
+        order.handled_by_id = member.id
+        order.handled_by_name = member.name
+    order.status = new_status
+
+
 async def update_order_status(
     restaurant_id: uuid.UUID,
     order_id: uuid.UUID,
@@ -356,18 +387,13 @@ async def update_order_status(
     order = result.scalar_one_or_none()
     if order is None:
         raise HTTPException(status_code=404, detail="order_not_found")
-    if new_status not in _VALID_TRANSITIONS[order.status]:
-        raise HTTPException(status_code=409, detail="invalid_transition")
+    check_transition(order, new_status)
     member = None
     if staff_member_id is not None:
         member = await get_active_staff_member(restaurant_id, staff_member_id, session)
+    shift = None
     if new_status == OrderStatus.completed:
         shift = await get_open_shift(restaurant_id, session)
-        if shift is not None:
-            order.cash_shift_id = shift.id
-    if member is not None:
-        order.handled_by_id = member.id
-        order.handled_by_name = member.name
-    order.status = new_status
+    apply_status_change(order, new_status, shift, member)
     await session.commit()
     return await _load_order(order.id, session)

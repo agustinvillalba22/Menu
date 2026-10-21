@@ -105,8 +105,8 @@ describe('PublicMenuPage — QR por mesa (M35)', () => {
     await screen.findByRole('heading', { name: 'Boulette', level: 1 })
     expect(screen.getByText('Mesa 5')).toBeInTheDocument()
     await openCheckout()
-    const select = screen.getByRole('combobox', { name: /número de mesa/i })
-    expect(select).toHaveValue('t5')
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+    expect(screen.getByTestId('locked-table')).toHaveTextContent('Mesa 5')
   })
 
   it.each(['?mesa=abc', '?mesa=5x', '?mesa=0', '?mesa=-1', '?mesa=1.5', '?mesa=', '?mesa=99'])(
@@ -173,8 +173,18 @@ describe('PublicMenuPage — QR por mesa (M35)', () => {
     expect(await screen.findByText('Mesa 5')).toBeInTheDocument()
   })
 
-  it('cambiar a "para llevar" respeta la elección del usuario', async () => {
+  it('con mesa fija no se puede cambiar el tipo de pedido ni la mesa (M35.1)', async () => {
     renderMenu('?mesa=5')
+    await openCheckout()
+    expect(screen.queryByRole('button', { name: /para llevar/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /envío/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /en mesa/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: /número de mesa/i })).not.toBeInTheDocument()
+  })
+
+  it('sin mesa preseleccionada se puede cambiar a "para llevar" (sin regresión)', async () => {
+    renderMenu('')
     await openCheckout()
     await userEvent.click(screen.getByRole('button', { name: /para llevar/i }))
     expect(screen.queryByRole('combobox', { name: /número de mesa/i })).not.toBeInTheDocument()
@@ -191,6 +201,7 @@ describe('PublicMenuPage — QR por mesa (M35)', () => {
       .mock.calls.map((c) => readCall(c as [unknown, unknown]))
       .filter((c) => c.method === 'POST' && c.url.includes('/orders'))
     const body = JSON.parse(posts[0].body as string)
+    expect(body.order_type).toBe('mesa')
     expect(body.table_id).toBe('t5')
     expect(body.table_or_address).toBeNull()
   })

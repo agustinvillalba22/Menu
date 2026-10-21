@@ -1,6 +1,7 @@
 import uuid
+from datetime import datetime
 
-from sqlalchemy import ForeignKey, Integer, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -31,6 +32,10 @@ class Table(Base):
     )
     number: Mapped[int] = mapped_column(Integer, nullable=False)
     capacity: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # M33 — when the guests asked for the bill; cleared on checkout.
+    bill_requested_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # relationships
     restaurant: Mapped["app.models.restaurant.Restaurant"] = relationship(  # type: ignore[name-defined]

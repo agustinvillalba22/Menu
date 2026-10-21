@@ -1,5 +1,5 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from './api'
-import type { Table, TableCreatePayload, TableUpdatePayload } from './types'
+import type { Table, TableCreatePayload, TableOccupancy, TableUpdatePayload } from './types'
 
 export function listTables(restaurantId: string): Promise<Table[]> {
   return apiGet<Table[]>(`/restaurants/${restaurantId}/tables`)
@@ -19,4 +19,24 @@ export function updateTable(
 
 export function deleteTable(restaurantId: string, tableId: string): Promise<void> {
   return apiDelete<void>(`/restaurants/${restaurantId}/tables/${tableId}`)
+}
+
+// M33 — plano operativo
+export function getTablesOccupancy(restaurantId: string): Promise<TableOccupancy[]> {
+  return apiGet<TableOccupancy[]>(`/restaurants/${restaurantId}/tables/occupancy`)
+}
+
+export function requestBill(restaurantId: string, tableId: string): Promise<TableOccupancy> {
+  return apiPost<TableOccupancy>(`/restaurants/${restaurantId}/tables/${tableId}/bill-request`, {})
+}
+
+export function checkoutTable(
+  restaurantId: string,
+  tableId: string,
+  staffMemberId?: string,
+): Promise<TableOccupancy> {
+  return apiPost<TableOccupancy>(
+    `/restaurants/${restaurantId}/tables/${tableId}/checkout`,
+    staffMemberId ? { staff_member_id: staffMemberId } : {},
+  )
 }

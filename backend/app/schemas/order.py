@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime
 from decimal import Decimal
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_serializer
 
 from app.models.item_modifier import ModifierType
 from app.models.order import OrderStatus, OrderType, PaymentMethod, PaymentStatus
@@ -104,9 +105,69 @@ class OrderRead(BaseModel):
     # by the public POST endpoint, since only that router has the restaurant
     # at hand to build it. Default null keeps every other caller valid.
     whatsapp_url: str | None = None
+    # M37: per-order guest credential. Returned only by the public POST (set
+    # explicitly by the router). The validation alias points at an attribute
+    # the model does not have, so ``from_attributes`` never leaks the stored
+    # token through the dashboard list/patch/occupancy reads.
+    public_token: str | None = Field(
+        default=None, validation_alias=AliasChoices("public_token_issued")
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
     @field_serializer("total")
     def _total(self, v: Decimal) -> str:
         return f"{v:.2f}"
+
+
+# ---------------------------------------------------------------------------
+# M37 — public "Tu consumo" (token-based, anonymous)
+# ---------------------------------------------------------------------------
+
+_TOKEN_MIN_LENGTH = 20
+_TOKEN_MAX_LENGTH = 64
+_MAX_STATUS_TOKENS = 20
+
+PublicToken = Annotated[
+    str, Field(min_length=_TOKEN_MIN_LENGTH, max_length=_TOKEN_MAX_LENGTH)
+]
+
+
+class PublicOrderStatusRequest(BaseModel):
+    tokens: list[PublicToken] = Field(min_length=1, max_length=_MAX_STATUS_TOKENS)
+
+
+class PublicBillRequest(BaseModel):
+    token: PublicToken
+
+
+class PublicOrderLineRead(BaseModel):
+    name: str
+    quantity: int
+    subtotal: Decimal
+    modifiers: list[str]
+
+    @field_serializer("subtotal")
+    def _subtotal(self, v: Decimal) -> str:
+        return f"{v:.2f}"
+
+
+class PublicOrderStatusRead(BaseModel):
+    token: str
+    status: OrderStatus
+    created_at: datetime
+    payment_method: PaymentMethod
+    payment_status: PaymentStatus
+    total: Decimal
+    table_number: int | None
+    bill_requested: bool
+    items: list[PublicOrderLineRead]
+
+    @field_serializer("total")
+    def _total(self, v: Decimal) -> str:
+        return f"{v:.2f}"
+
+
+class PublicBillRequestRead(BaseModel):
+    bill_requested: bool
+    bill_requested_at: datetime

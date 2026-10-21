@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
-import { Search, ShoppingBag, ChevronRight, MapPin, Phone, Clock } from 'lucide-react'
+import { Search, ShoppingBag, ChevronRight, MapPin, Phone, Clock, X } from 'lucide-react'
 import { ApiError } from '../../lib/api'
 import { getPublicMenu } from '../../lib/publicMenu'
 import { getCategoryIcon } from '../../lib/categoryIcons'
@@ -21,6 +21,8 @@ import PublicCheckoutModal from '../../components/public/PublicCheckoutModal'
 import PublicPromoBanner from '../../components/public/PublicPromoBanner'
 import PaymentReturnBanner from '../../components/public/PaymentReturnBanner'
 import { usePaymentReturn } from '../../components/public/usePaymentReturn'
+import { useTableBill } from '../../components/public/useTableBill'
+import TuConsumoSheet from '../../components/public/TuConsumoSheet'
 
 type LoadState =
   | { status: 'loading' }
@@ -63,6 +65,7 @@ export default function PublicMenuPage(): React.JSX.Element {
   const [selectedItem, setSelectedItem] = useState<PublicItem | null>(null)
   const [cartOpen, setCartOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
+  const [consumoOpen, setConsumoOpen] = useState(false)
 
   // Fase 0010: the active promo feeds the cart's displayed totals — the
   // same rule the server recomputes at POST (server authoritative).
@@ -99,6 +102,19 @@ export default function PublicMenuPage(): React.JSX.Element {
       cancelled = true
     }
   }, [qrToken])
+
+  // M35: table preselected by the table QR (?mesa=N) or the session; only ever
+  // a real published table, never the raw query text.
+  const orderingEnabled = state.status === 'ready' && state.data.restaurant.orders_enabled === true
+  const preselectedTable =
+    state.status === 'ready' && orderingEnabled && qrToken !== undefined
+      ? resolvePreselectedTable(qrToken, mesaParam, state.data.tables)
+      : null
+  // M37: "Tu consumo" — the guest's own orders for the locked table.
+  const tableBill = useTableBill(qrToken, preselectedTable?.number ?? null, orderingEnabled)
+  useEffect(() => {
+    if (tableBill.orders.length === 0) setConsumoOpen(false)
+  }, [tableBill.orders.length])
 
   const categories: PublicCategory[] = state.status === 'ready' ? state.data.categories : []
   const visibleCategories = useMemo(
@@ -143,16 +159,9 @@ export default function PublicMenuPage(): React.JSX.Element {
   }
 
   const { restaurant, style } = state.data
-  const orderingEnabled = restaurant.orders_enabled === true
   // M36: tolerate the flag on the restaurant block or at the top level.
   const acceptsMercadoPago =
     (restaurant.accepts_mercadopago ?? state.data.accepts_mercadopago) === true
-  // M35: table preselected by the table QR (?mesa=N) or the session; only ever
-  // a real published table, never the raw query text.
-  const preselectedTable =
-    orderingEnabled && qrToken !== undefined
-      ? resolvePreselectedTable(qrToken, mesaParam, state.data.tables)
-      : null
 
   // P4 — resolve the promo's linked item (if any) so the banner can open
   // its detail modal straight from the categories tree already in memory.
@@ -316,6 +325,39 @@ export default function PublicMenuPage(): React.JSX.Element {
         </main>
       </div>
 
+      {/* M37 — "Tu consumo" floating button + closed-table notice */}
+      {preselectedTable !== null && tableBill.orders.length > 0 && (
+        <div
+          className={`fixed left-1/2 z-30 w-full max-w-xs -translate-x-1/2 px-3 ${
+            cart.count > 0 ? 'bottom-24' : 'bottom-5'
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => setConsumoOpen(true)}
+            aria-label={`Tu consumo, total $${tableBill.total.toFixed(2)}`}
+            className="flex w-full items-center justify-between rounded-2xl border-2 border-primario bg-white px-6 py-3 text-primario shadow-xl transition-all active:scale-[0.98]"
+          >
+            <span className="text-xs font-black uppercase">Tu consumo</span>
+            <span className="font-mono text-sm font-bold">${tableBill.total.toFixed(2)}</span>
+          </button>
+        </div>
+      )}
+      {tableBill.closedNotice && (
+        <div
+          role="status"
+          className="fixed bottom-5 left-1/2 z-40 flex w-full max-w-xs -translate-x-1/2 items-center justify-between gap-2 rounded-2xl bg-primario px-4 py-3 text-sm font-bold text-white shadow-xl"
+        >
+          <span>Mesa cobrada, gracias</span>
+          <button type="button" onClick={tableBill.dismissClosedNotice} aria-label="Cerrar aviso">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+      {consumoOpen && tableBill.orders.length > 0 && (
+        <TuConsumoSheet bill={tableBill} onClose={() => setConsumoOpen(false)} />
+      )}
+
       {/* Floating cart button */}
       {orderingEnabled && cart.count > 0 && (
         <div className="fixed bottom-5 left-1/2 z-30 w-full max-w-xs -translate-x-1/2 px-3">
@@ -379,7 +421,10 @@ export default function PublicMenuPage(): React.JSX.Element {
               initialTableId={preselectedTable?.id}
               acceptsMercadoPago={acceptsMercadoPago}
               onClose={() => setCheckoutOpen(false)}
-              onSuccess={() => cart.clear()}
+              onSuccess={() => {
+                cart.clear()
+                void tableBill.refresh()
+              }}
             />
           )}
         </>

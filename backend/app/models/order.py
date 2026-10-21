@@ -112,6 +112,11 @@ class Order(Base, TimestampMixin):
     )
     mp_preference_id: Mapped[str | None] = mapped_column(String, nullable=True)
     mp_payment_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    # M37 — unguessable per-order credential the anonymous guest keeps on their
+    # device to read/act on their own order. NULL for pre-M37 orders.
+    public_token: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, unique=True, index=True
+    )
 
     # relationships
     items: Mapped[list["OrderItem"]] = relationship(

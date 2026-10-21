@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { X, CheckCircle2, Loader2, AlertTriangle, MessageCircle } from 'lucide-react'
 import { ApiError } from '../../lib/api'
 import { createOrder } from '../../lib/orders'
+import { addOrderToken } from '../../lib/orderTokens'
 import type { CartLine } from './cart'
 import type { OrderCreatePayload, OrderRead, OrderType, PaymentMethod, Table } from '../../lib/types'
 
@@ -19,7 +20,8 @@ interface PublicCheckoutModalProps {
   // free text. Empty array (restaurant hasn't adopted the feature) keeps
   // today's free-text input unchanged.
   tables: Table[]
-  // M35: id of the table preselected via the table QR (?mesa=N), if any.
+  // M35/M35.1: id of the table preselected via the table QR (?mesa=N), if any.
+  // When it matches a table, it is locked: fixed 'mesa', no type/table change.
   initialTableId?: string
   // M36: when true the guest can choose between paying at the local and paying
   // with Mercado Pago. Absent/false → no selector, payload unchanged.
@@ -76,6 +78,8 @@ export default function PublicCheckoutModal({
   onSuccess,
 }: PublicCheckoutModalProps): React.JSX.Element {
   const [customerName, setCustomerName] = useState('')
+  // M35.1: a table preselected via QR (and present in `tables`) is locked.
+  const lockedTable = initialTableId ? tables.find((t) => t.id === initialTableId) ?? null : null
   const [orderType, setOrderType] = useState<OrderType>('mesa')
   const [tableOrAddress, setTableOrAddress] = useState('')
   const [tableId, setTableId] = useState(initialTableId ?? '')
@@ -86,7 +90,7 @@ export default function PublicCheckoutModal({
   const needsLocation = orderType === 'mesa' || orderType === 'envio'
   const locationLabel = orderType === 'mesa' ? 'Número de mesa' : 'Dirección de entrega'
   // M17: real tables available → the "mesa" field becomes a <select>.
-  const useTableSelect = orderType === 'mesa' && tables.length > 0
+  const useTableSelect = orderType === 'mesa' && tables.length > 0 && lockedTable === null
 
   const payWithMercadoPago = acceptsMercadoPago && paymentMethod === 'mercadopago'
   const busy = phase.status === 'submitting' || phase.status === 'redirecting'
@@ -97,7 +101,7 @@ export default function PublicCheckoutModal({
       customer_name: customerName.trim(),
       order_type: orderType,
       table_or_address: useTableSelect ? null : tableOrAddress.trim() || null,
-      table_id: useTableSelect ? tableId || null : null,
+      table_id: lockedTable ? lockedTable.id : useTableSelect ? tableId || null : null,
       notes: notes.trim() || null,
       items: lines.map((l) => ({
         item_id: l.item.id,
@@ -110,6 +114,8 @@ export default function PublicCheckoutModal({
     setPhase({ status: 'submitting' })
     try {
       const order = await createOrder(qrToken, payload)
+      // M37: remember the guest's own order (locked table only).
+      if (lockedTable && order.public_token) addOrderToken(qrToken, lockedTable.number, order.public_token)
       if (payWithMercadoPago) {
         // The cart stays intact until the payment is confirmed on return.
         if (!order.payment_url) {
@@ -214,6 +220,7 @@ export default function PublicCheckoutModal({
               />
             </div>
 
+            {!lockedTable && (
             <fieldset className="space-y-1.5">
               <legend className="text-[11px] font-black uppercase tracking-widest text-gray-400">
                 Tipo de pedido
@@ -236,6 +243,7 @@ export default function PublicCheckoutModal({
                 ))}
               </div>
             </fieldset>
+            )}
 
             {acceptsMercadoPago && (
               <fieldset className="space-y-1.5">
@@ -260,6 +268,20 @@ export default function PublicCheckoutModal({
                   ))}
                 </div>
               </fieldset>
+            )}
+
+            {lockedTable && (
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-black uppercase tracking-widest text-gray-400">
+                  Tu mesa
+                </span>
+                <p
+                  data-testid="locked-table"
+                  className="w-full rounded-2xl border border-gray-150 bg-[#f5f5f0] px-4 py-3 text-sm font-bold text-gray-900"
+                >
+                  Mesa {lockedTable.number}
+                </p>
+              </div>
             )}
 
             {needsLocation && useTableSelect && (
@@ -287,7 +309,7 @@ export default function PublicCheckoutModal({
               </div>
             )}
 
-            {needsLocation && !useTableSelect && (
+            {needsLocation && !useTableSelect && !lockedTable && (
               <div className="space-y-1.5">
                 <label htmlFor="table-or-address" className="text-[11px] font-black uppercase tracking-widest text-gray-400">
                   {locationLabel}

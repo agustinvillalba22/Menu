@@ -10,12 +10,21 @@ from app.dependencies.mercadopago import get_mp_client
 from app.models.order import OrderStatus
 from app.models.restaurant import RestaurantRole
 from app.models.user import User
-from app.schemas.order import OrderCreate, OrderRead, OrderStatusUpdate
+from app.schemas.order import (
+    OrderCreate,
+    OrderRead,
+    OrderStatusUpdate,
+    PublicBillRequest,
+    PublicBillRequestRead,
+    PublicOrderStatusRead,
+    PublicOrderStatusRequest,
+)
 from app.services.order import (
     create_order,
     list_orders,
     update_order_status,
 )
+from app.services.public_order import get_public_orders_status, request_bill_by_token
 from app.services.whatsapp import build_whatsapp_url
 
 router = APIRouter()
@@ -38,7 +47,28 @@ async def create_public_order(
     order, restaurant = await create_order(qr_token, data, session, mp_client)
     read = OrderRead.model_validate(order)
     read.whatsapp_url = build_whatsapp_url(order, restaurant)
+    read.public_token = order.public_token
     return read
+
+
+@router.post("/menu/{qr_token}/orders/status", response_model=list[PublicOrderStatusRead])
+async def public_orders_status(
+    qr_token: str,
+    data: PublicOrderStatusRequest,
+    session: AsyncSession = Depends(get_db),
+) -> list[PublicOrderStatusRead]:
+    """Public: status of the caller's own orders, looked up by their tokens."""
+    return await get_public_orders_status(qr_token, data.tokens, session)
+
+
+@router.post("/menu/{qr_token}/orders/bill-request", response_model=PublicBillRequestRead)
+async def public_bill_request(
+    qr_token: str,
+    data: PublicBillRequest,
+    session: AsyncSession = Depends(get_db),
+) -> PublicBillRequestRead:
+    """Public: ask for the bill of the table the caller's order belongs to."""
+    return await request_bill_by_token(qr_token, data.token, session)
 
 
 @router.get(

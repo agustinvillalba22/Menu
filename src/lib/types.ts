@@ -439,6 +439,21 @@ export interface Table {
   id: string
   number: number
   capacity: number | null
+  bill_requested_at?: string | null
+}
+
+// M33: estado operativo de una mesa (GET /tables/occupancy).
+export type TableStatus = 'free' | 'occupied' | 'bill'
+
+export interface TableOccupancy {
+  id: string
+  number: number
+  capacity: number | null
+  status: TableStatus
+  total: string
+  first_order_at: string | null
+  bill_requested_at: string | null
+  orders: OrderRead[]
 }
 
 export interface TableCreatePayload {
@@ -639,6 +654,26 @@ export interface OrderRead {
   payment_method: PaymentMethod
   payment_status: PaymentStatus
   payment_url: string | null
+  // M37: per-order guest credential, only set on the public POST response.
+  public_token?: string | null
+}
+
+// M37: "Tu consumo" — anonymous, token-based view of the guest's own orders.
+export interface PublicOrderStatus {
+  token: string
+  status: OrderStatus
+  created_at: string
+  payment_method: PaymentMethod
+  payment_status: PaymentStatus
+  total: string
+  table_number: number | null
+  bill_requested: boolean
+  items: { name: string; quantity: number; subtotal: string; modifiers: string[] }[]
+}
+
+export interface PublicBillRequestRead {
+  bill_requested: true
+  bill_requested_at: string
 }
 
 // --- Panel de administración (M13.2) ---------------------------------------
