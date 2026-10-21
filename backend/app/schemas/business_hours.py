@@ -72,15 +72,12 @@ class RestaurantInfoRead(BaseModel):
     Returned by ``GET /restaurants/{id}/info``. ``is_open_now`` is computed
     server-side using the restaurant's tz (via ``services.datetime.now_in``)
     so the public menu and the dashboard agree on the answer — no client-side
-    clock guessing. ``whatsapp_enabled`` mirrors the public response so the
-    dashboard can render a "the WhatsApp button is active" hint without
-    parsing the raw phone.
+    clock guessing.
     """
 
     address: str
     phone: str
     whatsapp_phone: str | None
-    whatsapp_enabled: bool
     logo_url: str | None
     timezone: str
     business_hours: list[BusinessHoursRead]

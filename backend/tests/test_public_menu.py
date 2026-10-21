@@ -126,14 +126,13 @@ async def test_ca01_full_menu_tree(client: AsyncClient):
         "slug": restaurant["slug"],
         "orders_enabled": False,
         # P6/P7 default-restaurant state: empty info, no hours → is_open_now False,
-        # logo null; whatsapp_enabled False until the owner sets a phone.
+        # logo null.
         "address": "",
         "phone": "",
         "logo_url": None,
         "timezone": "",
         "business_hours": [],
         "is_open_now": False,
-        "whatsapp_enabled": False,
         "accepts_mercadopago": False,
     }
     assert len(body["categories"]) == 1

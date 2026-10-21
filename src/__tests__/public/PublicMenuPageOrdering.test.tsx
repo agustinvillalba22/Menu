@@ -24,7 +24,6 @@ const menu: PublicMenuResponse = {
     timezone: '',
     business_hours: [],
     is_open_now: false,
-    whatsapp_enabled: false,
   },
   style: null,
   promo: null,
@@ -232,21 +231,16 @@ describe('PublicMenuPage — ordering enabled', () => {
     expect(body.table_or_address).toBeNull()
   })
 
-  // P7 — when the restaurant has whatsapp_enabled and the order's response
-  // carries a wa.me whatsapp_url, the confirmation screen shows the
-  // "Confirmar por WhatsApp" button pointing at that URL.
+  // When the order's response carries a wa.me whatsapp_url, the confirmation
+  // screen shows the "Confirmar por WhatsApp" button pointing at that URL.
   it('shows the WhatsApp confirm button on success when the local has a phone', async () => {
     const orderWithWhatsapp = {
       ...createdOrder,
       whatsapp_url: 'https://wa.me/5491112345678?text=Nuevo%20pedido',
     }
-    const menuWithWhatsapp: typeof menu = {
-      ...menu,
-      restaurant: { ...menu.restaurant, whatsapp_enabled: true },
-    }
     routeFetch([
       { method: 'POST', match: '/orders', response: jsonResponse(orderWithWhatsapp, 201) },
-      { method: 'GET', match: '/menu/', response: jsonResponse(menuWithWhatsapp) },
+      { method: 'GET', match: '/menu/', response: jsonResponse(menu) },
     ])
 
     renderMenu()
@@ -266,9 +260,8 @@ describe('PublicMenuPage — ordering enabled', () => {
     expect(button).toHaveAttribute('target', '_blank')
   })
 
-  // P7 — when the restaurant has no whatsapp phone (whatsapp_enabled=false),
-  // the confirmation screen must NOT render the WhatsApp button, even if the
-  // backend returned a (would-never) whatsapp_url.
+  // When the restaurant has no whatsapp phone the server returns no
+  // whatsapp_url, so the confirmation screen must NOT render the button.
   it('hides the WhatsApp confirm button when the local has no phone', async () => {
     routeFetch([
       { method: 'POST', match: '/orders', response: jsonResponse(createdOrder, 201) },

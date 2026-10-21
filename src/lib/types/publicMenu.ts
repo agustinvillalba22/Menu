@@ -27,7 +27,6 @@ export interface PublicRestaurant {
   // Lets the checkout render the "Confirmar por WhatsApp" button
   // without a second round trip. Boolean only: the raw phone never leaves the
   // server (the deep link URL is minted server-side in POST /orders).
-  whatsapp_enabled: boolean
   // True only with a connected Mercado Pago account + server configured.
   accepts_mercadopago?: boolean
 }

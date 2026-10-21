@@ -416,10 +416,6 @@ export default function PublicMenuPage(): React.JSX.Element {
               qrToken={qrToken}
               lines={cart.lines}
               total={cart.total}
-              // The server's already-resolved is_open_now and whatsapp_enabled
-              // are on `restaurant` — pass the flag down so the checkout can
-              // render the "Confirmar por WhatsApp" button iff a phone is set.
-              whatsappEnabled={restaurant.whatsapp_enabled === true}
               tables={state.data.tables}
               initialTableId={preselectedTable?.id}
               acceptsMercadoPago={acceptsMercadoPago}

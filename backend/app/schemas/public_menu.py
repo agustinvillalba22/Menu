@@ -111,12 +111,6 @@ class PublicRestaurantRead(BaseModel):
     timezone: str
     business_hours: list[PublicBusinessHoursRead]
     is_open_now: bool
-    # Lets the public checkout decide whether to render the
-    # "Confirmar por WhatsApp" button without a second round trip. The phone
-    # itself is never sent: only a boolean so we don't leak the raw number to
-    # page-source scrapers; the deep link URL is minted server-side in the
-    # POST /orders response and that's the only place the real wa.me URL lives.
-    whatsapp_enabled: bool
     # True only when the restaurant has a connected Mercado Pago account
     # AND the server is configured; drives the checkout's payment selector.
     accepts_mercadopago: bool = False
