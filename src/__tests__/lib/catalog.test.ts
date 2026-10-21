@@ -4,7 +4,7 @@ import {
   getItemImageUploadUrl,
   confirmItemImageUpload,
   deleteItemImage,
-} from '../../lib/menu'
+} from '../../lib/catalog'
 import { ApiError } from '../../lib/api'
 import { errorResponse, jsonResponse } from '../helpers'
 import type { Item, ItemImageUploadResponse } from '../../lib/types'

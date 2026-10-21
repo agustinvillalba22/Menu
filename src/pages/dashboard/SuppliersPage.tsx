@@ -1,88 +1,25 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import type { FormEvent } from 'react'
-import { useMyRestaurant } from '../../hooks/useMyRestaurant'
+import { useRestaurantData } from '../../hooks/useRestaurantData'
 import { createSupplier, listSuppliers } from '../../lib/suppliers'
 import { ApiError } from '../../lib/api'
 import type { Supplier } from '../../lib/types'
 import SupplierRow from '../../components/dashboard/SupplierRow'
+import RestaurantGate from '../../components/dashboard/RestaurantGate'
+
+const NO_SUPPLIERS: Supplier[] = []
 
 export default function SuppliersPage(): React.JSX.Element {
-  const { restaurant, loading: restaurantLoading, error: restaurantError } = useMyRestaurant()
-  const restaurantId = restaurant?.id ?? null
-
-  const [suppliers, setSuppliers] = useState<Supplier[]>([])
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (restaurantId === null) {
-      setLoading(false)
-      return
-    }
-    let cancelled = false
-
-    async function load(id: string): Promise<void> {
-      setLoading(true)
-      setLoadError(null)
-      try {
-        const list = await listSuppliers(id)
-        if (!cancelled) setSuppliers(list)
-      } catch {
-        if (!cancelled) setLoadError('No se pudieron cargar los proveedores.')
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-
-    void load(restaurantId)
-    return () => {
-      cancelled = true
-    }
-  }, [restaurantId])
-
-  if (restaurantLoading || loading) {
-    return <p className="text-sm text-gray-600 dark:text-gray-300">Cargando…</p>
-  }
-
-  if (restaurantError) {
-    return (
-      <div role="alert" className="rounded-md bg-red-50 dark:bg-red-950 px-3 py-2 text-sm text-red-700 dark:text-red-400">
-        {restaurantError}
-      </div>
-    )
-  }
-
-  if (!restaurant) {
-    return (
-      <p className="text-sm text-gray-600 dark:text-gray-300">
-        Creá tu restaurante primero desde “Mi restaurante”.
-      </p>
-    )
-  }
-
-  return (
-    <SuppliersSection
-      restaurantId={restaurant.id}
-      suppliers={suppliers}
-      onSuppliersChange={setSuppliers}
-      loadError={loadError}
-    />
-  )
+  return <RestaurantGate>{(restaurant) => <SuppliersSection restaurantId={restaurant.id} />}</RestaurantGate>
 }
 
-interface SuppliersSectionProps {
-  restaurantId: string
-  suppliers: Supplier[]
-  onSuppliersChange: (updater: (prev: Supplier[]) => Supplier[]) => void
-  loadError: string | null
-}
-
-function SuppliersSection({
-  restaurantId,
-  suppliers,
-  onSuppliersChange,
-  loadError,
-}: SuppliersSectionProps): React.JSX.Element {
+function SuppliersSection({ restaurantId }: { restaurantId: string }): React.JSX.Element {
+  const {
+    data: suppliers,
+    setData: setSuppliers,
+    loading,
+    error: loadError,
+  } = useRestaurantData(restaurantId, listSuppliers, NO_SUPPLIERS, 'No se pudieron cargar los proveedores.')
   const [newName, setNewName] = useState('')
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
@@ -93,13 +30,17 @@ function SuppliersSection({
     setCreateError(null)
     try {
       const supplier = await createSupplier(restaurantId, { name: newName.trim() })
-      onSuppliersChange((prev) => [...prev, supplier].sort((a, b) => a.name.localeCompare(b.name)))
+      setSuppliers((prev) => [...prev, supplier].sort((a, b) => a.name.localeCompare(b.name)))
       setNewName('')
     } catch (err) {
       setCreateError(err instanceof ApiError ? err.message : 'No se pudo crear el proveedor.')
     } finally {
       setCreating(false)
     }
+  }
+
+  if (loading) {
+    return <p className="text-sm text-gray-600 dark:text-gray-300">Cargando…</p>
   }
 
   return (
@@ -155,11 +96,11 @@ function SuppliersSection({
               restaurantId={restaurantId}
               supplier={supplier}
               onUpdated={(updated) =>
-                onSuppliersChange((prev) =>
+                setSuppliers((prev) =>
                   prev.map((s) => (s.id === updated.id ? updated : s)).sort((a, b) => a.name.localeCompare(b.name)),
                 )
               }
-              onDeleted={(id) => onSuppliersChange((prev) => prev.filter((s) => s.id !== id))}
+              onDeleted={(id) => setSuppliers((prev) => prev.filter((s) => s.id !== id))}
             />
           </React.Fragment>
         ))}

@@ -5,7 +5,7 @@ import {
   createSubcategory,
   updateCategory,
   deleteCategory,
-} from '../../lib/menu'
+} from '../../lib/catalog'
 import { ApiError } from '../../lib/api'
 import { getCategoryIconOptions, NO_ICON_VALUE } from '../../lib/categoryIcons'
 import type { Category, CategoryIcon, Subcategory, CategoryUpdate } from '../../lib/types'

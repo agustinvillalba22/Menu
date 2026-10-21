@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { useMyRestaurant } from '../../hooks/useMyRestaurant'
+import { useRestaurantData } from '../../hooks/useRestaurantData'
 import { closeShift, getCurrentShift, listShifts, openShift } from '../../lib/shifts'
 import { listStaffMembers } from '../../lib/staff'
 import { ApiError } from '../../lib/api'
 import type { CashShift, StaffMember } from '../../lib/types'
+import RestaurantGate from '../../components/dashboard/RestaurantGate'
 
 const inputClass =
   'rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none'
@@ -50,61 +51,50 @@ function errorMessage(err: unknown, fallback: string): string {
   return fallback
 }
 
+interface ShiftsData {
+  staff: StaffMember[]
+  current: CashShift | null
+  history: CashShift[]
+}
+
+const NO_SHIFTS: ShiftsData = { staff: [], current: null, history: [] }
+
+async function loadShifts(restaurantId: string): Promise<ShiftsData> {
+  const [members, current, list] = await Promise.all([
+    listStaffMembers(restaurantId),
+    getCurrentShift(restaurantId),
+    listShifts(restaurantId),
+  ])
+  return {
+    staff: members.filter((m) => m.active),
+    current,
+    history: list.filter((s) => s.closed_at !== null),
+  }
+}
+
 export default function ShiftsPage(): React.JSX.Element {
-  const { restaurant, loading: restaurantLoading, error: restaurantError } = useMyRestaurant()
-  const restaurantId = restaurant?.id ?? null
+  return <RestaurantGate>{(restaurant) => <ShiftsSection restaurantId={restaurant.id} />}</RestaurantGate>
+}
 
-  const [staff, setStaff] = useState<StaffMember[]>([])
-  const [current, setCurrent] = useState<CashShift | null>(null)
-  const [history, setHistory] = useState<CashShift[]>([])
+function ShiftsSection({ restaurantId }: { restaurantId: string }): React.JSX.Element {
+  const { data, setData, loading, error: loadError } = useRestaurantData(
+    restaurantId,
+    loadShifts,
+    NO_SHIFTS,
+    'No se pudo cargar la caja.',
+  )
+  const { staff, current, history } = data
   const [lastClosed, setLastClosed] = useState<CashShift | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState<string | null>(null)
 
-  const [staffId, setStaffId] = useState('')
+  const [pickedStaffId, setStaffId] = useState('')
+  const staffId = pickedStaffId !== '' ? pickedStaffId : (staff[0]?.id ?? '')
   const [amount, setAmount] = useState('')
   const [notes, setNotes] = useState('')
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (restaurantId === null) {
-      setLoading(false)
-      return
-    }
-    let cancelled = false
-
-    async function load(id: string): Promise<void> {
-      setLoading(true)
-      setLoadError(null)
-      try {
-        const [members, shift, list] = await Promise.all([
-          listStaffMembers(id),
-          getCurrentShift(id),
-          listShifts(id),
-        ])
-        if (cancelled) return
-        const active = members.filter((m) => m.active)
-        setStaff(active)
-        setStaffId(active.length > 0 ? active[0].id : '')
-        setCurrent(shift)
-        setHistory(list.filter((s) => s.closed_at !== null))
-      } catch {
-        if (!cancelled) setLoadError('No se pudo cargar la caja.')
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-
-    void load(restaurantId)
-    return () => {
-      cancelled = true
-    }
-  }, [restaurantId])
-
   async function handleOpen(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault()
-    if (restaurantId === null) return
     setBusy(true)
     setActionError(null)
     try {
@@ -113,7 +103,7 @@ export default function ShiftsPage(): React.JSX.Element {
         opening_amount: amount.trim(),
         notes: notes.trim() === '' ? null : notes.trim(),
       })
-      setCurrent(shift)
+      setData((prev) => ({ ...prev, current: shift }))
       setLastClosed(null)
       setAmount('')
       setNotes('')
@@ -126,7 +116,7 @@ export default function ShiftsPage(): React.JSX.Element {
 
   async function handleClose(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault()
-    if (restaurantId === null || current === null) return
+    if (current === null) return
     setBusy(true)
     setActionError(null)
     try {
@@ -136,8 +126,11 @@ export default function ShiftsPage(): React.JSX.Element {
         notes: notes.trim() === '' ? null : notes.trim(),
       })
       setLastClosed(shift)
-      setHistory((prev) => [shift, ...prev.filter((s) => s.id !== shift.id)])
-      setCurrent(null)
+      setData((prev) => ({
+        ...prev,
+        current: null,
+        history: [shift, ...prev.history.filter((s) => s.id !== shift.id)],
+      }))
       setAmount('')
       setNotes('')
     } catch (err) {
@@ -147,24 +140,8 @@ export default function ShiftsPage(): React.JSX.Element {
     }
   }
 
-  if (restaurantLoading || loading) {
+  if (loading) {
     return <p className="text-sm text-gray-600 dark:text-gray-300">Cargando…</p>
-  }
-
-  if (restaurantError) {
-    return (
-      <div role="alert" className="rounded-md bg-red-50 dark:bg-red-950 px-3 py-2 text-sm text-red-700 dark:text-red-400">
-        {restaurantError}
-      </div>
-    )
-  }
-
-  if (!restaurant) {
-    return (
-      <p className="text-sm text-gray-600 dark:text-gray-300">
-        Creá tu restaurante primero desde “Mi restaurante”.
-      </p>
-    )
   }
 
   const amountInvalid = amount.trim() === '' || !/^\d+(\.\d{1,2})?$/.test(amount.trim())

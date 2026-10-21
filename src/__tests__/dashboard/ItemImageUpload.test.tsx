@@ -6,14 +6,14 @@ import {
   getItemImageUploadUrl,
   confirmItemImageUpload,
   deleteItemImage,
-} from '../../lib/menu'
+} from '../../lib/catalog'
 import { uploadImageToR2 } from '../../lib/r2'
 import type { Item, ItemImageUploadResponse } from '../../lib/types'
 
 // The whole menu client is mocked: this is a component test and must never do a
 // real fetch (neither to our API nor to R2). Each API function the component
 // depends on is a vi.fn() we can arrange/assert on per case.
-vi.mock('../../lib/menu', () => ({
+vi.mock('../../lib/catalog', () => ({
   getItemImageUploadUrl: vi.fn(),
   confirmItemImageUpload: vi.fn(),
   deleteItemImage: vi.fn(),
