@@ -15,11 +15,11 @@ class CategoryType(str, enum.Enum):
 
 
 class CategoryIcon(str, enum.Enum):
-    """Curated icon keys for P8 (chips de categoría con ícono).
+    """Curated icon keys for category chips.
 
     Stored as ``native_enum=False`` text — same pattern as the other enums —
     so adding new icon keys later is a Python-only change (no migration
-    needed), and the frontend (Fase 1c) maps each key to a Lucide component
+    needed), and the frontend maps each key to a Lucide component
     in a single dict. Only keys with a concrete Lucide component counterpart
     are listed here — the union is intentional, not aspirational.
     """
@@ -66,10 +66,10 @@ class Menu(Base):
         nullable=False,
     )
 
-    # --- Fase 0009 (P2) — multi-menu scheduling, back-compat mode ---
+    # --- multi-menu scheduling, back-compat mode ---
     # The auto-created menu of every restaurant keeps ``is_default=True`` and
     # null scheduling fields, so it is always active (back-compat). Future
-    # menus created via CRUD (Fase 3) default to False — the dashboard then
+    # menus created via CRUD default to False — the dashboard then
     # marks exactly one menu per restaurant as default.
     is_default: Mapped[bool] = mapped_column(
         Boolean,
@@ -88,7 +88,7 @@ class Menu(Base):
         SmallInteger, nullable=True
     )
 
-    # M21 — menu names are unique per restaurant, case-insensitively.
+    # Menu names are unique per restaurant, case-insensitively.
     # Mirrors migration 0015 (func.lower() indexes work on SQLite and Postgres).
     __table_args__ = (
         Index(
@@ -99,7 +99,6 @@ class Menu(Base):
         ),
     )
 
-    # relationships
     restaurant: Mapped["app.models.restaurant.Restaurant"] = relationship(  # type: ignore[name-defined]
         "Restaurant",
         back_populates="menus",
@@ -129,7 +128,7 @@ class Category(Base):
         Enum(CategoryType, native_enum=False),
         nullable=False,
     )
-    # Fase 0008 (P8): nullable curated icon key — null means "no icon", the
+    # Nullable curated icon key — null means "no icon", the
     # frontend renders a text-only chip. Stored as text (native_enum=False)
     # so adding new icon keys later is a Python-only change.
     icon: Mapped["CategoryIcon | None"] = mapped_column(
@@ -138,7 +137,6 @@ class Category(Base):
         default=None,
     )
 
-    # relationships
     menu: Mapped["Menu"] = relationship("Menu", back_populates="categories")
     subcategories: Mapped[list["Subcategory"]] = relationship(
         "Subcategory",
@@ -162,7 +160,6 @@ class Subcategory(Base):
         nullable=False,
     )
 
-    # relationships
     category: Mapped["Category"] = relationship("Category", back_populates="subcategories")
     items: Mapped[list["app.models.item.Item"]] = relationship(  # type: ignore[name-defined]
         "Item",

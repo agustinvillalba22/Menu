@@ -18,18 +18,18 @@ class Settings(BaseSettings):
     COOKIE_SAMESITE: Literal["lax", "strict", "none"] = "lax"
     LOG_LEVEL: str = "INFO"
 
-    # Fase 0a — tz fallback for restaurants whose `timezone` is null and for
+    # Tz fallback for restaurants whose `timezone` is null and for
     # flows without a restaurant context. IANA name; UTC is a safe no-op.
     DEFAULT_TIMEZONE: str = "UTC"
 
-    # Fase 2b (P2) — global kill-switch for multi-menu auto-switching. Off =
-    # every restaurant serves its `is_default` menu (pre-P2 behavior, total
+    # Global kill-switch for multi-menu auto-switching. Off =
+    # every restaurant serves its `is_default` menu (pre-multi-menu behavior, total
     # back-compat). On = menus with `start_time` are filtered by the current
     # time in the restaurant's tz, falling back to `is_default` when none
-    # matches. Per-restaurant gating arrives with the Fase 3 CRUD.
+    # matches. Per-restaurant gating is not implemented.
     MENU_SCHEDULING_ENABLED: bool = True
 
-    # Cloudflare R2 (S3-compatible object storage) — M4 item images.
+    # Cloudflare R2 (S3-compatible object storage) — item images.
     # No defaults: missing any of these fails app startup (fail-fast, same
     # pattern as DATABASE_URL / SECRET_KEY).
     R2_ACCOUNT_ID: str
@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     R2_BUCKET_NAME: str
     R2_PUBLIC_URL: str
 
-    # M36 — Mercado Pago (Checkout Pro, marketplace model). All optional with
+    # Mercado Pago (Checkout Pro, marketplace model). All optional with
     # empty defaults: a missing value must never break startup or tests; the
     # integration simply reports itself as not configured (see
     # `mercadopago_configured` / `mercadopago_oauth_configured`).

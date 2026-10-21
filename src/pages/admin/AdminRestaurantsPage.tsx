@@ -13,7 +13,7 @@ export default function AdminRestaurantsPage(): React.JSX.Element {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [togglingId, setTogglingId] = useState<string | null>(null)
-  // RF-06: at most one row's import form is open at a time (inline expand).
+  // At most one row's import form is open at a time (inline expand).
   const [importOpenId, setImportOpenId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -38,7 +38,7 @@ export default function AdminRestaurantsPage(): React.JSX.Element {
     }
   }, [])
 
-  // CA-04: PATCH only {is_active}.
+  // PATCH only {is_active}.
   async function handleToggleActive(restaurant: AdminRestaurant): Promise<void> {
     setTogglingId(restaurant.id)
     setError(null)
@@ -106,7 +106,7 @@ export default function AdminRestaurantsPage(): React.JSX.Element {
                         onToggle={() => handleToggleActive(r)}
                       />
                     </td>
-                    {/* Read-only per RF-06 — plain text, not an interactive switch. */}
+                    {/* Read-only — plain text, not an interactive switch. */}
                     <td className="py-2 pr-4 text-gray-900">{r.orders_enabled ? 'Sí' : 'No'}</td>
                     <td className="py-2 pr-4">
                       <button

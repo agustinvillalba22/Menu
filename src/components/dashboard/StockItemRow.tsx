@@ -5,7 +5,7 @@ import type { StockItem, StockUnit, Supplier } from '../../lib/types'
 import { isCriticalStock, isLowStock } from '../../lib/stockStatus'
 import RowActions from './RowActions'
 
-// M19 RF-06: client-side status badge — no backend endpoint for this.
+// Client-side status badge — no backend endpoint for this.
 function statusFor(item: StockItem): { label: string; className: string } {
   if (isCriticalStock(item)) {
     return { label: 'Crítico', className: 'bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-400' }

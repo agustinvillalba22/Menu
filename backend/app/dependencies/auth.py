@@ -48,15 +48,14 @@ _ROLE_HIERARCHY: dict[RestaurantRole, int] = {
 def require_role(role: RestaurantRole):
     """Factory that returns a FastAPI dependency enforcing a minimum role.
 
-    M13.1 (RF-02): after validating the caller's role, also checks
+    After validating the caller's role, also checks
     ``Restaurant.is_active`` — an inactive restaurant rejects owner/editor
     access with 403 ``restaurant_inactive``, even for a caller who otherwise
     holds a sufficient role. This is the single choke point that blocks every
     dashboard endpoint (categories, subcategories, items, tags, modifiers,
     orders, styles) for an inactive restaurant without touching each router.
     A superadmin never goes through this dependency (it uses
-    ``require_superadmin`` instead), so no exemption is needed here — see
-    RNF-01.
+    ``require_superadmin`` instead), so no exemption is needed here.
     """
 
     async def _dependency(
@@ -90,11 +89,11 @@ def require_role(role: RestaurantRole):
 async def require_superadmin(
     current_user: User = Depends(get_current_user),
 ) -> User:
-    """Dependency enforcing ``current_user.is_superadmin`` (RF-01).
+    """Dependency enforcing ``current_user.is_superadmin``.
 
     Unlike ``require_role``, this has no notion of a specific restaurant —
     it grants global admin access, which is precisely what lets a superadmin
-    operate on an inactive restaurant via ``/admin/*`` (RNF-01).
+    operate on an inactive restaurant via ``/admin/*``.
     """
     if not current_user.is_superadmin:
         raise HTTPException(status_code=403, detail="not_superadmin")

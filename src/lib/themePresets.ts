@@ -1,7 +1,7 @@
 import type { FontFamily } from './types'
 
 /**
- * Curated palette presets for the appearance page (Fase 1b — P1).
+ * Curated palette presets for the appearance page.
  *
  * Each preset packs a coherent `{ primary, secondary, font }` triple together
  * so a restaurant owner can land a usable look in one click instead of

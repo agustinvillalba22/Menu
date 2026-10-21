@@ -104,9 +104,9 @@ export default function OverviewPage(): React.JSX.Element {
   }
 
   const publicPath = `/menu/${restaurant.qr_token}`
-  // RF-03: URL absoluta para el QR — el celular que escanea no tiene "origin" propio.
+  // URL absoluta para el QR — el celular que escanea no tiene "origin" propio.
   const publicUrl = `${window.location.origin}${publicPath}`
-  // M15 RF-03: PATCH /restaurants/{id} (incl. orders_enabled) is owner-only
+  // PATCH /restaurants/{id} (incl. orders_enabled) is owner-only
   // on the backend — the toggle is disabled for editor instead of silently
   // 403ing on click.
   const canEditOrders = isOwner(restaurant)

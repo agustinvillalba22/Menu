@@ -127,7 +127,7 @@ async def delete_item(
 ) -> None:
     """Delete an Item (cascade removes its tags).
 
-    RF-08: if the item has an image, its R2 object is deleted first
+    If the item has an image, its R2 object is deleted first
     (best-effort — a storage failure is logged but never blocks the DB delete,
     so we don't leave an orphan row behind).
     """
@@ -155,7 +155,7 @@ async def add_tag(
     """Add a tag to an Item. Idempotent per (item_id, name) — returns the
     existing tag with created=False if one already exists (PA-01).
 
-    "Already exists" is matched case-insensitively and trimmed (M12.2, RF-01):
+    "Already exists" is matched case-insensitively and trimmed:
     adding "Vegano" when the item already has "vegano" is a no-op that
     returns the existing tag, not a new one.
     """

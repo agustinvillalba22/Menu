@@ -33,7 +33,6 @@ class Supplier(Base):
     notes: Mapped[str | None] = mapped_column(String, nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
-    # relationships
     restaurant: Mapped["app.models.restaurant.Restaurant"] = relationship(  # type: ignore[name-defined]
         "Restaurant",
         back_populates="suppliers",

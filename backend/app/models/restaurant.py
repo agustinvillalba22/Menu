@@ -24,7 +24,7 @@ class RestaurantRole(str, enum.Enum):
 
 
 class RestaurantPlan(str, enum.Enum):
-    # Gating for the dominio-propio feature (P3). Default `free` so existing
+    # Gating for the dominio-propio feature. Default `free` so existing
     # rows backfill to the lowest tier without loosing the NOT NULL constraint.
     free = "free"
     pro = "pro"
@@ -33,7 +33,7 @@ class RestaurantPlan(str, enum.Enum):
 
 class Weekday(enum.IntEnum):
     # 0=Mon .. 6=Sun — matches Python's `datetime.weekday()`, so `is_open_now`
-    # (P6) can compare server-side without remapping.
+    # can compare server-side without remapping.
     monday = 0
     tuesday = 1
     wednesday = 2
@@ -75,14 +75,14 @@ class Restaurant(Base):
         nullable=False,
         default=True,
     )
-    # Created by migration 0001; declared here so models match the DB (M30).
+    # Created by migration 0001; declared here so models match the DB.
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
     )
 
-    # --- Fase 0008 extensions (P3 / P6 / P7) — all nullable + backfilled ---
+    # --- Extensions — all nullable + backfilled ---
     # Strings default to "" (not NULL) so partial UPDATEs and existing rows keep
     # a deterministic empty-state instead of NULL-handling surprises.
     address: Mapped[str] = mapped_column(
@@ -99,7 +99,7 @@ class Restaurant(Base):
     timezone: Mapped[str] = mapped_column(
         String, nullable=False, server_default="", default=""
     )
-    # P3 — only the data model lands here; DNS/TLS infra is out of scope.
+    # Only the data model lands here; DNS/TLS infra is out of scope.
     custom_domain: Mapped[str | None] = mapped_column(String, nullable=True)
     plan: Mapped[RestaurantPlan] = mapped_column(
         Enum(RestaurantPlan, native_enum=False),
@@ -108,7 +108,6 @@ class Restaurant(Base):
         default=RestaurantPlan.free,
     )
 
-    # relationships
     menus: Mapped[list["app.models.menu.Menu"]] = relationship(  # type: ignore[name-defined]
         "Menu",
         back_populates="restaurant",
@@ -131,28 +130,28 @@ class Restaurant(Base):
         cascade="all, delete-orphan",
         order_by="[BusinessHours.weekday, BusinessHours.open_time]",
     )
-    # Fase 0009 (P4) — promotional banners. Cascade with the restaurant;
-    # the public service (Fase 2c) picks the active one at read time.
+    # Promotional banners. Cascade with the restaurant;
+    # the public service picks the active one at read time.
     promos: Mapped[list["app.models.promo.Promo"]] = relationship(  # type: ignore[name-defined]
         "Promo",
         back_populates="restaurant",
         cascade="all, delete-orphan",
     )
-    # M17 — physical tables, ordered by number for the dashboard/public list.
+    # Physical tables, ordered by number for the dashboard/public list.
     tables: Mapped[list["app.models.table.Table"]] = relationship(  # type: ignore[name-defined]
         "Table",
         back_populates="restaurant",
         cascade="all, delete-orphan",
         order_by="app.models.table.Table.number",
     )
-    # M18 — operational staff roster, ordered by name.
+    # Operational staff roster, ordered by name.
     staff_members: Mapped[list["app.models.staff_member.StaffMember"]] = relationship(  # type: ignore[name-defined]
         "StaffMember",
         back_populates="restaurant",
         cascade="all, delete-orphan",
         order_by="app.models.staff_member.StaffMember.name",
     )
-    # M19 — suppliers + manually-managed stock, each ordered by name.
+    # Suppliers + manually-managed stock, each ordered by name.
     suppliers: Mapped[list["app.models.supplier.Supplier"]] = relationship(  # type: ignore[name-defined]
         "Supplier",
         back_populates="restaurant",
@@ -165,7 +164,7 @@ class Restaurant(Base):
         cascade="all, delete-orphan",
         order_by="app.models.stock_item.StockItem.name",
     )
-    # M36 — connected payment account (at most one). Tokens stay encrypted.
+    # Connected payment account (at most one). Tokens stay encrypted.
     payment_account: Mapped["app.models.payment_account.PaymentAccount | None"] = relationship(  # type: ignore[name-defined]
         "PaymentAccount",
         back_populates="restaurant",
@@ -197,7 +196,6 @@ class UserRestaurantRole(Base):
         nullable=False,
     )
 
-    # relationships
     restaurant: Mapped["Restaurant"] = relationship(
         "Restaurant",
         back_populates="user_roles",
@@ -209,7 +207,7 @@ class UserRestaurantRole(Base):
 
 
 class BusinessHours(Base):
-    """One row per (restaurant, weekday) — P6.
+    """One row per (restaurant, weekday).
 
     A restaurant can have at most one open/close window per weekday in this
     version; split shifts (lunch + dinner) are out of scope. A `UNIQUE
@@ -239,12 +237,11 @@ class BusinessHours(Base):
         nullable=False,
     )
     weekday: Mapped[int] = mapped_column(nullable=False)
-    # Aware time-of-day (no date) — `is_open_now` (P6) combines it with today's
+    # Aware time-of-day (no date) — `is_open_now` combines it with today's
     # date in the restaurant tz.
     open_time: Mapped[time] = mapped_column(Time, nullable=False)
     close_time: Mapped[time] = mapped_column(Time, nullable=False)
 
-    # relationships
     restaurant: Mapped["Restaurant"] = relationship(
         "Restaurant",
         back_populates="business_hours",

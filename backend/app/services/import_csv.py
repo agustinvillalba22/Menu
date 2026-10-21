@@ -1,21 +1,21 @@
-"""CSV import service — M3.4, extended by M12.5.
+"""CSV import service.
 
 Additive bulk import of items from a CSV. Category/subcategory are matched by
 name (case-insensitive + trim) against the restaurant's already-existing
 menu. By default (``create_missing=False``), a row whose category or
 subcategory doesn't exist fails instead of creating anything — this is the
-original M3 behavior and stays unchanged (RNF-01).
+original behavior and stays unchanged.
 
-When ``create_missing=True`` (M12.5, opt-in), a row may create the missing
+When ``create_missing=True`` (opt-in), a row may create the missing
 ``Category``/``Subcategory`` instead of failing: the CSV's optional `type`
 column (`food`/`drink`, case-insensitive, defaults to `food`) is used only
 when a brand-new Category is created; it is ignored when the category
 already exists. Categories/subcategories created this way are deduped
-in-memory within the same import (RF-06): the same index used to resolve
+in-memory within the same import: the same index used to resolve
 existing rows is updated as new ones are created during the row loop.
 
 Rows are validated one by one without aborting on error: valid rows are
-staged on the session and a SINGLE commit is issued at the end (RF-07),
+staged on the session and a SINGLE commit is issued at the end,
 matching the pattern already used for `Item`. `Category`/`Subcategory` IDs
 are generated client-side (`default=uuid.uuid4`), so they're available
 in-memory to assign as FKs before that single commit.
@@ -41,8 +41,7 @@ _TAG_SEPARATOR = ";"
 _NAME_MAX_LENGTH = 120
 _DESCRIPTION_MAX_LENGTH = 1000
 _TAG_MAX_LENGTH = 50
-# Kept in lock-step with app.schemas.menu (CategoryCreate / SubcategoryCreate,
-# RNF-03) so categories/subcategories auto-created by the importer reject the
+# Kept in lock-step with app.schemas.menu (CategoryCreate / SubcategoryCreate) so categories/subcategories auto-created by the importer reject the
 # same over-length names the normal CRUD path rejects.
 _CATEGORY_NAME_MAX_LENGTH = 120
 _SUBCATEGORY_NAME_MAX_LENGTH = 120
@@ -97,7 +96,7 @@ def _build_index(
     """Map normalized category name -> normalized subcategory name -> [ids].
 
     Mutated in place as new categories/subcategories are created during the
-    row loop (RF-06 dedupe), not just built once up front.
+    row loop (dedupe), not just built once up front.
     """
     index: dict[str, dict[str, list[uuid.UUID]]] = {}
     for category in categories:
@@ -115,7 +114,7 @@ def _build_category_ids(categories: list) -> dict[str, uuid.UUID]:
 
 
 def _category_type_from(raw: str | None) -> CategoryType:
-    """RF-05: default 'food' when `type` is missing, empty, or not a
+    """Default 'food' when `type` is missing, empty, or not a
     recognized value (case-insensitive `food`/`drink`)."""
     value = (raw or "").strip().lower()
     if value == CategoryType.drink.value:
@@ -135,9 +134,9 @@ def _resolve_subcategory(
 ) -> tuple[uuid.UUID | None, str | None]:
     """Return (subcategory_id, None) or (None, error_reason).
 
-    With ``create_missing=False`` this is byte-for-byte the original M3
-    behavior. With ``create_missing=True`` (RF-04), a missing category or
-    subcategory is created instead of failing the row; RF-02 the `type`
+    With ``create_missing=False`` this is byte-for-byte the original
+    behavior. With ``create_missing=True``, a missing category or
+    subcategory is created instead of failing the row; the `type`
     column is only consulted when a brand-new Category is created.
     """
     cat_key = _normalize(cat_name)
@@ -163,7 +162,7 @@ def _resolve_subcategory(
             # refactor fails loudly instead of inserting a Category with a
             # NULL menu_id.
             raise HTTPException(status_code=500, detail="internal_import_error")
-        # RF-07: assign the id explicitly rather than relying on the mapped
+        # Assign the id explicitly rather than relying on the mapped
         # column's `default=uuid.uuid4` — that default is only evaluated at
         # flush time, but we need the FK available in memory right now (no
         # intermediate flush before the single commit at the end).
@@ -206,11 +205,11 @@ def _resolve_subcategory(
 def _parse_tags(raw: str | None) -> list[str]:
     """Split a ";"-separated tag string, trimming, dropping empties and dupes.
 
-    Deduping here (CRIT-01) prevents a row like ``vegano;vegano`` from building
+    Deduping here prevents a row like ``vegano;vegano`` from building
     two ItemTag rows that would violate ``uq_item_tag`` and abort the whole
     single-commit import.
 
-    Dedup is case-insensitive and trimmed (M12.2, RF-02), matching the same
+    Dedup is case-insensitive and trimmed, matching the same
     "already exists" criterion as ``add_tag``: ``vegano;Vegano`` collapses to
     a single tag, keeping the casing of the first occurrence seen.
     """
@@ -299,9 +298,9 @@ async def import_items_csv(
 ) -> ImportResult:
     """Import items from CSV bytes. Additive, single commit at the end.
 
-    ``create_missing`` (RF-01, default False) opts into auto-creating
-    missing categories/subcategories (RF-04) instead of failing those rows.
-    ``menu_id`` (M26) targets a specific menu of the restaurant; ``None`` keeps
+    ``create_missing`` (default False) opts into auto-creating
+    missing categories/subcategories instead of failing those rows.
+    ``menu_id`` targets a specific menu of the restaurant; ``None`` keeps
     the default menu. An unknown/foreign menu is 404 ``menu_not_found`` before
     any row is processed, regardless of ``create_missing``.
     """

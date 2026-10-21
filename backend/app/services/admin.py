@@ -9,7 +9,7 @@ from app.models.user import User
 
 
 async def list_users(session: AsyncSession) -> list[User]:
-    """All users, newest first (RF-09)."""
+    """All users, newest first."""
     result = await session.execute(select(User).order_by(User.created_at.desc()))
     return list(result.scalars().all())
 
@@ -21,7 +21,7 @@ async def update_user(
 
     ``fields`` is expected to already be the result of ``model_dump(exclude_unset=True)``
     on ``AdminUserUpdate`` — only keys actually present in the request body are
-    applied (RF-10).
+    applied.
     """
     result = await session.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -41,10 +41,10 @@ async def update_user(
 async def list_restaurants_with_owner(
     session: AsyncSession,
 ) -> list[tuple[Restaurant, str | None]]:
-    """All restaurants with their owner's email, alphabetical by name (RF-11).
+    """All restaurants with their owner's email, alphabetical by name.
 
     Resolved with a single LEFT JOIN against a per-restaurant owner subquery
-    rather than one query per restaurant, to avoid N+1 (RNF-02).
+    rather than one query per restaurant, to avoid N+1.
     """
     owner_subq = (
         select(
@@ -81,7 +81,7 @@ async def get_owner_email(
 async def update_restaurant_active(
     restaurant_id: uuid.UUID, is_active: bool, session: AsyncSession
 ) -> Restaurant:
-    """Set ``Restaurant.is_active`` (RF-12). 404 if the restaurant doesn't exist."""
+    """Set ``Restaurant.is_active``. 404 if the restaurant doesn't exist."""
     result = await session.execute(
         select(Restaurant).where(Restaurant.id == restaurant_id)
     )

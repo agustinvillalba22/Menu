@@ -69,7 +69,7 @@ async def create_restaurant(
                     role=RestaurantRole.owner,
                 )
             )
-            # Fase 0009 (P2): the auto-created menu is the restaurant's
+            # The auto-created menu is the restaurant's
             # default — always active until the owner schedules otherwise.
             session.add(
                 Menu(
@@ -154,7 +154,7 @@ async def update_restaurant(
 
 
 # ---------------------------------------------------------------------------
-# P6 / P7 — Restaurant info (address/phone/tz/logo/whatsapp_phone) ----------
+# Restaurant info (address/phone/tz/logo/whatsapp_phone) ----------
 # ---------------------------------------------------------------------------
 #
 # Eager-load business_hours on every read that will be turned into a

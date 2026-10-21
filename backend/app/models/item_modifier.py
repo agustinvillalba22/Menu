@@ -29,14 +29,13 @@ class ItemModifier(Base):
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
     # price_delta can be negative (removal) or positive (extra); unlike
-    # Item.price it is NOT constrained to >= 0. See M11 spec, open question 1.
+    # Item.price it is NOT constrained to >= 0.
     price_delta: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     type: Mapped[ModifierType] = mapped_column(
         Enum(ModifierType, native_enum=False),
         nullable=False,
     )
 
-    # relationships
     item: Mapped["app.models.item.Item"] = relationship(  # type: ignore[name-defined]
         "Item",
         back_populates="modifiers",

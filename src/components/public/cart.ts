@@ -22,7 +22,7 @@ export function makeLineId(item: PublicItem, modifiers: PublicModifier[]): strin
   return `${item.id}::${ids.join('-')}`
 }
 
-/** The % discount a promo applies to this line's item (Fase 0010). */
+/** The % discount a promo applies to this line's item. */
 export function lineDiscountPct(
   line: CartLine,
   promo?: PublicPromo | null,
@@ -73,7 +73,7 @@ interface UsePublicCart {
  * Cart state persisted to localStorage under a qrToken-scoped key. Reloads when
  * the token changes so scanning a different restaurant starts a fresh cart.
  *
- * ``promo`` (Fase 0010) only feeds the *displayed* totals — the same rule the
+ * ``promo`` only feeds the *displayed* totals — the same rule the
  * server recomputes at POST; the stored lines never mutate.
  */
 export function usePublicCart(

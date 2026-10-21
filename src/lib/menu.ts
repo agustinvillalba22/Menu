@@ -137,7 +137,7 @@ export function removeTag(
   )
 }
 
-// --- Modifiers (M11) -------------------------------------------------------
+// --- Modifiers -------------------------------------------------------
 // Nested under an item, same URL shape as tags.
 
 export function listModifiers(
@@ -186,8 +186,8 @@ export function removeModifier(
   )
 }
 
-// --- Item image upload (M10) -----------------------------------------------
-// Presigned PUT + confirm flow (mirrors the M4 backend contract). The binary
+// --- Item image upload -----------------------------------------------
+// Presigned PUT + confirm flow (mirrors the backend contract). The binary
 // never touches our API: we ask for a presigned URL, PUT the file straight to
 // R2, then confirm against the backend.
 
@@ -229,7 +229,7 @@ export function deleteItemImage(
  * PUTs the raw file straight to the presigned R2 URL. Deliberately does NOT go
  * through apiFetch: that prefixes VITE_API_URL and forces
  * `Content-Type: application/json`, both wrong here. It also omits
- * `credentials: 'include'` (RNF-02) so the session cookie is never sent to the
+ * `credentials: 'include'` so the session cookie is never sent to the
  * external R2 origin. On a non-ok response it throws a plain Error (there is no
  * `{detail}` JSON body from R2 to wrap in an ApiError).
  */
@@ -255,7 +255,7 @@ export function importItemsCsv(
   const formData = new FormData()
   formData.append('file', file)
   // Only append when true: keeps the request byte-identical to before this
-  // flag existed when the caller doesn't opt in (RNF-01/CA-07).
+  // flag existed when the caller doesn't opt in.
   if (createMissing) {
     formData.append('create_missing', 'true')
   }

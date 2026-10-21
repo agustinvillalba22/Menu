@@ -1,9 +1,9 @@
 """
-Item image business logic (M4) — thin wrapper over `services.image_upload`.
+Item image business logic — thin wrapper over `services.image_upload`.
 
-Fase 0b: the R2 plumbing (signing, HEAD verification, best-effort delete,
+The R2 plumbing (signing, HEAD verification, best-effort delete,
 content-type/size caps) lives in `services.image_upload` now so promo banners
-(P4) and restaurant logos (P6) reuse it. This file keeps the item-specific
+and restaurant logos reuse it. This file keeps the item-specific
 bits: loading the `Item` via `services.item._get_item`, the
 `"items/{rid}/{iid}/"` object key prefix, and the `Item.image_url`
 persistence on confirm/delete — none of which the generic service can know

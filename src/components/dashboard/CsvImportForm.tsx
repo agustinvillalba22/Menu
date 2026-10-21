@@ -7,7 +7,7 @@ import type { ImportResult, Menu } from '../../lib/types'
 interface CsvImportFormProps {
   restaurantId: string
   /** Called after a successful import that created at least one row, so the
-   *  caller can refresh the already-rendered category tree (RF-05). */
+   *  caller can refresh the already-rendered category tree. */
   onImported?: (result: ImportResult) => void
   /** Optional loader for the restaurant's menus. With 2+ menus a target-menu
    *  selector is shown; on failure the form silently imports to the default. */

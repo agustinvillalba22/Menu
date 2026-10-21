@@ -44,7 +44,7 @@ class PublicItemRead(BaseModel):
     description: str
     price: Decimal
     image_url: str | None = None
-    # Fase 0010: the owning subcategory's category id — lets the public cart
+    # The owning subcategory's category id — lets the public cart
     # evaluate category-scoped promo discounts without a second round trip
     # (the promo rides in PublicMenuResponse.promo with its own scope).
     category_id: uuid.UUID
@@ -70,7 +70,7 @@ class PublicCategoryRead(BaseModel):
     id: uuid.UUID
     name: str
     type: CategoryType
-    # P8: same nullable curated icon key used by the dashboard. The public menu
+    # Same nullable curated icon key used by the dashboard. The public menu
     # reads it to render the Lucide component next to the chip name; null
     # means "text-only chip".
     icon: CategoryIcon | None = None
@@ -102,7 +102,7 @@ class PublicRestaurantRead(BaseModel):
     # client-side. The server still enforces it on POST /menu/{qr_token}/orders
     # (404 orders_disabled); this field only drives what the SPA renders.
     orders_enabled: bool
-    # P6 — local info shown in the public header (logo, address, phone,
+    # Local info shown in the public header (logo, address, phone,
     # schedule summary + Abierto/Cerrado pill). All nullable OR empty-string
     # tolerant so a brand-new restaurant with no info yet renders clean.
     address: str
@@ -111,13 +111,13 @@ class PublicRestaurantRead(BaseModel):
     timezone: str
     business_hours: list[PublicBusinessHoursRead]
     is_open_now: bool
-    # P7 — lets the public checkout decide whether to render the
+    # Lets the public checkout decide whether to render the
     # "Confirmar por WhatsApp" button without a second round trip. The phone
     # itself is never sent: only a boolean so we don't leak the raw number to
     # page-source scrapers; the deep link URL is minted server-side in the
     # POST /orders response and that's the only place the real wa.me URL lives.
     whatsapp_enabled: bool
-    # M36 — true only when the restaurant has a connected Mercado Pago account
+    # True only when the restaurant has a connected Mercado Pago account
     # AND the server is configured; drives the checkout's payment selector.
     accepts_mercadopago: bool = False
 
@@ -133,12 +133,12 @@ class PublicStyleRead(BaseModel):
 
 
 class PublicPromoRead(BaseModel):
-    """The active promo banner (P4) — never the scheduling internals.
+    """The active promo banner — never the scheduling internals.
 
     The public sees what to render (title/subtitle/discount/image/links);
     ``is_active``/``starts_at``/``ends_at`` are dashboard-only concerns
     resolved server-side in ``active_promo_for``. ``scope``/``category_id``
-    (Fase 0010) let the cart apply the same discount the server will
+    let the cart apply the same discount the server will
     recompute at POST — one shared rule, server authoritative.
     """
 
@@ -158,11 +158,11 @@ class PublicPromoRead(BaseModel):
 class PublicMenuResponse(BaseModel):
     restaurant: PublicRestaurantRead
     style: PublicStyleRead | None
-    # P4 — the currently-active promo, or null when there is none. Resolved
+    # The currently-active promo, or null when there is none. Resolved
     # server-side against is_active + the validity window in the
     # restaurant's tz; the client never re-derives it.
     promo: PublicPromoRead | None = None
-    # M17 — the restaurant's configured tables (empty if none set up yet),
+    # The restaurant's configured tables (empty if none set up yet),
     # so the public checkout can offer a <select> instead of free text.
     tables: list[PublicTableRead] = []
     categories: list[PublicCategoryRead]

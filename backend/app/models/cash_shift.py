@@ -14,7 +14,7 @@ def _utcnow() -> datetime:
 
 
 class CashShift(Base):
-    """A cash-register shift (M20): open/close with arqueo.
+    """A cash-register shift: open/close with arqueo.
 
     `opened_by_id`/`closed_by_id` point to the StaffMember roster as
     attribution only (no auth). The `*_name` columns are snapshots so history

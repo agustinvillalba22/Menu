@@ -67,11 +67,11 @@ export default function PublicMenuPage(): React.JSX.Element {
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [consumoOpen, setConsumoOpen] = useState(false)
 
-  // Fase 0010: the active promo feeds the cart's displayed totals — the
+  // The active promo feeds the cart's displayed totals — the
   // same rule the server recomputes at POST (server authoritative).
   const activePromo = state.status === 'ready' ? state.data.promo : null
   const cart = usePublicCart(qrToken, activePromo)
-  // M36: return from Mercado Pago (?pago=…&order=…). The cart is only emptied
+  // Return from Mercado Pago (?pago=…&order=…). The cart is only emptied
   // once the payment is confirmed as approved.
   const paymentReturn = usePaymentReturn(qrToken, cart.clear)
 
@@ -103,14 +103,14 @@ export default function PublicMenuPage(): React.JSX.Element {
     }
   }, [qrToken])
 
-  // M35: table preselected by the table QR (?mesa=N) or the session; only ever
+  // Table preselected by the table QR (?mesa=N) or the session; only ever
   // a real published table, never the raw query text.
   const orderingEnabled = state.status === 'ready' && state.data.restaurant.orders_enabled === true
   const preselectedTable =
     state.status === 'ready' && orderingEnabled && qrToken !== undefined
       ? resolvePreselectedTable(qrToken, mesaParam, state.data.tables)
       : null
-  // M37: "Tu consumo" — the guest's own orders for the locked table.
+  // "Tu consumo" — the guest's own orders for the locked table.
   const tableBill = useTableBill(qrToken, preselectedTable?.number ?? null, orderingEnabled)
   useEffect(() => {
     if (tableBill.orders.length === 0) setConsumoOpen(false)
@@ -162,11 +162,11 @@ export default function PublicMenuPage(): React.JSX.Element {
   }
 
   const { restaurant, style } = state.data
-  // M36: tolerate the flag on the restaurant block or at the top level.
+  // Tolerate the flag on the restaurant block or at the top level.
   const acceptsMercadoPago =
     (restaurant.accepts_mercadopago ?? state.data.accepts_mercadopago) === true
 
-  // P4 — resolve the promo's linked item (if any) so the banner can open
+  // Resolve the promo's linked item (if any) so the banner can open
   // its detail modal straight from the categories tree already in memory.
   const promoItem =
     state.data.promo?.item_id != null
@@ -234,7 +234,7 @@ export default function PublicMenuPage(): React.JSX.Element {
               </div>
             </div>
 
-            {/* P6 — local info row: open/closed pill, address, phone, schedule.
+            {/* Local info row: open/closed pill, address, phone, schedule.
                 Rendered only when the owner has set something, so a fresh
                 restaurant with empty info keeps the original minimal header. */}
             <LocalInfoBar
@@ -252,7 +252,7 @@ export default function PublicMenuPage(): React.JSX.Element {
           <PaymentReturnBanner state={paymentReturn.state} onClose={paymentReturn.dismiss} />
         )}
 
-        {/* P4 — active promo banner (server-resolved; null renders nothing) */}
+        {/* Active promo banner (server-resolved; null renders nothing) */}
         {state.data.promo && (
           <PublicPromoBanner
             promo={state.data.promo}
@@ -328,7 +328,7 @@ export default function PublicMenuPage(): React.JSX.Element {
         </main>
       </div>
 
-      {/* M37 — "Tu consumo" floating button + closed-table notice */}
+      {/* "Tu consumo" floating button + closed-table notice */}
       {preselectedTable !== null && tableBill.orders.length > 0 && (
         <div
           className={`fixed left-1/2 z-30 w-full max-w-xs -translate-x-1/2 px-3 ${
@@ -416,7 +416,7 @@ export default function PublicMenuPage(): React.JSX.Element {
               qrToken={qrToken}
               lines={cart.lines}
               total={cart.total}
-              // P7: the server's already-resolved is_open_now and whatsapp_enabled
+              // The server's already-resolved is_open_now and whatsapp_enabled
               // are on `restaurant` — pass the flag down so the checkout can
               // render the "Confirmar por WhatsApp" button iff a phone is set.
               whatsappEnabled={restaurant.whatsapp_enabled === true}
@@ -466,13 +466,13 @@ function FilterChip({
 }
 
 /**
- * Local info row rendered under the search input (Fase 1d — P6): open/closed
+ * Local info row rendered under the search input: open/closed
  * pill + address/phone/schedule as small white chips, only when the owner has
  * actually set any of them. Open/closed is the server's `is_open_now` (no
  * client clock guessing). Schedule is the one-line summary built by
  * `formatSchedule`.
  *
- * The pill needs special handling for the parent's `bg-primario` (P1 yellow
+ * The pill needs special handling for the parent's `bg-primario` (yellow
  * theme already inverts the button colors via `.theme-amarillo`); we keep the
  * pill simple — green chip for Abierto, gray for Cerrado — so it reads
  * correctly regardless of theme.

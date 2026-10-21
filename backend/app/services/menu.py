@@ -26,10 +26,10 @@ from app.services.datetime import now_in
 async def _get_default_menu(restaurant_id: uuid.UUID, session: AsyncSession) -> Menu:
     """Return the restaurant's default Menu, with a first-row fallback.
 
-    Prefers ``is_default=True`` (P2). Falls back to any menu of the
+    Prefers ``is_default=True``. Falls back to any menu of the
     restaurant — pre-0009 rows (or a misconfigured default flag) keep working
     instead of crashing with ``scalar_one``'s MultipleResultsFound, which the
-    pre-P2 implementation raised as soon as a second menu existed.
+    previous implementation raised as soon as a second menu existed.
     """
     result = await session.execute(
         select(Menu)
@@ -51,7 +51,7 @@ def _default_or_first(menus: list[Menu]) -> Menu | None:
     """Pick the ``is_default`` menu, falling back to the first by name.
 
     The name sort is a deterministic tie-break when several menus claim
-    ``is_default`` (the CRUD in Fase 3 enforces exactly-one, this is a
+    ``is_default`` (the menu CRUD enforces exactly-one, this is a
     read-side safety net).
     """
     if not menus:
@@ -92,12 +92,12 @@ def _menu_is_active(menu: Menu, now: datetime) -> bool:
 def resolve_active_menu(
     restaurant: Restaurant, now: datetime | None = None
 ) -> Menu | None:
-    """Return the menu the public should see right now (P2, Fase 2b).
+    """Return the menu the public should see right now.
 
     Pure/in-memory — works off the eager-loaded ``restaurant.menus`` so the
     public flow pays no extra query:
 
-    - flag off  -> the ``is_default`` menu (pre-P2 behavior, back-compat).
+    - flag off  -> the ``is_default`` menu (legacy behavior, back-compat).
     - flag on   -> among menus with ``start_time`` (i.e. "scheduled"), the
                    first active one at ``now`` in the restaurant's tz;
                    if none matches, the ``is_default`` fallback.
@@ -204,7 +204,7 @@ async def get_category(
     session: AsyncSession,
     menu_id: uuid.UUID | None = None,
 ) -> Category:
-    """Fetch a Category, ensuring it belongs to the restaurant (RF-07).
+    """Fetch a Category, ensuring it belongs to the restaurant.
 
     Membership is checked via ``Category -> Menu.restaurant_id``, so a
     category of ANY of the restaurant's menus is reachable. When ``menu_id``
@@ -255,7 +255,7 @@ async def delete_category(
 
 
 # ---------------------------------------------------------------------------
-# Menus (M21 — CRUD)
+# Menus (CRUD)
 # ---------------------------------------------------------------------------
 
 

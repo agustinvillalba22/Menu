@@ -8,7 +8,7 @@ import type {
   LogoUploadResponse,
 } from './types'
 
-// --- Restaurant info (P6) ------------------------------------------------
+// --- Restaurant info ------------------------------------------------
 
 export function getRestaurantInfo(restaurantId: string): Promise<RestaurantInfo> {
   return apiGet<RestaurantInfo>(`/restaurants/${restaurantId}/info`)
@@ -21,7 +21,7 @@ export function updateRestaurantInfo(
   return apiPatch<RestaurantInfo>(`/restaurants/${restaurantId}/info`, data)
 }
 
-// --- Business hours (P6) -------------------------------------------------
+// --- Business hours -------------------------------------------------
 
 /** Atomically replaces the whole week's schedule. `hours` is the full set. */
 export function replaceBusinessHours(
@@ -31,7 +31,7 @@ export function replaceBusinessHours(
   return apiPut<BusinessHours[]>(`/restaurants/${restaurantId}/business-hours`, { hours })
 }
 
-// --- Restaurant logo (P6) ------------------------------------------------
+// --- Restaurant logo ------------------------------------------------
 // Same presigned-PUT + confirm + delete flow as the item-image endpoints,
 // wrapped so the dashboard page doesn't have to know about R2 object keys.
 

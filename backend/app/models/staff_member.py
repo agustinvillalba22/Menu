@@ -17,7 +17,7 @@ class StaffPosition(str, enum.Enum):
 
 
 class StaffMember(Base):
-    """A roster entry for operational staff (M18) — identification only.
+    """A roster entry for operational staff — identification only.
 
     No relation to `User`/auth: `pin` is a short identifier for future
     attribution UI (e.g. "who marked this order ready"), never a login
@@ -47,7 +47,6 @@ class StaffMember(Base):
     pin: Mapped[str] = mapped_column(String(4), nullable=False)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
-    # relationships
     restaurant: Mapped["app.models.restaurant.Restaurant"] = relationship(  # type: ignore[name-defined]
         "Restaurant",
         back_populates="staff_members",

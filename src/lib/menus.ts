@@ -1,7 +1,7 @@
 import { apiGet, apiPost, apiPatch, apiDelete } from './api'
 import type { Category, CategoryCreate, Menu, MenuCreate, MenuUpdate } from './types'
 
-// Menus (M21). Categories-by-menu use the v2 routes; the legacy
+// Menus. Categories-by-menu use the v2 routes; the legacy
 // `/restaurants/{id}/categories` routes keep targeting the default menu.
 
 export function listMenus(restaurantId: string): Promise<Menu[]> {

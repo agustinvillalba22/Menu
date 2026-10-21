@@ -7,7 +7,7 @@ import type {
   PromoUpdate,
 } from './types'
 
-// --- Promo CRUD (P4, Fase 2c) ----------------------------------------------
+// --- Promo CRUD ----------------------------------------------
 // Mirrors lib/restaurantInfo.ts: thin typed wrappers so the dashboard page
 // never has to know about URL shapes.
 

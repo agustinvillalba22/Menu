@@ -36,7 +36,7 @@ export default function AdminLayout(): React.JSX.Element {
                 Restaurantes
               </NavLink>
             </nav>
-            {/* RF-07: /admin is a separate section, not a replacement for the
+            {/* /admin is a separate section, not a replacement for the
                 owner dashboard — a simple link keeps both reachable. */}
             <NavLink
               to="/dashboard"

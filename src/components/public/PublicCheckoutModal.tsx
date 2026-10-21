@@ -10,20 +10,20 @@ interface PublicCheckoutModalProps {
   qrToken: string
   lines: CartLine[]
   total: number
-  // P7: when true, the confirmation screen offers a "Confirmar por WhatsApp"
+  // When true, the confirmation screen offers a "Confirmar por WhatsApp"
   // button that opens `order.whatsapp_url` (a server-minted wa.me deep link).
   // When false, the button is omitted entirely — the local has not configured
   // a WhatsApp number.
   whatsappEnabled: boolean
-  // M17: the restaurant's configured tables. When non-empty and order_type
+  // The restaurant's configured tables. When non-empty and order_type
   // is 'mesa', the table field becomes a <select> of real tables instead of
   // free text. Empty array (restaurant hasn't adopted the feature) keeps
   // today's free-text input unchanged.
   tables: Table[]
-  // M35/M35.1: id of the table preselected via the table QR (?mesa=N), if any.
+  // Id of the table preselected via the table QR (?mesa=N), if any.
   // When it matches a table, it is locked: fixed 'mesa', no type/table change.
   initialTableId?: string
-  // M36: when true the guest can choose between paying at the local and paying
+  // When true the guest can choose between paying at the local and paying
   // with Mercado Pago. Absent/false → no selector, payload unchanged.
   acceptsMercadoPago?: boolean
   onClose: () => void
@@ -78,7 +78,7 @@ export default function PublicCheckoutModal({
   onSuccess,
 }: PublicCheckoutModalProps): React.JSX.Element {
   const [customerName, setCustomerName] = useState('')
-  // M35.1: a table preselected via QR (and present in `tables`) is locked.
+  // A table preselected via QR (and present in `tables`) is locked.
   const lockedTable = initialTableId ? tables.find((t) => t.id === initialTableId) ?? null : null
   const [orderType, setOrderType] = useState<OrderType>('mesa')
   const [tableOrAddress, setTableOrAddress] = useState('')
@@ -89,7 +89,7 @@ export default function PublicCheckoutModal({
 
   const needsLocation = orderType === 'mesa' || orderType === 'envio'
   const locationLabel = orderType === 'mesa' ? 'Número de mesa' : 'Dirección de entrega'
-  // M17: real tables available → the "mesa" field becomes a <select>.
+  // Real tables available → the "mesa" field becomes a <select>.
   const useTableSelect = orderType === 'mesa' && tables.length > 0 && lockedTable === null
 
   const payWithMercadoPago = acceptsMercadoPago && paymentMethod === 'mercadopago'
@@ -114,7 +114,7 @@ export default function PublicCheckoutModal({
     setPhase({ status: 'submitting' })
     try {
       const order = await createOrder(qrToken, payload)
-      // M37: remember the guest's own order (locked table only).
+      // Remember the guest's own order (locked table only).
       if (lockedTable && order.public_token) addOrderToken(qrToken, lockedTable.number, order.public_token)
       if (payWithMercadoPago) {
         // The cart stays intact until the payment is confirmed on return.
@@ -175,7 +175,7 @@ export default function PublicCheckoutModal({
                 <span className="font-mono font-black text-primario">${phase.order.total}</span>
               </div>
             </div>
-            {/* P7 — "Confirmar por WhatsApp". Only rendered when the local has
+            {/* "Confirmar por WhatsApp". Only rendered when the local has
                 a WhatsApp number (the public-menu flag is async-derived and the
                 per-order `whatsapp_url` is built server-side from the order's
                 snapshots on POST /orders). Opening is a plain anchor with

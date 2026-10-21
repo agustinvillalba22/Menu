@@ -1,7 +1,7 @@
 import type { PublicItem, PublicPromo } from './types'
 
 /**
- * Promo-discount rule (Fase 0010) — the exact client-side mirror of the
+ * Promo-discount rule — the exact client-side mirror of the
  * backend's `services/promo.py::promo_discount_pct`. One shared rule so the
  * cart/checkout totals the guest sees match what the server recomputes at
  * POST; the server stays authoritative.

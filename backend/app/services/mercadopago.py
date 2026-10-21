@@ -1,4 +1,4 @@
-"""Mercado Pago integration (M36): OAuth connection, seller tokens, Checkout
+"""Mercado Pago integration: OAuth connection, seller tokens, Checkout
 Pro preferences and webhook processing. Marketplace model — every call that
 moves money uses the *restaurant's* token and no fee is ever requested.
 
@@ -38,7 +38,7 @@ STATE_PURPOSE = "mp_oauth"
 STATE_TTL = timedelta(minutes=10)
 CENTS = Decimal("0.01")
 
-# MP payment.status -> our payment_status (M36 RF-18).
+# MP payment.status -> our payment_status.
 _STATUS_MAP: dict[str, PaymentStatus] = {
     "approved": PaymentStatus.approved,
     "rejected": PaymentStatus.rejected,
@@ -153,7 +153,7 @@ async def connect_account(
     session: AsyncSession,
     client: httpx.AsyncClient,
 ) -> PaymentAccount:
-    """Exchange the OAuth ``code`` and upsert the restaurant's account (RF-06)."""
+    """Exchange the OAuth ``code`` and upsert the restaurant's account."""
     if await session.get(Restaurant, restaurant_id) is None:
         raise MercadoPagoError("unknown restaurant")
     tokens = await _request_tokens(
@@ -214,7 +214,7 @@ async def disconnect_account(restaurant_id: uuid.UUID, session: AsyncSession) ->
 async def get_seller_token(
     account: PaymentAccount, session: AsyncSession, client: httpx.AsyncClient
 ) -> str:
-    """Return a usable access token, refreshing it lazily (RF-09)."""
+    """Return a usable access token, refreshing it lazily."""
     if account.status != PaymentAccountStatus.connected:
         raise PaymentAccountDisconnected()
     try:
@@ -370,7 +370,7 @@ async def process_payment_notification(
     session: AsyncSession,
     client: httpx.AsyncClient,
 ) -> None:
-    """Apply a signed ``payment`` notification (RF-17..RF-19).
+    """Apply a signed ``payment`` notification.
 
     Nothing from the notification body is trusted: the payment is re-fetched
     from MP with the seller's token and its amount/ownership are verified.

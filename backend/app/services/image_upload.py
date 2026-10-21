@@ -1,8 +1,8 @@
 """
-Generic R2 image-upload helper (Fase 0b).
+Generic R2 image-upload helper.
 
 Extracted from `app.services.item_image` so every image-bearing feature
-(M4 item images, P6 restaurant logos, P4 promo banners) shares one
+(item images, restaurant logos, promo banners) shares one
 validation + signing + verification path instead of duplicating the R2
 plumbing per feature.
 
@@ -45,7 +45,7 @@ def object_key_from_url(image_url: str) -> str:
     """Recover the R2 object key from a stored public image URL.
 
     Public version of the old private `_object_key_from_url` — `item.py`
-    needs it on the delete-item path, and other features (P6 logo delete)
+    needs it on the delete-item path, and other features (logo delete)
     will too. Kept non-async since it's pure string work.
     """
     prefix = f"{settings.R2_PUBLIC_URL}/"

@@ -26,7 +26,7 @@ import {
 import type { CategoryIcon } from './types'
 
 /**
- * Map of curated category icon keys → Lucide components (P8).
+ * Map of curated category icon keys → Lucide components.
  *
  * The backend `CategoryIcon` enum is the source-of-truth for *which* keys
  * are allowed (and is mirrored in `lib/types.ts`). This file is the single

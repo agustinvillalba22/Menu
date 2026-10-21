@@ -81,7 +81,7 @@ async def import_csv(
     file: UploadFile = File(...),
     create_missing: bool = Form(False),
     menu_id: uuid.UUID | None = Form(None),
-    # M13.1 (RF-07): CSV import is restricted to superadmins only — the
+    # CSV import is restricted to superadmins only — the
     # owner/editor role in `restaurant_id` no longer grants access, and a
     # superadmin can import into ANY restaurant regardless of role there.
     _: User = Depends(require_superadmin),
@@ -143,7 +143,7 @@ async def delete(
 
 
 # ---------------------------------------------------------------------------
-# Image — sub-resource of an item (M4, R2-backed)
+# Image — sub-resource of an item (R2-backed)
 # ---------------------------------------------------------------------------
 
 _IMAGE_PREFIX = _PREFIX + "/{item_id}/image"
@@ -231,7 +231,7 @@ async def delete_item_tag(
 
 
 # ---------------------------------------------------------------------------
-# Modifiers — sub-resource of an item (M11)
+# Modifiers — sub-resource of an item
 # ---------------------------------------------------------------------------
 
 _MODIFIERS_PREFIX = _PREFIX + "/{item_id}/modifiers"

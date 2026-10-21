@@ -1,15 +1,14 @@
-"""WhatsApp confirmation URL builder (P7) — Fase 1d.
+"""WhatsApp confirmation URL builder.
 
 Owns the only place that knows how to format an order into a `wa.me` deep
 link. Reads exclusively from the order's *snapshot* columns (``name_snapshot``,
 ``unit_price_snapshot``, ``subtotal``) — never from the live menu — so the
 message the customer sees on WhatsApp matches exactly what was persisted at
-checkout time, even if the owner edits a price minutes later (M11 RF-05
-parity: the same invariant the order rows already enforce).
+checkout time, even if the owner edits a price minutes later (same invariant
+the order rows already enforce).
 
 Returns ``None`` when the restaurant has no ``whatsapp_phone`` set; the
-checkout UI hides the button in that case (P7 spec — the button is optional,
-not a hard requirement).
+checkout UI hides the button in that case (the button is optional).
 """
 from decimal import Decimal
 from urllib.parse import quote
@@ -65,7 +64,7 @@ def build_whatsapp_url(order: Order, restaurant: Restaurant) -> str | None:
     """Build a ``https://wa.me/{phone}?text={msg}`` deep link, or None.
 
     ``None`` is the explicit "no WhatsApp number configured" signal: the
-    checkout UI hides the button (P7). The phone is stored without the
+    checkout UI hides the button. The phone is stored without the
     leading ``+`` (see ``RestaurantInfoUpdate`` validation), which is what
     ``wa.me`` expects — no extra normalization here.
     """

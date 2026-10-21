@@ -36,7 +36,7 @@ def _build_item(item: Item) -> PublicItemRead:
         description=item.description,
         price=item.price,
         image_url=item.image_url,
-        # The owning subcategory's category (Fase 0010) — the subcategory is
+        # The owning subcategory's category — the subcategory is
         # always in memory here via the eager-loaded public tree.
         category_id=item.subcategory.category_id,
         tags=[PublicTagRead(id=t.id, name=t.name) for t in item.tags],
@@ -73,14 +73,14 @@ def _build_category(category: Category) -> PublicCategoryRead:
 
 
 def _build_restaurant(restaurant: Restaurant) -> PublicRestaurantRead:
-    """Compose the public restaurant shape with P6 (info + hours + open/closed)
-    and P7 (whatsapp_enabled flag) fields.
+    """Compose the public restaurant shape with info + hours + open/closed
+    and whatsapp_enabled flag fields.
 
     ``is_open_now`` is computed here (not in the service layer) so the
     response shape is the only place that decides what the public sees — the
     service returns the ORM row and stays free of response-shaping concerns.
     ``whatsapp_enabled`` is a boolean only: never leak the raw phone number
-    to page-source scrapers (P7 deep link is minted server-side in the POST
+    to page-source scrapers (the deep link is minted server-side in the POST
     /orders response).
     """
     return PublicRestaurantRead(
@@ -110,8 +110,8 @@ def _build_restaurant(restaurant: Restaurant) -> PublicRestaurantRead:
 
 
 def _build_response(restaurant: Restaurant) -> PublicMenuResponse:
-    # P2 (Fase 2b): the auto-switching lives in resolve_active_menu — flag
-    # off (default) this is exactly the pre-P2 "the default menu" behavior.
+    # The auto-switching lives in resolve_active_menu — flag
+    # off (default) this is exactly the legacy "the default menu" behavior.
     menu = resolve_active_menu(restaurant)
     categories = sorted(menu.categories, key=lambda c: c.name) if menu else []
     style = (
@@ -119,7 +119,7 @@ def _build_response(restaurant: Restaurant) -> PublicMenuResponse:
         if restaurant.style is not None
         else None
     )
-    # P4 (Fase 2c): the active promo, resolved server-side (is_active +
+    # The active promo, resolved server-side (is_active +
     # window vs now in the restaurant's tz). Null when there is none.
     promo = active_promo_for(restaurant)
     return PublicMenuResponse(

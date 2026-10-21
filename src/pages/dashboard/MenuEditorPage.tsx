@@ -47,7 +47,7 @@ export default function MenuEditorPage(): React.JSX.Element {
 
   const [newName, setNewName] = useState('')
   const [newType, setNewType] = useState<CategoryType>('food')
-  // P8: null = text-only chip. NO_ICON_VALUE is the select placeholder code
+  // Null = text-only chip. NO_ICON_VALUE is the select placeholder code
   // that decodes back into `null` on submit — `<select>` can't carry null.
   const [newIcon, setNewIcon] = useState<CategoryIcon | null>(null)
   const [creating, setCreating] = useState(false)

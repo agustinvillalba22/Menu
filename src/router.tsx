@@ -33,7 +33,7 @@ function PrivateRoute({ children }: { children: ReactNode }): React.JSX.Element 
   return <>{children}</>
 }
 
-// RF-03: gates /admin on `is_superadmin`. Distinct from `PrivateRoute` because
+// Gates /admin on `is_superadmin`. Distinct from `PrivateRoute` because
 // the "authenticated but unauthorized" case redirects to "/" (not "/login") —
 // the user does have a session, they just lack the permission.
 export function SuperadminRoute({ children }: { children: ReactNode }): React.JSX.Element {
@@ -50,7 +50,7 @@ export function SuperadminRoute({ children }: { children: ReactNode }): React.JS
   return <>{children}</>
 }
 
-// M22: "/" (and, via "*", any unknown URL) sends the visitor to the dashboard
+// "/" (and, via "*", any unknown URL) sends the visitor to the dashboard
 // when signed in, otherwise to the login page. No landing page.
 function RootRedirect(): React.JSX.Element {
   const { loading, isAuthenticated } = useAuth()

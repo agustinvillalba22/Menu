@@ -28,7 +28,7 @@ export default function CategoryRow({
   const [name, setName] = useState(category.name)
   const [editing, setEditing] = useState(false)
   const [draftName, setDraftName] = useState(category.name)
-  // P8: icon is edited inline alongside the name. Initialized from the
+  // Icon is edited inline alongside the name. Initialized from the
   // current cell when entering edit mode so an unchanged icon doesn't
   // round-trip into the PATCH body.
   const [draftIcon, setDraftIcon] = useState<CategoryIcon | null>(category.icon)

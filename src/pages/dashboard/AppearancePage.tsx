@@ -126,7 +126,7 @@ export default function AppearancePage(): React.JSX.Element {
     )
   }
 
-  // M15 RF-03: PATCH /restaurants/{id}/style is owner-only on the backend;
+  // PATCH /restaurants/{id}/style is owner-only on the backend;
   // the GET (what's rendered here) stays editor-visible.
   const canEdit = isOwner(restaurant)
 

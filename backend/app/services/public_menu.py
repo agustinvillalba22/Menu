@@ -17,14 +17,14 @@ async def get_public_menu(qr_token: str, session: AsyncSession) -> Restaurant:
     subcategories -> items -> tags. Alphabetical ordering is applied by the
     caller when building the response.
 
-    ``business_hours`` (P6) is loaded here so ``is_open_now`` can be computed
+    ``business_hours`` is loaded here so ``is_open_now`` can be computed
     without a second trip, and so the public response can list the schedule
-    for the header. ``promos`` (P4) is loaded the same way — the active-promo
+    for the header. ``promos`` is loaded the same way — the active-promo
     resolution is done in-memory off the loaded rows.
 
     Raises 404 ``menu_not_found`` if no restaurant owns the token, or if the
-    restaurant exists but is inactive (``is_active=False``) — M13.1 (RF-05)
-    treats both cases identically so an inactive restaurant is not
+    restaurant exists but is inactive (``is_active=False``) — both
+    cases are treated identically so an inactive restaurant is not
     distinguishable from an unknown token.
     """
     result = await session.execute(

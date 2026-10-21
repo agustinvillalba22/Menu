@@ -1,8 +1,8 @@
 """
-Timezone-aware current-time helper (Fase 0a).
+Timezone-aware current-time helper.
 
-Centralizes every "now in this restaurant's tz" call so P2/P4/P5/P6 all
-share one definition and one set of tests (via freezegun), instead of
+Centralizes every "now in this restaurant's tz" call so every feature
+shares one definition and one set of tests (via freezegun), instead of
 sprinkling ``datetime.now(ZoneInfo(...))`` across the codebase.
 
 ``DEFAULT_TIMEZONE`` lives in ``app.core.config`` so callers without a

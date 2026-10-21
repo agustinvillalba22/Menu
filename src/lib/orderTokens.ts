@@ -1,4 +1,4 @@
-// M37: per-device storage of the public tokens of the guest's own orders.
+// Per-device storage of the public tokens of the guest's own orders.
 // Every storage access is guarded: if storage is unavailable the feature
 // degrades to "no bill" without breaking the menu or the checkout.
 

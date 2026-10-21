@@ -25,7 +25,7 @@ const REFRESH_MS = 30_000
 const ACTIVE_STATUSES: OrderStatus[] = ['pending', 'accepted', 'ready']
 
 /**
- * M32 RF-06 — numbers for the sidebar badges, the top bar and the stock toast.
+ * Numbers for the sidebar badges, the top bar and the stock toast.
  * Each source is fetched independently: a failing request leaves its previous
  * value untouched (zero on first load) and never throws into the layout.
  */

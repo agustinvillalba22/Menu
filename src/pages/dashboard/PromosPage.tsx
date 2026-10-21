@@ -20,16 +20,16 @@ import {
 } from '../../lib/menu'
 import type { Item, Promo, PromoScope, PromoUpdate } from '../../lib/types'
 
-// The dashboard "Promos" page (P4/P5, Fase 2c/2d): list + create/edit form
-// (texto, % desc, vigencia, producto vinculado, imagen R2) + the P5 expiry
+// The dashboard "Promos" page: list + create/edit form
+// (texto, % desc, vigencia, producto vinculado, imagen R2) + the expiry
 // notice. Same conventions as RestaurantInfoPage: one load on mount, each
 // action re-fetches, server responses are the single source of truth.
 
-// Mirror of the backend limits (Fase 0b shared image set): jpg/png/webp, 5 MiB.
+// Mirror of the backend limits (shared image set): jpg/png/webp, 5 MiB.
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_SIZE = 5 * 1024 * 1024
 
-// P5 — a promo expiring within this many days triggers the notice banner.
+// A promo expiring within this many days triggers the notice banner.
 const EXPIRY_NOTICE_DAYS = 3
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -131,7 +131,7 @@ export default function PromosPage(): React.JSX.Element {
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
-  // P5 notice (dismissible; recomputed on every load).
+  // Expiry notice (dismissible; recomputed on every load).
   const [noticeDismissed, setNoticeDismissed] = useState(false)
 
   // Image upload state (only in edit mode — the R2 URL is per-promo).
@@ -337,7 +337,7 @@ export default function PromosPage(): React.JSX.Element {
     }
   }
 
-  // P5 — active promos expiring soon (or today) drive the notice banner.
+  // Active promos expiring soon (or today) drive the notice banner.
   const expiringSoon = promos.filter(
     (p) =>
       p.is_active &&
@@ -373,7 +373,7 @@ export default function PromosPage(): React.JSX.Element {
         )}
       </div>
 
-      {/* P5 — in-app expiry notice (toast-style, dismissible). */}
+      {/* In-app expiry notice (toast-style, dismissible). */}
       {expiringSoon.length > 0 && !noticeDismissed && (
         <div
           role="alert"
@@ -677,7 +677,7 @@ export default function PromosPage(): React.JSX.Element {
                       {SCOPE_LABELS[promo.scope]}
                     </span>
                   )}
-                  {/* P5 badge — server-computed days_remaining. */}
+                  {/* Expiry badge — server-computed days_remaining. */}
                   {promo.days_remaining !== null && (
                     <span
                       data-testid={`promo-days-${promo.id}`}

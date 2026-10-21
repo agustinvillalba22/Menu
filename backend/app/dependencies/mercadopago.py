@@ -2,7 +2,7 @@ from collections.abc import AsyncGenerator
 
 import httpx
 
-# M36 RF-15 — every call to Mercado Pago has a hard 10 s timeout.
+# Every call to Mercado Pago has a hard 10 s timeout.
 MP_TIMEOUT_SECONDS = 10.0
 
 

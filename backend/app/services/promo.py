@@ -1,13 +1,13 @@
-"""Promo service (P4/P5, Fase 2c/2d).
+"""Promo service.
 
 Dashboard CRUD + the public "active promo" resolution. Same layering as the
 other feature services: semantic validation (aware datetimes, window
 ordering, item ownership) raises ``HTTPException`` here so every caller gets
 the API's ``detail``-string error shape.
 
-R2 images reuse the generic ``services.image_upload`` (Fase 0b) with the
+R2 images reuse the generic ``services.image_upload`` with the
 ``promos/{restaurant_id}/{promo_id}/`` object-key prefix — the binary never
-passes through the API, exactly like item images (M4) and logos (P6).
+passes through the API, exactly like item images and logos.
 """
 import uuid
 from datetime import datetime, timezone as dt_timezone
@@ -105,7 +105,7 @@ def _validate_scope(
     category_id: uuid.UUID | None,
     discount_pct: int | None,
 ) -> None:
-    """Scope/link consistency (Fase 0010, 422 detail-strings).
+    """Scope/link consistency (422 detail-strings).
 
     - scope='item'     -> item_id required, category_id must be null.
     - scope='category' -> category_id required, item_id must be null.
@@ -149,7 +149,7 @@ async def create_promo(
     session.add(promo)
     await session.commit()
     # Re-fetch through get_promo so Promo.restaurant is eager-loaded —
-    # days_remaining (P5) reads the tz off it and must not lazy-load.
+    # days_remaining reads the tz off it and must not lazy-load.
     return await get_promo(restaurant_id, promo.id, session)
 
 
@@ -158,7 +158,7 @@ async def list_promos(
 ) -> list[Promo]:
     """All promos, newest first — the dashboard decides what to highlight.
 
-    ``Promo.restaurant`` is eager-loaded: ``days_remaining`` (P5) reads the
+    ``Promo.restaurant`` is eager-loaded: ``days_remaining`` reads the
     restaurant's tz off the row and must not lazy-load in async context.
     """
     result = await session.execute(
@@ -225,7 +225,7 @@ async def delete_promo(
 
 
 # ---------------------------------------------------------------------------
-# Discount resolution (Fase 0010)
+# Discount resolution
 # ---------------------------------------------------------------------------
 
 
@@ -255,7 +255,7 @@ def promo_discount_pct(promo: Promo | None, item: Item) -> int | None:
 
 
 # ---------------------------------------------------------------------------
-# P5 — expiry signal for the dashboard
+# expiry signal for the dashboard
 # ---------------------------------------------------------------------------
 
 
