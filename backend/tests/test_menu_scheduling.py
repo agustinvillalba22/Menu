@@ -28,7 +28,7 @@ from app.models.item import Item
 from app.models.menu import Category, Menu, Subcategory
 from app.models.order import Order
 from app.models.restaurant import Restaurant
-from app.services.menu import _get_default_menu, resolve_active_menu
+from app.services.menu_scheduling import _get_default_menu, resolve_active_menu
 
 # Monday, 2026-09-14 — weekday 0 in every frozen instant below.
 _MON = "2026-09-14"

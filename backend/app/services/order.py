@@ -34,7 +34,7 @@ from app.services.mercadopago import (
     get_account,
     get_seller_token,
 )
-from app.services.menu import resolve_active_menu
+from app.services.menu_scheduling import resolve_active_menu
 from app.services.staff_member import get_active_staff_member
 from app.services.promo import active_promo_for, promo_discount_pct
 from app.services.public_menu import get_public_menu
