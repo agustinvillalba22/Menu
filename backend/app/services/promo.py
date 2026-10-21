@@ -30,6 +30,7 @@ from app.schemas.promo import (
 )
 from app.services import image_upload
 from app.services.datetime import now_in
+from app.services.crud import apply_patch
 
 
 # ---------------------------------------------------------------------------
@@ -200,8 +201,7 @@ async def update_promo(
         await _check_item_owned(restaurant_id, changes["item_id"], session)
     if "category_id" in changes and changes["category_id"] is not None:
         await _check_category_owned(restaurant_id, changes["category_id"], session)
-    for field, value in changes.items():
-        setattr(promo, field, value)
+    apply_patch(promo, changes)
     # Validate the *effective* window: a PATCH that only touches ends_at
     # must still be checked against the already-stored starts_at.
     _validate_window(promo.starts_at, promo.ends_at)

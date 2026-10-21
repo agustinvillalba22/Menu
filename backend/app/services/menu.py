@@ -21,6 +21,7 @@ from app.schemas.menu import (
     validate_schedule,
 )
 from app.services.datetime import now_in
+from app.services.crud import apply_patch
 
 
 async def _get_default_menu(restaurant_id: uuid.UUID, session: AsyncSession) -> Menu:
@@ -235,8 +236,7 @@ async def update_category(
 ) -> Category:
     """Apply a partial update to a Category owned by the restaurant."""
     category = await get_category(restaurant_id, category_id, session, menu_id)
-    for field, value in data.model_dump(exclude_unset=True).items():
-        setattr(category, field, value)
+    apply_patch(category, data.model_dump(exclude_unset=True))
     await session.commit()
     await session.refresh(category)
     return category

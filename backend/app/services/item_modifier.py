@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.item_modifier import ItemModifier
 from app.schemas.item_modifier import ItemModifierCreate, ItemModifierUpdate
 from app.services.item import _get_item
+from app.services.crud import apply_patch
 
 
 async def _get_modifier(
@@ -79,12 +80,9 @@ async def update_modifier(
     modifier = await _get_modifier(
         restaurant_id, subcategory_id, item_id, modifier_id, session
     )
-    for field, value in data.model_dump(exclude_unset=True).items():
-        # name/price_delta/type are NOT NULL columns; an explicit null in the
-        # PATCH body is ignored (no-op) rather than triggering an error.
-        if value is None:
-            continue
-        setattr(modifier, field, value)
+    # name/price_delta/type are NOT NULL columns; an explicit null in the
+    # PATCH body is ignored (no-op) rather than triggering an error.
+    apply_patch(modifier, data.model_dump(exclude_unset=True), skip_none=True)
     await session.commit()
     await session.refresh(modifier)
     return modifier
