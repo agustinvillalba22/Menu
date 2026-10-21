@@ -1,4 +1,4 @@
-"""Schemas for restaurant info (P6) and business hours (P6) — Fase 1d.
+"""Schemas for restaurant info and business hours.
 
 These mirror the columns added in migration 0008 and the new
 ``business_hours`` table. The existing ``RestaurantRead`` (in
@@ -13,7 +13,7 @@ from datetime import time
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-# P7: international phone format accepted by `wa.me`. Digits only, 6 to 15,
+# International phone format accepted by `wa.me`. Digits only, 6 to 15,
 # matching E.164 minus the leading `+` (we strip a leading `+` server-side so
 # the owner can paste either form in the dashboard). Compiled once at import.
 _WHATSAPP_PHONE_RE = re.compile(r"^\+?\d{6,15}$")
@@ -67,7 +67,7 @@ class BusinessHoursBulkUpsert(BaseModel):
 
 
 class RestaurantInfoRead(BaseModel):
-    """Restaurant contact info + schedule summary (P6, P7).
+    """Restaurant contact info + schedule summary.
 
     Returned by ``GET /restaurants/{id}/info``. ``is_open_now`` is computed
     server-side using the restaurant's tz (via ``services.datetime.now_in``)
@@ -88,7 +88,7 @@ class RestaurantInfoRead(BaseModel):
 
 
 class RestaurantInfoUpdate(BaseModel):
-    """Partial PATCH for the restaurant's contact info (P6, P7).
+    """Partial PATCH for the restaurant's contact info.
 
     ``address``/``phone``/``timezone`` are NOT NULL with ``''`` default, so
     they accept an empty string (clear) and any value (set). ``whatsapp_phone``

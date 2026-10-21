@@ -9,7 +9,7 @@ from app.models.menu import CategoryIcon, CategoryType
 class CategoryCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     type: CategoryType
-    # P8: nullable curated icon key. Defaults to None (text-only chip on the
+    # Nullable curated icon key. Defaults to None (text-only chip on the
     # public menu). Validated against the `CategoryIcon` enum by pydantic so a
     # typo in the dashboard can't reach the DB as a free string.
     icon: CategoryIcon | None = None
@@ -51,13 +51,13 @@ class SubcategoryRead(BaseModel):
 
 
 class CategoryTreeRead(CategoryRead):
-    """Category with its subcategories (editor tree, RF-08)."""
+    """Category with its subcategories (editor tree)."""
 
     subcategories: list[SubcategoryRead] = []
 
 
 # ---------------------------------------------------------------------------
-# Menus (M21)
+# Menus
 # ---------------------------------------------------------------------------
 
 WEEKDAY_MASK_MIN = 1

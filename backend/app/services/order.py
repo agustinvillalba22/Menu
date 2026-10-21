@@ -40,13 +40,13 @@ from app.services.promo import active_promo_for, promo_discount_pct
 from app.services.public_menu import get_public_menu
 
 # Numeric(10, 2) columns (subtotal/total) top out at 8 integer digits. The
-# per-request bounds on quantity/items/modifier_ids (M11 review CRIT-01) make
+# per-request bounds on quantity/items/modifier_ids make
 # this very hard to hit organically, but a near-max-price item combined with
 # the max allowed quantity across many lines can still overflow it. Reject
 # that explicitly with a 422 instead of letting Postgres raise an unhandled
 # DataError on INSERT (SQLite's lax NUMERIC affinity would silently accept
 # it, masking the bug in tests).
-# M37: 32 random bytes -> 43-char urlsafe token (256 bits of entropy).
+# 32 random bytes -> 43-char urlsafe token (256 bits of entropy).
 PUBLIC_TOKEN_BYTES = 32
 _MAX_AMOUNT = Decimal("99999999.99")
 
@@ -56,7 +56,7 @@ def _check_amount(value: Decimal) -> None:
         raise HTTPException(status_code=422, detail="amount_too_large")
 
 
-# Allowed status transitions (M11 RF-07). Terminal states (completed,
+# Allowed status transitions. Terminal states (completed,
 # cancelled) map to an empty set — no outgoing transition is permitted.
 _VALID_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
     OrderStatus.pending: {OrderStatus.accepted, OrderStatus.cancelled},
@@ -71,7 +71,7 @@ def _collect_items(restaurant: Restaurant) -> dict[uuid.UUID, Item]:
     """Flatten the eager-loaded menu tree into an {item_id: Item} map.
 
     Only items reachable from this restaurant's menu are included, which is what
-    enforces cross-restaurant integrity (RNF-02): an item_id from another
+    enforces cross-restaurant integrity: an item_id from another
     restaurant simply will not be present in the map.
     """
     items: dict[uuid.UUID, Item] = {}
@@ -84,7 +84,7 @@ def _collect_items(restaurant: Restaurant) -> dict[uuid.UUID, Item]:
 
 
 async def _load_order(order_id: uuid.UUID, session: AsyncSession) -> Order:
-    """Re-fetch an Order with its lines and modifiers eagerly loaded (RNF-03)."""
+    """Re-fetch an Order with its lines and modifiers eagerly loaded."""
     result = await session.execute(
         select(Order)
         .where(Order.id == order_id)
@@ -94,7 +94,7 @@ async def _load_order(order_id: uuid.UUID, session: AsyncSession) -> Order:
 
 
 def _apply_discount(value: Decimal, pct: int) -> Decimal:
-    """Apply a whole-number % discount, quantized to cents (Fase 0010)."""
+    """Apply a whole-number % discount, quantized to cents."""
     factor = Decimal(100 - pct) / Decimal(100)
     return (value * factor).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
@@ -104,10 +104,10 @@ def _build_line(item: Item, line: OrderItemCreate, promo=None) -> OrderItem:
 
     The server recomputes every price from live DB values; nothing from the
     client body except item_id/modifier_ids/quantity/special_instructions is
-    trusted (M11 RF-05, CA-05).
+    trusted.
 
-    Fase 0010: the active promo's discount (scope-matched) is applied to the
-    effective unit price — base + modifiers, clamped at 0 (M11.1 parity).
+    The active promo's discount (scope-matched) is applied to the
+    effective unit price — base + modifiers, clamped at 0.
     ``unit_price_snapshot`` keeps the LIST price and ``discount_pct``
     snapshots what was applied, so order history explains its own subtotal.
     """
@@ -125,7 +125,7 @@ def _build_line(item: Item, line: OrderItemCreate, promo=None) -> OrderItem:
     modifiers_total: Decimal = sum(
         (m.price_delta for m in chosen), start=Decimal("0")
     )
-    # M11.1 RF-01/RF-02: negative modifiers (type=removal) must not push the
+    # Negative modifiers (type=removal) must not push the
     # effective unit price below $0. Clamp before multiplying by quantity so
     # a high quantity cannot hide a would-be-negative unit price.
     effective_unit_price = max(unit_price + modifiers_total, Decimal("0"))
@@ -157,7 +157,7 @@ def _build_line(item: Item, line: OrderItemCreate, promo=None) -> OrderItem:
 async def _require_seller_account(
     restaurant_id: uuid.UUID, session: AsyncSession
 ) -> PaymentAccount:
-    """M36 RF-11: a connected account on a configured server, else 409."""
+    """A connected account on a configured server, else 409."""
     account = await get_account(restaurant_id, session)
     if (
         not settings.mercadopago_configured
@@ -184,7 +184,7 @@ async def _start_checkout(
     mp_client: httpx.AsyncClient,
     session: AsyncSession,
 ) -> str:
-    """Create the MP preference for a just-persisted order (M36 RF-12/RF-13).
+    """Create the MP preference for a just-persisted order.
 
     On any provider failure the order is marked ``cancelled`` so it can never
     linger as a ``pending`` payment without a preference, and 502 is raised.
@@ -211,12 +211,12 @@ async def create_order(
 ) -> tuple[Order, Restaurant]:
     """Create a public order for the restaurant resolved by ``qr_token``.
 
-    Resolution/validation order (M11 RF-05):
+    Resolution/validation order:
       1. 404 menu_not_found  — token resolves to no restaurant.
       2. 404 orders_disabled — restaurant.orders_enabled is False.
       3. 404 item_not_found  — an item_id is missing or belongs elsewhere.
       4. 404 modifier_not_found — a modifier_id does not belong to its line item.
-    M36: with ``payment_method=mercadopago`` a 409 mercadopago_unavailable is
+    With ``payment_method=mercadopago`` a 409 mercadopago_unavailable is
     checked right after (2) and nothing is created if the seller account is
     missing/unusable; after persisting, the Checkout Pro preference is created
     (502 payment_provider_error + order cancelled on failure) and the
@@ -225,7 +225,7 @@ async def create_order(
 
     Returns ``(order, restaurant)`` because the public router needs the
     restaurant's ``whatsapp_phone`` to build the optional WhatsApp confirm
-    URL (P7) on the just-persisted order. Other callers (list/patch) only
+    URL on the just-persisted order. Other callers (list/patch) only
     need the order; they get the restaurant through the URL's id.
     """
     restaurant = await get_public_menu(qr_token, session)
@@ -236,7 +236,7 @@ async def create_order(
         await _require_seller_account(restaurant.id, session) if pay_online else None
     )
 
-    # M17: a real Table takes precedence over free-text table_or_address —
+    # A real Table takes precedence over free-text table_or_address —
     # server-stamps the display text so a spoofed client value can never show
     # a table number that doesn't exist.
     table_id = data.table_id
@@ -256,7 +256,7 @@ async def create_order(
 
     items_by_id = _collect_items(restaurant)
 
-    # Fase 0010: resolve the active promo once (eager-loaded, no extra
+    # Resolve the active promo once (eager-loaded, no extra
     # query) — the same rule the public cart applied client-side, but
     # recomputed here from live rows. Server is authoritative.
     promo = active_promo_for(restaurant)
@@ -279,7 +279,7 @@ async def create_order(
             raise RuntimeError("mp_client is required for mercadopago orders")
         seller_token = await _seller_token_or_409(seller_account, session, mp_client)
 
-    # P2 (Fase 2b): stamp which menu the guest was browsing. Items are still
+    # Stamp which menu the guest was browsing. Items are still
     # collected across ALL menus (a cart can outlive a menu switch mid-meal);
     # menu_id is provenance, not an integrity constraint.
     active_menu = resolve_active_menu(restaurant)
@@ -318,7 +318,7 @@ async def list_orders(
 ) -> list[Order]:
     """List a restaurant's orders (newest first), optionally filtered by status.
 
-    M36 RF-21: mercadopago orders only appear once their payment is approved
+    Mercado Pago orders only appear once their payment is approved
     (the kitchen must not cook unpaid orders); cash orders are unaffected.
     """
     query = (
@@ -340,7 +340,7 @@ async def list_orders(
 
 
 def check_transition(order: Order, new_status: OrderStatus) -> None:
-    """Raise 409 invalid_transition unless the M11 state machine allows it."""
+    """Raise 409 invalid_transition unless the state machine allows it."""
     if new_status not in _VALID_TRANSITIONS[order.status]:
         raise HTTPException(status_code=409, detail="invalid_transition")
 
@@ -371,9 +371,9 @@ async def update_order_status(
     session: AsyncSession,
     staff_member_id: uuid.UUID | None = None,
 ) -> Order:
-    """Transition an order's status, enforcing the M11 state machine (RF-07).
+    """Transition an order's status, enforcing the state machine.
 
-    M28: an optional active ``staff_member_id`` is stamped as handler (last
+    An optional active ``staff_member_id`` is stamped as handler (last
     one wins; omitted leaves the previous value), and completing the order
     links it to the restaurant's open cash shift, if any. All validation
     happens before any mutation.

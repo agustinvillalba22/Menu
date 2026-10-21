@@ -8,7 +8,7 @@ def _fernet() -> Fernet:
 
 
 def encrypt(value: str) -> str:
-    """Encrypt ``value`` with the configured Fernet key (M36 RF-02)."""
+    """Encrypt ``value`` with the configured Fernet key."""
     return _fernet().encrypt(value.encode()).decode()
 
 

@@ -1,11 +1,11 @@
-"""Restaurant logo upload (P6) — Fase 1d.
+"""Restaurant logo upload.
 
-Thin wrapper over ``services.image_upload`` (Fase 0b) that owns the
+Thin wrapper over ``services.image_upload`` that owns the
 item-specific bits the generic service can't know about: the
 ``"logos/{restaurant_id}/"`` object key prefix and the
 ``Restaurant.logo_url`` persistence on confirm/delete.
 
-Same PUT-url + HEAD-confirm + DELETE flow as item images (M4): the binary
+Same PUT-url + HEAD-confirm + DELETE flow as item images: the binary
 never passes through the API, the client PUTs straight to R2 with a
 presigned URL, then confirms against the backend so we can record the public
 URL and verify content type/size server-side.

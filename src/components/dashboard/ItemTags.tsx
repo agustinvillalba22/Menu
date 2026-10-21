@@ -5,7 +5,7 @@ import { ApiError } from '../../lib/api'
 import { badgeInfo } from '../public/badges'
 import type { Tag } from '../../lib/types'
 
-/** Curated set of dietary tags (M12.2). Canonical names — used verbatim when
+/** Curated set of dietary tags. Canonical names — used verbatim when
  *  adding a tag so the backend stores exactly one of these five spellings. */
 const CURATED_TAGS = ['Sin TACC', 'Sin lácteos', 'Vegetariano', 'Vegano', 'Picante'] as const
 

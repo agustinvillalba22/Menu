@@ -9,7 +9,7 @@ from app.models.base import Base
 
 
 class Table(Base):
-    """A physical table at a restaurant (M17) — number + optional capacity.
+    """A physical table at a restaurant — number + optional capacity.
 
     No floor-plan positioning (x/y) by deliberate scope decision — this is a
     list-and-occupancy feature, not a visual layout editor.
@@ -32,12 +32,11 @@ class Table(Base):
     )
     number: Mapped[int] = mapped_column(Integer, nullable=False)
     capacity: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    # M33 — when the guests asked for the bill; cleared on checkout.
+    # When the guests asked for the bill; cleared on checkout.
     bill_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 
-    # relationships
     restaurant: Mapped["app.models.restaurant.Restaurant"] = relationship(  # type: ignore[name-defined]
         "Restaurant",
         back_populates="tables",

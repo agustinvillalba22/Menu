@@ -34,7 +34,7 @@ async def get_open_shift(restaurant_id: uuid.UUID, session: AsyncSession) -> Cas
 async def attach_orders_count(shifts: list[CashShift], session: AsyncSession) -> None:
     """Set `orders_count` on each shift with ONE grouped query (no N+1).
 
-    Counts completed orders linked to the shift (M28 RF-06).
+    Counts completed orders linked to the shift.
     """
     if not shifts:
         return
@@ -79,7 +79,7 @@ async def _completed_total(shift_id: uuid.UUID, session: AsyncSession) -> Decima
         select(func.coalesce(func.sum(Order.total), 0)).where(
             Order.cash_shift_id == shift_id,
             Order.status == OrderStatus.completed,
-            # M36: money collected through Mercado Pago never enters the till.
+            # Money collected through Mercado Pago never enters the till.
             Order.payment_method == PaymentMethod.cash,
         )
     )

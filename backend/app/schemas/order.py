@@ -15,7 +15,7 @@ class OrderItemCreate(BaseModel):
     # unbounded DB write, or driving subtotal/total past Numeric(10,2)'s range
     # (which would otherwise surface as an unhandled 500 on Postgres — SQLite's
     # NUMERIC affinity does not enforce the same limit, so this must be caught
-    # here, not relied upon at the DB layer). See M11 review CRIT-01.
+    # here, not relied upon at the DB layer).
     quantity: int = Field(ge=1, le=999)
     modifier_ids: list[uuid.UUID] = Field(default_factory=list, max_length=50)
     special_instructions: str | None = Field(default=None, max_length=300)
@@ -25,21 +25,21 @@ class OrderCreate(BaseModel):
     customer_name: str = Field(min_length=1, max_length=120)
     order_type: OrderType
     table_or_address: str | None = Field(default=None, max_length=200)
-    # M17: when order_type == 'mesa' and the restaurant has real tables
+    # When order_type == 'mesa' and the restaurant has real tables
     # configured, the client sends the picked table's id instead of free
     # text — the server stamps table_or_address itself (see create_order).
     table_id: uuid.UUID | None = None
     notes: str | None = Field(default=None, max_length=500)
-    # M36: omitted/cash = pay at the venue (pre-M36 behavior, untouched).
+    # Omitted/cash = pay at the venue (legacy behavior, untouched).
     payment_method: PaymentMethod = PaymentMethod.cash
     # max_length caps request size / DB writes for this public, unauthenticated
-    # endpoint (M11 review CRIT-01).
+    # endpoint.
     items: list[OrderItemCreate] = Field(min_length=1, max_length=100)
 
 
 class OrderStatusUpdate(BaseModel):
     status: OrderStatus
-    # M28: optional attribution; omitted = leave previous value untouched.
+    # Optional attribution; omitted = leave previous value untouched.
     staff_member_id: uuid.UUID | None = None
 
 
@@ -61,7 +61,7 @@ class OrderItemRead(BaseModel):
     item_id: uuid.UUID | None
     name_snapshot: str
     unit_price_snapshot: Decimal
-    # Fase 0010: promo discount applied to this line (NULL = none). The
+    # Promo discount applied to this line (NULL = none). The
     # registry shows "-20%" next to the list price so the owner can audit
     # why subtotal < unit_price_snapshot * quantity.
     discount_pct: int | None = None
@@ -92,20 +92,20 @@ class OrderRead(BaseModel):
     cash_shift_id: uuid.UUID | None = None
     handled_by_id: uuid.UUID | None = None
     handled_by_name: str | None = None
-    # M36: online-payment state. ``payment_url`` (the Checkout Pro init_point)
+    # Online-payment state. ``payment_url`` (the Checkout Pro init_point)
     # is only set by the public POST for mercadopago orders.
     payment_method: PaymentMethod = PaymentMethod.cash
     payment_status: PaymentStatus = PaymentStatus.none
     payment_url: str | None = None
     items: list[OrderItemRead]
-    # P7: pre-built ``https://wa.me/...`` URL the customer's checkout UI opens
+    # Pre-built ``https://wa.me/...`` URL the customer's checkout UI opens
     # after the order is persisted. Null when the restaurant has no
     # ``whatsapp_phone`` (button hidden) or when the read comes from the
     # dashboard side (list/patch), where the URL is irrelevant — it's only set
     # by the public POST endpoint, since only that router has the restaurant
     # at hand to build it. Default null keeps every other caller valid.
     whatsapp_url: str | None = None
-    # M37: per-order guest credential. Returned only by the public POST (set
+    # Per-order guest credential. Returned only by the public POST (set
     # explicitly by the router). The validation alias points at an attribute
     # the model does not have, so ``from_attributes`` never leaks the stored
     # token through the dashboard list/patch/occupancy reads.
@@ -121,7 +121,7 @@ class OrderRead(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# M37 — public "Tu consumo" (token-based, anonymous)
+# public "Tu consumo" (token-based, anonymous)
 # ---------------------------------------------------------------------------
 
 _TOKEN_MIN_LENGTH = 20

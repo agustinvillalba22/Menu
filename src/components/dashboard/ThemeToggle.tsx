@@ -8,7 +8,7 @@ const THEME_OPTIONS: Array<{ value: Theme; label: string; icon: React.ComponentT
   { value: 'system', label: 'Sistema', icon: Monitor },
 ]
 
-/** M16 light/dark/system selector, compact version for the sidebar footer (M32). */
+/** Light/dark/system selector, compact version for the sidebar footer. */
 export default function ThemeToggle(): React.JSX.Element {
   const { theme, setTheme } = useTheme()
 

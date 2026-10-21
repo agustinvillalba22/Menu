@@ -16,15 +16,15 @@ interface ItemImageUploadProps {
   onImageChange: (imageUrl: string | null) => void
 }
 
-// Mirror of the backend limits (M4): only these MIME types, max 5 MiB.
+// Mirror of the backend limits: only these MIME types, max 5 MiB.
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_SIZE = 5 * 1024 * 1024
 
 /**
  * Dashboard control to upload / replace / remove an item's image. Reproduces
- * the M4 presigned-PUT + confirm flow in the browser: request a presigned URL,
+ * the presigned-PUT + confirm flow in the browser: request a presigned URL,
  * PUT the file straight to R2, confirm against the backend, and only then
- * surface the new image (RNF-03 — never optimistically before confirmation).
+ * surface the new image (never optimistically before confirmation).
  */
 export default function ItemImageUpload({
   restaurantId,

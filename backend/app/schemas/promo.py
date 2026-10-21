@@ -1,4 +1,4 @@
-"""Promo schemas (P4, Fase 2c) — dashboard CRUD shape.
+"""Promo schemas — dashboard CRUD shape.
 
 Field bounds mirror the model/migration (0009): ``discount_pct`` 0-100,
 title/substr ≤120/160, description ≤1000. Semantic validation (aware
@@ -20,7 +20,7 @@ class PromoBase(BaseModel):
     description: str | None = Field(default=None, max_length=1000)
     discount_pct: int | None = Field(default=None, ge=0, le=100)
     image_url: str | None = None
-    # Fase 0010 — what the discount applies to. 'none' = banner only.
+    # What the discount applies to. 'none' = banner only.
     scope: PromoScope = PromoScope.none
     # Optional link to one of the restaurant's own items (scope='item';
     # verified at the service layer — cross-restaurant ids are 404).
@@ -65,7 +65,7 @@ class PromoRead(BaseModel):
     is_active: bool
     starts_at: datetime | None
     ends_at: datetime | None
-    # P5 (Fase 2d): calendar days until ends_at in the restaurant's tz —
+    # Calendar days until ends_at in the restaurant's tz —
     # computed server-side (never trusted from the client), None when the
     # promo has no end date. 0 = expires today (or already past).
     days_remaining: int | None = None

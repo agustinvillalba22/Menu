@@ -13,21 +13,21 @@ interface LogoUploadProps {
   logoUrl: string | null
   /** Called when the logo row changes — the page re-fetches `/info` to refresh `is_open_now` etc. */
   onLogoChange: (logoUrl: string | null) => void
-  /** M15 RF-03: the 3 logo endpoints are owner-only on the backend — when
+  /** The 3 logo endpoints are owner-only on the backend — when
    * true, upload/replace/quitar are hidden and a note is shown instead. */
   disabled?: boolean
 }
 
-// Mirror of the backend limits (Fase 0b, same as item images): only these
+// Mirror of the backend limits (same as item images): only these
 // MIME types, max 5 MiB. Keeping the same set means a single fixture/test
 // matrix covers both uploaders.
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_SIZE = 5 * 1024 * 1024
 
 /**
- * Logo uploader (P6) — dashboard control for the restaurant's header logo.
+ * Logo uploader — dashboard control for the restaurant's header logo.
  * Mirrors `ItemImageUpload`: presigned PUT + confirm against the backend,
- * never optimistically swaps the image before confirmation (RNF-03 parity).
+ * never optimistically swaps the image before confirmation (as the item uploader does).
  *
  * Differences from the item counterpart:
  *  - No subcategory/item in scope — the URL is `/restaurants/{id}/logo/*`.
@@ -81,7 +81,7 @@ export default function LogoUpload({
       // Don't invent a public URL on the client (we don't know R2_PUBLIC_URL).
       // The parent re-fetches /info and passes the new logo_url back through
       // props — `useEffect([logoUrl])` then syncs displayUrl. Keeping the
-      // server response as the single source of truth matches RNF-03 parity
+      // server response as the single source of truth matches the item image uploader
       // with the item image uploader.
       onLogoChange('refresh')
     } catch (err) {

@@ -40,7 +40,7 @@ async def create_public_order(
     """Public (no-auth) order creation. Total is recomputed server-side.
 
     The response carries ``whatsapp_url`` built from the freshly-resolved
-    restaurant (P7): the customer's checkout can open a "Confirmar por
+    restaurant: the customer's checkout can open a "Confirmar por
     WhatsApp" deep link without re-fetching anything. Null when the
     restaurant hasn't set a WhatsApp number.
     """

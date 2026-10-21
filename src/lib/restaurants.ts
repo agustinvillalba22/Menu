@@ -13,7 +13,7 @@ export function updateRestaurant(id: string, data: RestaurantUpdate): Promise<Re
   return apiPatch<Restaurant>(`/restaurants/${id}`, data)
 }
 
-/** M15 RF-03/RNF-05 — single source of truth for "can this user edit
+/** Single source of truth for "can this user edit
  * owner-only restaurant settings". Mirrors the backend's
  * `require_role(RestaurantRole.owner)` split (restaurant/style/business_hours
  * mutations and logo upload), so every page gates the same way. */

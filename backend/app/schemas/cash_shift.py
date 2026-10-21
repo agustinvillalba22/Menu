@@ -29,7 +29,7 @@ class CashShiftRead(BaseModel):
     counted_amount: Decimal | None
     expected_amount: Decimal | None
     notes: str | None
-    # M28: completed orders linked to this shift (set by the service).
+    # Completed orders linked to this shift (set by the service).
     orders_count: int = 0
 
     model_config = ConfigDict(from_attributes=True)

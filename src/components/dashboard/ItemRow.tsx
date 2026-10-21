@@ -28,10 +28,10 @@ export default function ItemRow({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Tags/modifiers are collapsed by default (RF-03) — the tag count comes
+  // Tags/modifiers are collapsed by default — the tag count comes
   // from the item itself. ItemRow is the single source of truth for the
   // modifiers list: it fetches once on mount and passes the list down to
-  // ItemModifiers as a controlled prop (M12.4) instead of letting
+  // ItemModifiers as a controlled prop instead of letting
   // ItemModifiers fetch it again itself.
   const [tagsExpanded, setTagsExpanded] = useState(false)
   const [modifiersExpanded, setModifiersExpanded] = useState(false)

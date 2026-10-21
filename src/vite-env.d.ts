@@ -8,5 +8,5 @@ interface ImportMeta {
   readonly env: ImportMetaEnv
 }
 
-/** Injected by Vite `define` from package.json (M32). */
+/** Injected by Vite `define` from package.json. */
 declare const __APP_VERSION__: string

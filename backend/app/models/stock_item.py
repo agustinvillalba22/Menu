@@ -27,10 +27,10 @@ class StockUnit(str, enum.Enum):
 
 
 class StockItem(Base):
-    """Manually-managed inventory row (M19) — no link to menu Items/Orders.
+    """Manually-managed inventory row — no link to menu Items/Orders.
 
     Quantity is never decremented automatically; the owner updates it by
-    hand. See .agents/specs/M19_stock_suppliers.md for the scope decision.
+    hand.
     """
 
     __tablename__ = "stock_items"
@@ -61,7 +61,7 @@ class StockItem(Base):
     cost_per_unit: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
     # SET NULL (not CASCADE): deleting a supplier must not destroy the stock
     # rows that bought from it — just unlink them (same philosophy as
-    # orders.table_id in M17).
+    # orders.table_id).
     supplier_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("suppliers.id", ondelete="SET NULL"),
@@ -69,7 +69,6 @@ class StockItem(Base):
     )
     last_restocked: Mapped[date | None] = mapped_column(Date, nullable=True)
 
-    # relationships
     restaurant: Mapped["app.models.restaurant.Restaurant"] = relationship(  # type: ignore[name-defined]
         "Restaurant",
         back_populates="stock_items",

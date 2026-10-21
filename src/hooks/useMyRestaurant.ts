@@ -10,7 +10,7 @@ interface UseMyRestaurantResult {
 }
 
 /**
- * MVP assumption (RNF-03): a user owns at most one relevant restaurant, so the
+ * MVP assumption: a user owns at most one relevant restaurant, so the
  * first item of `listRestaurants()` is the single source of truth. Shared by
  * OverviewPage and AppearancePage to avoid duplicating the fetch logic.
  */

@@ -32,7 +32,7 @@ interface UseThemeResult {
   setTheme: (theme: Theme) => void
 }
 
-/** M16 RF-02 — dashboard-only theme preference (light/dark/system),
+/** Dashboard-only theme preference (light/dark/system),
  * persisted in localStorage. "system" tracks the OS preference live. */
 export function useTheme(): UseThemeResult {
   const [theme, setThemeState] = useState<Theme>(readStoredTheme)

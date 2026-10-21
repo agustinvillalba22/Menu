@@ -1,6 +1,6 @@
-"""M37 — anonymous "Tu consumo": order status and bill request by order token.
+"""Anonymous "Tu consumo": order status and bill request by order token.
 
-Reuses the M33 table rules (``is_active_order`` / ``is_bill_requested`` and
+Reuses the table rules (``is_active_order`` / ``is_bill_requested`` and
 ``request_bill``) so the guest-facing flow can never diverge from the
 dashboard's notion of an occupied / "bill" table.
 """

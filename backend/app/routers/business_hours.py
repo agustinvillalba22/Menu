@@ -1,4 +1,4 @@
-"""Router for restaurant info (P6) + business hours (P6) — Fase 1d.
+"""Router for restaurant info + business hours.
 
 Mounted under ``/restaurants`` (same prefix as the existing category/style
 routers) so:

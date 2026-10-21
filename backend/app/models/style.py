@@ -37,7 +37,6 @@ class MenuStyle(Base):
     primary_color: Mapped[str | None] = mapped_column(String, nullable=True)
     secondary_color: Mapped[str | None] = mapped_column(String, nullable=True)
 
-    # relationships
     restaurant: Mapped["app.models.restaurant.Restaurant"] = relationship(  # type: ignore[name-defined]
         "Restaurant",
         back_populates="style",

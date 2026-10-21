@@ -15,7 +15,7 @@ class PaymentAccountStatus(str, enum.Enum):
 
 
 class PaymentAccount(Base, TimestampMixin):
-    """A restaurant's connected payment-provider account (M36).
+    """A restaurant's connected payment-provider account.
 
     One per restaurant. Tokens are Fernet-encrypted at rest (``*_enc``) and
     must never be returned by the API nor logged.
@@ -48,7 +48,6 @@ class PaymentAccount(Base, TimestampMixin):
         default=PaymentAccountStatus.connected,
     )
 
-    # relationships
     restaurant: Mapped["app.models.restaurant.Restaurant"] = relationship(  # type: ignore[name-defined]
         "Restaurant",
         back_populates="payment_account",

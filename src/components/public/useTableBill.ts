@@ -6,7 +6,7 @@ import type { PublicOrderStatus } from '../../lib/types'
 
 export const POLL_INTERVAL_MS = 25_000
 
-/** M33/M37 rule: pending|accepted|ready and (cash or payment approved). */
+/** Rule: pending|accepted|ready and (cash or payment approved). */
 export function isActiveOrder(o: PublicOrderStatus): boolean {
   return (
     (o.status === 'pending' || o.status === 'accepted' || o.status === 'ready') &&
@@ -34,7 +34,7 @@ export interface TableBill {
 }
 
 /**
- * M37: the guest's own orders for the locked table, polled every 25 s while
+ * The guest's own orders for the locked table, polled every 25 s while
  * the tab is visible. `mesa === null` (or `enabled` false) keeps it inert.
  */
 export function useTableBill(qrToken: string | undefined, mesa: number | null, enabled: boolean): TableBill {

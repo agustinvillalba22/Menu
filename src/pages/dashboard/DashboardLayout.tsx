@@ -7,7 +7,7 @@ import DashboardSidebar from '../../components/dashboard/DashboardSidebar'
 import DashboardTopBar from '../../components/dashboard/DashboardTopBar'
 import StockAlertToast from '../../components/dashboard/StockAlertToast'
 
-// M32: shell faithful to the GastroSuite prototype — full-height sidebar on the
+// Shell faithful to the GastroSuite prototype — full-height sidebar on the
 // left, sticky top bar and a scrollable <main> on the right. Below `md` the
 // sidebar becomes a drawer opened from the top bar.
 export default function DashboardLayout(): React.JSX.Element {

@@ -10,7 +10,7 @@ from app.models.base import Base, TimestampMixin
 
 
 class PromoScope(str, enum.Enum):
-    """What the promo's discount applies to (Fase 0010).
+    """What the promo's discount applies to.
 
     ``none``    — banner only: the promo advertises but discounts nothing.
     ``item``    — discount_pct applies to the linked item's order lines.
@@ -25,11 +25,10 @@ class PromoScope(str, enum.Enum):
 
 
 class Promo(Base, TimestampMixin):
-    """Promotional banner (P4) — one row per promo, per restaurant.
+    """Promotional banner — one row per promo, per restaurant.
 
-    The public menu renders the *active* promo (see the public service in
-    Fase 2c): ``is_active=True`` AND ``now`` within ``[starts_at, ends_at]``
-    (both bounds optional) in the restaurant's timezone. No periodic job
+    The public menu renders the *active* promo (see the public service):
+    ``is_active=True`` AND ``now`` within ``[starts_at, ends_at]`` (both bounds optional) in the restaurant's timezone. No periodic job
     flips ``is_active`` — the window check is implicit at read time.
 
     ``item_id`` is SET NULL on item delete: a promo about a deleted item
@@ -37,7 +36,7 @@ class Promo(Base, TimestampMixin):
     just disappears. Same snapshot-philosophy as ``OrderItem.item_id``.
     ``category_id`` follows the same rule for category-scoped promos.
 
-    The discount only applies to what ``scope`` points at (Fase 0010);
+    The discount only applies to what ``scope`` points at;
     ``scope='none'`` promos are pure advertising.
     """
 
@@ -61,7 +60,7 @@ class Promo(Base, TimestampMixin):
     # Only applies when scope != 'none' (and then it is required).
     discount_pct: Mapped[int | None] = mapped_column(Integer, nullable=True)
     image_url: Mapped[str | None] = mapped_column(String, nullable=True)
-    # Fase 0010 — what the discount applies to.
+    # What the discount applies to.
     scope: Mapped[PromoScope] = mapped_column(
         Enum(PromoScope, native_enum=False),
         nullable=False,
@@ -93,7 +92,6 @@ class Promo(Base, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
 
-    # relationships
     restaurant: Mapped["app.models.restaurant.Restaurant"] = relationship(  # type: ignore[name-defined]
         "Restaurant",
         back_populates="promos",

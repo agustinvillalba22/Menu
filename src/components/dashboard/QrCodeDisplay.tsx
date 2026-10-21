@@ -6,7 +6,7 @@ interface QrCodeDisplayProps {
   fileName: string // nombre sugerido del archivo descargado, ej. "boulette-qr.png"
 }
 
-// RF-06: tamaño fijo legible para impresión y corrección de errores media (M),
+// Tamaño fijo legible para impresión y corrección de errores media (M),
 // para que el QR siga siendo escaneable con desgaste/pliegues físicos.
 const QR_SIZE = 240
 const QR_OPTIONS: QRCode.QRCodeToDataURLOptions = {
@@ -21,7 +21,7 @@ export default function QrCodeDisplay({
   const [dataUrl, setDataUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // RNF-01: generación 100% client-side vía la librería `qrcode`, sin red.
+  // Generación 100% client-side vía la librería `qrcode`, sin red.
   useEffect(() => {
     let active = true
     setError(null)
@@ -37,7 +37,7 @@ export default function QrCodeDisplay({
     }
   }, [value])
 
-  // RF-04 / RNF-02: descarga vía <a download> sintético con el data URL; se
+  // Descarga vía <a download> sintético con el data URL; se
   // dispara su click sin navegar ni recargar la página.
   function handleDownload(): void {
     if (!dataUrl) return

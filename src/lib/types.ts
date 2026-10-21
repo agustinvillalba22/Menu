@@ -68,7 +68,7 @@ export interface PublicTag {
   name: string
 }
 
-// --- Modificadores (M11) ---------------------------------------------------
+// --- Modificadores ---------------------------------------------------
 
 export type ModifierType = 'extra' | 'removal'
 
@@ -84,12 +84,12 @@ export interface PublicItem {
   name: string
   description: string
   price: string
-  image_url: string | null // NUEVO (M11)
-  // Fase 0010 — owning category, so the cart can evaluate category-scoped
+  image_url: string | null // NUEVO
+  // Owning category, so the cart can evaluate category-scoped
   // promo discounts without a second round trip.
   category_id: string
   tags: PublicTag[]
-  modifiers: PublicModifier[] // NUEVO (M11)
+  modifiers: PublicModifier[] // NUEVO
 }
 
 export interface PublicSubcategory {
@@ -101,7 +101,7 @@ export interface PublicSubcategory {
 export type CategoryType = 'food' | 'drink'
 
 /**
- * Curated category icon keys (P8). Mirror of the backend `CategoryIcon`
+ * Curated category icon keys. Mirror of the backend `CategoryIcon`
  * enum — the dashboard picker only offers these values, and the public menu
  * chip renders a Lucide component for each (see `lib/categoryIcons.ts`).
  * `null` means "text-only chip" — no icon component rendered.
@@ -138,7 +138,7 @@ export interface PublicCategory {
   subcategories: PublicSubcategory[]
 }
 
-// --- Dashboard CRUD (M9) ---------------------------------------------------
+// --- Dashboard CRUD ---------------------------------------------------
 // Read types use bare names (`Category`, not `CategoryRead`), matching the
 // convention already used for the authenticated side (`Restaurant`). The
 // `Public*` types above are for the public endpoint and are not reused here.
@@ -185,7 +185,7 @@ export interface TagCreate {
   name: string
 }
 
-// --- Modificadores por ítem (dashboard CRUD, M11) --------------------------
+// --- Modificadores por ítem (dashboard CRUD) --------------------------
 // Authenticated read type (mirrors backend ItemModifierRead). Distinct from
 // `PublicModifier` above (which the public menu uses) because this one carries
 // `item_id`. `price_delta` stays a string, may be negative for removals.
@@ -232,7 +232,7 @@ export interface Item {
   tags: Tag[]
 }
 
-// --- Item image upload (M10) -----------------------------------------------
+// --- Item image upload -----------------------------------------------
 
 export interface ItemImageUploadRequest {
   content_type: string
@@ -268,7 +268,7 @@ export interface PublicRestaurant {
   // Drives the ordering UI (cart/checkout) on the public menu. The server also
   // enforces it on POST /menu/{qr_token}/orders (404 orders_disabled).
   orders_enabled: boolean
-  // P6 — local info shown in the public header (logo, address, phone,
+  // Local info shown in the public header (logo, address, phone,
   // schedule summary + Abierto/Cerrado pill). Strings are '' when unset so
   // the header can use `if (address)` consistently with the rest of the code.
   address: string
@@ -277,30 +277,30 @@ export interface PublicRestaurant {
   timezone: string
   business_hours: PublicBusinessHours[]
   is_open_now: boolean
-  // P7 — lets the checkout render the "Confirmar por WhatsApp" button
+  // Lets the checkout render the "Confirmar por WhatsApp" button
   // without a second round trip. Boolean only: the raw phone never leaves the
   // server (the deep link URL is minted server-side in POST /orders).
   whatsapp_enabled: boolean
-  // M36 — true only with a connected Mercado Pago account + server configured.
+  // True only with a connected Mercado Pago account + server configured.
   accepts_mercadopago?: boolean
 }
 
 export interface PublicMenuResponse {
   restaurant: PublicRestaurant
   style: Style | null
-  // P4 — the currently-active promo banner, resolved server-side against
+  // The currently-active promo banner, resolved server-side against
   // is_active + the validity window in the restaurant's tz. Null = none.
   promo: PublicPromo | null
-  // M17 — the restaurant's configured tables (empty if none set up yet).
+  // The restaurant's configured tables (empty if none set up yet).
   tables: Table[]
   categories: PublicCategory[]
-  // M36 — also accepted at the top level of the response (see PublicMenuPage).
+  // Also accepted at the top level of the response (see PublicMenuPage).
   accepts_mercadopago?: boolean
 }
 
-// --- Promos (P4/P5, Fase 2c/2d) ---------------------------------------------
+// --- Promos ---------------------------------------------
 
-/** What the promo's discount applies to (Fase 0010) — mirrors PromoScope. */
+/** What the promo's discount applies to — mirrors PromoScope. */
 export type PromoScope = 'none' | 'item' | 'category' | 'catalog'
 
 /** What the public menu renders — never the scheduling internals. */
@@ -311,13 +311,13 @@ export interface PublicPromo {
   description: string | null
   discount_pct: number | null
   image_url: string | null
-  // Fase 0010 — lets the cart mirror the server's discount rule.
+  // Lets the cart mirror the server's discount rule.
   scope: PromoScope
   item_id: string | null
   category_id: string | null
 }
 
-/** Dashboard read shape — includes the server-computed expiry signal (P5). */
+/** Dashboard read shape — includes the server-computed expiry signal. */
 export interface Promo {
   id: string
   restaurant_id: string
@@ -377,7 +377,7 @@ export interface PromoImageUploadResponse {
   expires_in: number
 }
 
-// --- Restaurant info + business hours + logo (P6, Fase 1d) ----------------
+// --- Restaurant info + business hours + logo ----------------
 
 /** One day's open/close window, as read by the dashboard info page. */
 export interface BusinessHours {
@@ -433,7 +433,7 @@ export interface LogoUploadResponse {
   expires_in: number
 }
 
-// --- Mesas (M17) -------------------------------------------------------------
+// --- Mesas -------------------------------------------------------------
 
 export interface Table {
   id: string
@@ -442,7 +442,7 @@ export interface Table {
   bill_requested_at?: string | null
 }
 
-// M33: estado operativo de una mesa (GET /tables/occupancy).
+// Estado operativo de una mesa (GET /tables/occupancy).
 export type TableStatus = 'free' | 'occupied' | 'bill'
 
 export interface TableOccupancy {
@@ -466,9 +466,9 @@ export interface TableUpdatePayload {
   capacity?: number | null
 }
 
-// --- Staff (M18) -------------------------------------------------------------
+// --- Staff -------------------------------------------------------------
 // Identification-only roster — no relation to auth, no permissions gated by
-// `position`. See .agents/specs/M18_staff_roster.md.
+// `position`.
 
 export type StaffPosition = 'mozo' | 'bartender' | 'jefe_cocina' | 'cajero' | 'gerente'
 
@@ -493,9 +493,9 @@ export interface StaffMemberUpdatePayload {
   active?: boolean
 }
 
-// --- Stock + Proveedores (M19) ----------------------------------------------
+// --- Stock + Proveedores ----------------------------------------------
 // Manually-managed inventory — no link to menu Items/Orders, no
-// auto-decrement. See .agents/specs/M19_stock_suppliers.md.
+// auto-decrement.
 
 export interface Supplier {
   id: string
@@ -559,12 +559,12 @@ export interface StockItemCreatePayload {
 
 export type StockItemUpdatePayload = Partial<StockItemCreatePayload>
 
-// --- Pedidos (M11) ---------------------------------------------------------
+// --- Pedidos ---------------------------------------------------------
 
 export type OrderType = 'mesa' | 'llevar' | 'envio'
 export type OrderStatus = 'pending' | 'accepted' | 'ready' | 'completed' | 'cancelled'
 
-// --- Pagos con Mercado Pago (M36) -------------------------------------------
+// --- Pagos con Mercado Pago -------------------------------------------
 
 export type PaymentMethod = 'cash' | 'mercadopago'
 export type PaymentStatus = 'none' | 'pending' | 'approved' | 'rejected' | 'cancelled'
@@ -594,11 +594,11 @@ export interface OrderCreatePayload {
   customer_name: string
   order_type: OrderType
   table_or_address?: string | null
-  // M17 — when order_type is 'mesa' and the restaurant has real tables
+  // When order_type is 'mesa' and the restaurant has real tables
   // configured, the client sends the picked table's id instead of free text.
   table_id?: string | null
   notes?: string | null
-  // M36 — omitted for cash (server default); 'mercadopago' only when the menu
+  // Omitted for cash (server default); 'mercadopago' only when the menu
   // reports `accepts_mercadopago`.
   payment_method?: PaymentMethod
   items: OrderItemCreate[]
@@ -616,7 +616,7 @@ export interface OrderItemRead {
   item_id: string | null
   name_snapshot: string
   unit_price_snapshot: string
-  // Fase 0010 — promo discount applied to the line (null = none). Explains
+  // Promo discount applied to the line (null = none). Explains
   // why subtotal < unit_price_snapshot * quantity in the registry.
   discount_pct: number | null
   quantity: number
@@ -638,27 +638,27 @@ export interface OrderRead {
   created_at: string
   updated_at: string
   items: OrderItemRead[]
-  // P7: server-minted wa.me deep link built off the order's snapshots and
+  // Server-minted wa.me deep link built off the order's snapshots and
   // the restaurant's whatsapp_phone. Only set on the POST /menu/{qr}/orders
   // response. Null when the restaurant has no whatsapp phone OR when the read
   // comes from the dashboard side (list/patch), where the URL is irrelevant.
   // The checkout's "Confirmar por WhatsApp" button uses this verbatim.
   whatsapp_url: string | null
-  // M28: who handled the order (snapshot name survives staff deletion) and
+  // Who handled the order (snapshot name survives staff deletion) and
   // the cash shift it was completed in.
   handled_by_id: string | null
   handled_by_name: string | null
   cash_shift_id: string | null
-  // M36: how the order is paid. `payment_url` is the Checkout Pro `init_point`,
+  // How the order is paid. `payment_url` is the Checkout Pro `init_point`,
   // only set on the POST /menu/{qr}/orders response for mercadopago orders.
   payment_method: PaymentMethod
   payment_status: PaymentStatus
   payment_url: string | null
-  // M37: per-order guest credential, only set on the public POST response.
+  // Per-order guest credential, only set on the public POST response.
   public_token?: string | null
 }
 
-// M37: "Tu consumo" — anonymous, token-based view of the guest's own orders.
+// "Tu consumo" — anonymous, token-based view of the guest's own orders.
 export interface PublicOrderStatus {
   token: string
   status: OrderStatus
@@ -676,7 +676,7 @@ export interface PublicBillRequestRead {
   bill_requested_at: string
 }
 
-// --- Panel de administración (M13.2) ---------------------------------------
+// --- Panel de administración ---------------------------------------
 
 export interface AdminUser {
   id: string
@@ -697,8 +697,8 @@ export interface AdminRestaurant {
   owner_email: string | null
 }
 
-// --- Turnos de caja (M20) ---------------------------------------------------
-// Amounts are decimal strings, never floats. See .agents/specs/M20_cash_shifts.md.
+// --- Turnos de caja ---------------------------------------------------
+// Amounts are decimal strings, never floats.
 
 export interface CashShift {
   id: string
@@ -726,7 +726,7 @@ export interface CashShiftClosePayload {
   notes?: string | null
 }
 
-// --- Multiple menus (M21) --------------------------------------------------
+// --- Multiple menus --------------------------------------------------
 
 export interface Menu {
   id: string

@@ -29,7 +29,6 @@ class Item(Base):
         nullable=False,
     )
 
-    # relationships
     subcategory: Mapped["app.models.menu.Subcategory"] = relationship(  # type: ignore[name-defined]
         "Subcategory",
         back_populates="items",
@@ -61,7 +60,7 @@ class ItemTag(Base):
         nullable=False,
     )
 
-    # M12.3: case-insensitive unique index — "vegano" and "Vegano" cannot
+    # Case-insensitive unique index — "vegano" and "Vegano" cannot
     # coexist as tags of the same item at the DB level (replaces the
     # exact-match uq_item_tag constraint from 0002_item_tag_unique.py).
     # func.lower() expression indexes are supported by both SQLite and
@@ -71,5 +70,4 @@ class ItemTag(Base):
         Index("uq_item_tag_ci", "item_id", func.lower(name), unique=True),
     )
 
-    # relationships
     item: Mapped["Item"] = relationship("Item", back_populates="tags")

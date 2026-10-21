@@ -17,7 +17,7 @@ export function deleteTable(restaurantId: string, tableId: string): Promise<void
   return apiDelete<void>(`/restaurants/${restaurantId}/tables/${tableId}`)
 }
 
-// M33 — plano operativo
+// Plano operativo
 export function getTablesOccupancy(restaurantId: string): Promise<TableOccupancy[]> {
   return apiGet<TableOccupancy[]>(`/restaurants/${restaurantId}/tables/occupancy`)
 }

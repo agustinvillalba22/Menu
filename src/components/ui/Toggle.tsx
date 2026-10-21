@@ -9,7 +9,7 @@ interface ToggleProps {
 
 /**
  * Accessible switch, visually and semantically matching the `orders_enabled`
- * toggle in `OverviewPage.tsx` (RNF-03) — same `role="switch"`/`aria-checked`
+ * toggle in `OverviewPage.tsx` — same `role="switch"`/`aria-checked`
  * pattern, reused here instead of re-implemented per admin page.
  */
 export default function Toggle({

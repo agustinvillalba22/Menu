@@ -12,7 +12,7 @@ import { formatSchedule } from '../../lib/businessHours'
 import type { RestaurantInfo } from '../../lib/types'
 import LogoUpload from '../../components/dashboard/LogoUpload'
 
-// The dashboard "Información del local" page (P6) — contact info editor +
+// The dashboard "Información del local" page — contact info editor +
 // 7-day business hours grid + logo upload. Owner-only on the mutations; the
 // read is editor-visible (matches the rest of /dashboard). All three pieces
 // share a single GET /info load so the page opens with all data materialized,
@@ -189,7 +189,7 @@ export default function RestaurantInfoPage(): React.JSX.Element {
     )
   }
 
-  // M15 RF-03: PATCH /info, PUT /business-hours and the 3 logo endpoints are
+  // PATCH /info, PUT /business-hours and the 3 logo endpoints are
   // owner-only on the backend; the GET (what loads this page) is editor-visible.
   const canEdit = isOwner(restaurant)
 

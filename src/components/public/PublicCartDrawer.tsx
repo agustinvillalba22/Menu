@@ -11,7 +11,7 @@ interface PublicCartDrawerProps {
   onUpdateQuantity: (lineId: string, delta: number) => void
   onRemove: (lineId: string) => void
   onCheckout: () => void
-  /** Active promo (Fase 0010) — discounted per-line/total display. */
+  /** Active promo — discounted per-line/total display. */
   promo?: PublicPromo | null
 }
 

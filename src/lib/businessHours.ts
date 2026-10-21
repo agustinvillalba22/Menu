@@ -1,7 +1,7 @@
 import type { PublicBusinessHours } from './types'
 
 /**
- * Formatting helpers for the public menu's local-info block (Fase 1d — P6).
+ * Formatting helpers for the public menu's local-info block.
  *
  * The backend exposes ``is_open_now`` (computed server-side in the
  * restaurant's tz) so the front-end never has to guess the open/closed state.

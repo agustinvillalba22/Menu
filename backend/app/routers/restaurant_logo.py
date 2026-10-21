@@ -1,6 +1,6 @@
-"""Router for restaurant logo upload (P6) — Fase 1d.
+"""Router for restaurant logo upload.
 
-Mirrors the M4 item-image router shape (upload-url + confirm + DELETE), since
+Mirrors the item-image router shape (upload-url + confirm + DELETE), since
 both wrap the same generic R2 service:
 
   POST   /restaurants/{id}/logo/upload-url

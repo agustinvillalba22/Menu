@@ -22,7 +22,7 @@ interface RowHeaderProps {
   deleteConfirmMessage: string
   /**
    * Optional extra controls rendered inline next to the name input while
-   * editing. Used by CategoryRow (P8) to host the icon select without
+   * editing. Used by CategoryRow to host the icon select without
    * forcing every consumer (SubcategoryRow) to pass children.
    */
   editExtras?: React.ReactNode

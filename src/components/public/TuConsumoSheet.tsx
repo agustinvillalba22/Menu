@@ -27,7 +27,7 @@ function timeText(iso: string): string {
     : d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
 }
 
-/** M37: bottom sheet with the guest's own orders, running total and "Pedir cuenta". */
+/** Bottom sheet with the guest's own orders, running total and "Pedir cuenta". */
 export default function TuConsumoSheet({ bill, onClose }: TuConsumoSheetProps): React.JSX.Element {
   const { orders, total, hasActive, billRequested, requesting, message } = bill
   return (

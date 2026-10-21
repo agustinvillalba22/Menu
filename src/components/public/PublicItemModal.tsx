@@ -9,7 +9,7 @@ interface PublicItemModalProps {
   orderingEnabled: boolean
   onClose: () => void
   onAdd: (item: PublicItem, modifiers: PublicModifier[], quantity: number, note?: string) => void
-  /** Active promo (Fase 0010) — discounts the displayed prices when in scope. */
+  /** Active promo — discounts the displayed prices when in scope. */
   promo?: PublicPromo | null
 }
 
@@ -51,7 +51,7 @@ export default function PublicItemModal({
     )
   }
 
-  // Fase 0010 — the promo discount applies to the effective unit price
+  // The promo discount applies to the effective unit price
   // (base + modifiers, clamped at 0), the same rule the cart and the server use.
   const base = parseFloat(item.price)
   const deltas = selected.reduce((sum, m) => sum + parseFloat(m.price_delta), 0)

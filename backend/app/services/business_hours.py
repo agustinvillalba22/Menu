@@ -1,10 +1,10 @@
-"""Business hours CRUD + ``is_open_now`` (P6) — Fase 1d.
+"""Business hours CRUD + ``is_open_now``.
 
 The schedule lives on its own table (one row per weekday) so the dashboard
 form can edit each day independently. ``is_open_now`` centralizes the open/
 closed computation: the public menu and the dashboard "Información del
 local" page both ask the same question and get the same answer, computed
-against the restaurant's tz via the shared ``now_in`` helper (Fase 0a).
+against the restaurant's tz via the shared ``now_in`` helper.
 """
 import uuid
 from datetime import datetime, time

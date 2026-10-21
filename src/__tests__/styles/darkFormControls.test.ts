@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 const css = readFileSync(resolve(__dirname, '../../index.css'), 'utf8')
 
-describe('index.css dark mode form controls (M31)', () => {
+describe('index.css dark mode form controls', () => {
   it('sets color-scheme: dark on .dark .dashboard-root', () => {
     expect(css).toMatch(/\.dark \.dashboard-root\s*\{[^}]*color-scheme:\s*dark/)
   })
@@ -22,7 +22,7 @@ describe('index.css dark mode form controls (M31)', () => {
   })
 
   it('lives in @layer base without :where() (preflight would out-specify it)', () => {
-    const block = css.slice(css.indexOf('/* M31'))
+    const block = css.slice(css.indexOf('/* Dark mode form controls'))
     expect(block).toContain('@layer base')
     expect(block).not.toMatch(/:where\(/)
   })

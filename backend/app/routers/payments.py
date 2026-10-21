@@ -111,7 +111,7 @@ async def mercadopago_callback(
 
 
 def _notification_fields(request: Request, body: object) -> tuple[str | None, str | None, str | None]:
-    """Extract ``(data_id, type, seller_user_id)`` from query/body (RF-16/17)."""
+    """Extract ``(data_id, type, seller_user_id)`` from query/body."""
     payload = body if isinstance(body, dict) else {}
     data = payload.get("data") if isinstance(payload.get("data"), dict) else {}
     data_id = request.query_params.get("data.id") or data.get("id")

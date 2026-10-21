@@ -13,7 +13,7 @@ interface UsePaymentReturn {
 }
 
 /**
- * M36 (RF-28): handles the return from Mercado Pago (`?pago=ok|error|pendiente
+ * Handles the return from Mercado Pago (`?pago=ok|error|pendiente
  * &order=<id>`). While the order's payment is still pending it polls the public
  * status endpoint (the webhook can land after the redirect), up to a fixed
  * number of attempts. `onApproved` runs once when the payment is confirmed.

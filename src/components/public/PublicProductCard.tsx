@@ -8,7 +8,7 @@ interface PublicProductCardProps {
   item: PublicItem
   orderingEnabled: boolean
   onSelect: (item: PublicItem) => void
-  /** Active promo (Fase 0010) — drives the discounted price display. */
+  /** Active promo — drives the discounted price display. */
   promo?: PublicPromo | null
 }
 

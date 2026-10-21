@@ -3,11 +3,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
-/* M16 RF-01 — dark mode toggled by a `.dark` class on <html> (via useTheme),
+/* Dark mode toggled by a `.dark` class on <html> (via useTheme),
    not only `prefers-color-scheme`. Tailwind v4 custom-variant syntax. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Fase 1b (P1): the four FontFamily enum values must be callable as
+/* The four FontFamily enum values must be callable as
    `--font-heading` on the public menu. `Playfair Display` was already
    imported above; the remaining three (Inter, Poppins, DM Sans) land here so
    selecting them in the dashboard actually renders the right headings.
@@ -166,7 +166,7 @@ body {
   animation: shine 4.5s infinite linear;
 }
 
-/* M31 — dark mode form controls in the dashboard only (.dashboard-root is set
+/* Dark mode form controls in the dashboard only (.dashboard-root is set
    on DashboardLayout). Lives in @layer base so Tailwind utilities on individual
    controls still win. Not wrapped in zero-specificity selectors: they would lose to
    Tailwind's preflight (`select { color: inherit; background: transparent }`). */
@@ -190,7 +190,7 @@ body {
   }
 }
 
-/* M32 — dashboard typography and thin scrollbar, as in the GastroSuite prototype.
+/* Dashboard typography and thin scrollbar, as in the GastroSuite prototype.
    The public menu keeps its own fonts (it never uses .font-jakarta). */
 .font-jakarta {
   font-family: 'Plus Jakarta Sans', sans-serif;

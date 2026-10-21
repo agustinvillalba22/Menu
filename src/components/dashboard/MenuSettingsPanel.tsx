@@ -29,7 +29,7 @@ const inputCls =
 const secondaryBtn =
   'rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60'
 
-/** Collapsible "Configuración de este menú" block (RF-12, RF-13). */
+/** Collapsible "Configuración de este menú" block. */
 export default function MenuSettingsPanel(props: MenuSettingsPanelProps): React.JSX.Element {
   const [open, setOpen] = useState(false)
   return (

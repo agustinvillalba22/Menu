@@ -1,11 +1,10 @@
 """
-R2 (Cloudflare, S3-compatible) object storage client — M4 item images.
+R2 (Cloudflare, S3-compatible) object storage client for item images.
 
 boto3 is synchronous, so every network call is dispatched via
-`asyncio.to_thread` to avoid blocking the event loop (RNF-02). The binary of
+`asyncio.to_thread` to avoid blocking the event loop. The binary of
 the image never passes through the API: `generate_upload_url` only signs a URL
-the client PUTs to directly, and `head_image_object` only reads metadata
-(RNF-01).
+the client PUTs to directly, and `head_image_object` only reads metadata.
 """
 import asyncio
 import logging
@@ -18,7 +17,7 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Presigned PUT URL lifetime, in seconds (RF-05).
+# Presigned PUT URL lifetime, in seconds.
 UPLOAD_URL_EXPIRES_IN = 300
 
 _client = None
@@ -84,5 +83,5 @@ def _delete_image_object(object_key: str) -> None:
 
 async def delete_image_object(object_key: str) -> None:
     """Delete an object from R2. Callers on the delete path treat this as
-    best-effort — see `item_image` service (RNF-04)."""
+    best-effort — see `item_image` service."""
     await asyncio.to_thread(_delete_image_object, object_key)

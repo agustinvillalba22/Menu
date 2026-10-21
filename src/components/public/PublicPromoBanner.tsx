@@ -9,7 +9,7 @@ interface PublicPromoBannerProps {
 }
 
 /**
- * Active-promo banner for the public menu (P4, Fase 2c).
+ * Active-promo banner for the public menu.
  *
  * Adapted from the demo `components/PromoBanner.tsx` design (fixed
  * yellow/black, shine hover, "HOY" live tag) but fully props-driven: every

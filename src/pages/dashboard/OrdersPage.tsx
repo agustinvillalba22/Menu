@@ -35,7 +35,7 @@ interface Transition {
   variant: 'primary' | 'danger'
 }
 
-/** Valid forward transitions offered per status (mirrors backend RF-07). */
+/** Valid forward transitions offered per status (mirrors the backend). */
 function transitionsFor(status: OrderStatus): Transition[] {
   switch (status) {
     case 'pending':

@@ -1,4 +1,4 @@
-"""Router for promo CRUD + promo image upload (P4, Fase 2c).
+"""Router for promo CRUD + promo image upload.
 
 Mirrors the category router (editor role — a promo banner is marketing
 content, same trust level as editing the menu) and the restaurant_logo
@@ -13,7 +13,7 @@ router (R2 upload-url + confirm + DELETE shape, scoped per promo):
   POST   /restaurants/{id}/promos/{promo_id}/image/confirm
   DELETE /restaurants/{id}/promos/{promo_id}/image
 
-``days_remaining`` (P5, Fase 2d) is computed here — the ORM row never
+``days_remaining`` is computed here — the ORM row never
 carries it, the response shape is the only place the dashboard sees it.
 """
 import uuid

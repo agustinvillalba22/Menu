@@ -64,15 +64,15 @@ class Order(Base, TimestampMixin):
     table_or_address: Mapped[str | None] = mapped_column(String, nullable=True)
     notes: Mapped[str | None] = mapped_column(String, nullable=True)
     total: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
-    # Fase 0009 (P2): which menu the guest was browsing when ordering. SET NULL
+    # Which menu the guest was browsing when ordering. SET NULL
     # (not CASCADE): deleting a menu must not destroy order history; null means
-    # "ordered under the pre-P2 single-menu model" or the menu was removed.
+    # "ordered under the legacy single-menu model" or the menu was removed.
     menu_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("menus.id", ondelete="SET NULL"),
         nullable=True,
     )
-    # M17 — set only when order_type == 'mesa' and the guest picked a real
+    # Set only when order_type == 'mesa' and the guest picked a real
     # Table (vs. the free-text table_or_address fallback). SET NULL (not
     # CASCADE): deleting a table must not destroy order history.
     table_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -80,7 +80,7 @@ class Order(Base, TimestampMixin):
         ForeignKey("tables.id", ondelete="SET NULL"),
         nullable=True,
     )
-    # M28 — set when the order is completed while a cash shift is open. SET
+    # Set when the order is completed while a cash shift is open. SET
     # NULL (not CASCADE): shifts are never deleted in practice, but order
     # history must survive if one is.
     cash_shift_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -89,7 +89,7 @@ class Order(Base, TimestampMixin):
         nullable=True,
         index=True,
     )
-    # M28 — who handled the order (attribution only, no auth). The name is a
+    # Who handled the order (attribution only, no auth). The name is a
     # snapshot so history survives deleting the StaffMember (FK is SET NULL).
     handled_by_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
@@ -97,7 +97,7 @@ class Order(Base, TimestampMixin):
         nullable=True,
     )
     handled_by_name: Mapped[str | None] = mapped_column(String, nullable=True)
-    # M36 — online payment tracking. Cash orders keep none/cash forever.
+    # Online payment tracking. Cash orders keep none/cash forever.
     payment_method: Mapped[PaymentMethod] = mapped_column(
         Enum(PaymentMethod, native_enum=False),
         nullable=False,
@@ -112,13 +112,12 @@ class Order(Base, TimestampMixin):
     )
     mp_preference_id: Mapped[str | None] = mapped_column(String, nullable=True)
     mp_payment_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
-    # M37 — unguessable per-order credential the anonymous guest keeps on their
-    # device to read/act on their own order. NULL for pre-M37 orders.
+    # Unguessable per-order credential the anonymous guest keeps on their
+    # device to read/act on their own order. NULL for legacy orders.
     public_token: Mapped[str | None] = mapped_column(
         String(64), nullable=True, unique=True, index=True
     )
 
-    # relationships
     items: Mapped[list["OrderItem"]] = relationship(
         "OrderItem",
         back_populates="order",
@@ -156,7 +155,7 @@ class OrderItem(Base):
         Numeric(10, 2),
         nullable=False,
     )
-    # Fase 0010: snapshot of the promo discount actually applied to this
+    # Snapshot of the promo discount actually applied to this
     # line (NULL = none). unit_price_snapshot keeps the LIST price, subtotal
     # the actually-paid amount — discount_pct explains the difference so
     # history stays auditable after the promo is edited/deleted.
@@ -165,7 +164,6 @@ class OrderItem(Base):
     special_instructions: Mapped[str | None] = mapped_column(String, nullable=True)
     subtotal: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
 
-    # relationships
     order: Mapped["Order"] = relationship("Order", back_populates="items")
     modifiers: Mapped[list["OrderItemModifier"]] = relationship(
         "OrderItemModifier",
@@ -187,7 +185,7 @@ class OrderItemModifier(Base):
         ForeignKey("order_items.id", ondelete="CASCADE"),
         nullable=False,
     )
-    # Pure snapshot — no FK to item_modifiers.id on purpose (M11 spec): the
+    # Pure snapshot — no FK to item_modifiers.id on purpose: the
     # historical order line must survive the live modifier being edited/deleted.
     name_snapshot: Mapped[str] = mapped_column(String, nullable=False)
     price_snapshot: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
@@ -196,7 +194,6 @@ class OrderItemModifier(Base):
         nullable=False,
     )
 
-    # relationships
     order_item: Mapped["OrderItem"] = relationship(
         "OrderItem",
         back_populates="modifiers",

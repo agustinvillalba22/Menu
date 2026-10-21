@@ -90,7 +90,7 @@ async def delete_table(
 
 
 # ---------------------------------------------------------------------------
-# M33 — occupancy, bill request and checkout
+# occupancy, bill request and checkout
 # ---------------------------------------------------------------------------
 
 # Orders that occupy a table: still in progress, and either cash or already
@@ -135,7 +135,7 @@ def is_active_order(order: Order) -> bool:
 
 
 def is_bill_requested(table: Table, first_order_at: datetime | None) -> bool:
-    """M33 ``bill`` rule: requested at/after the first active order of the table."""
+    """``bill`` rule: requested at/after the first active order of the table."""
     if table.bill_requested_at is None or first_order_at is None:
         return False
     return _as_utc(table.bill_requested_at) >= _as_utc(first_order_at)
