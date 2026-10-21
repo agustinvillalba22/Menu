@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { CheckCircle2, CreditCard, TriangleAlert } from 'lucide-react'
-import { useMyRestaurant } from '../../hooks/useMyRestaurant'
+import { useRestaurantData } from '../../hooks/useRestaurantData'
+import RestaurantGate from '../../components/dashboard/RestaurantGate'
 import {
   connectMercadoPago,
   disconnectMercadoPago,
   getMercadoPagoStatus,
 } from '../../lib/payments'
-import type { MercadoPagoStatus } from '../../lib/types'
+import type { MercadoPagoStatus, Restaurant } from '../../lib/types'
 
 const primaryBtn =
   'rounded-lg bg-neutral-900 px-4 py-2 text-xs font-medium text-white shadow-xs transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300'
@@ -44,18 +45,29 @@ function Card({ children }: { children: React.ReactNode }): React.JSX.Element {
 }
 
 export default function PaymentsPage(): React.JSX.Element {
-  const { restaurant, loading: restaurantLoading, error: restaurantError } = useMyRestaurant()
-  const restaurantId = restaurant?.id ?? null
-  const isOwner = restaurant?.role === 'owner'
+  return <RestaurantGate>{(restaurant) => <PaymentsSection restaurant={restaurant} />}</RestaurantGate>
+}
+
+function PaymentsSection({ restaurant }: { restaurant: Restaurant }): React.JSX.Element {
+  const restaurantId = restaurant.id
+  const isOwner = restaurant.role === 'owner'
 
   const [searchParams, setSearchParams] = useSearchParams()
   // The ?mp= result is read once and then removed from the URL so a refresh
   // does not replay the message.
   const [flash, setFlash] = useState<Flash | null>(() => flashFromParam(searchParams.get('mp')))
 
-  const [status, setStatus] = useState<MercadoPagoStatus | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState<string | null>(null)
+  const {
+    data: status,
+    setData: setStatus,
+    loading,
+    error: loadError,
+  } = useRestaurantData<MercadoPagoStatus | null>(
+    restaurantId,
+    getMercadoPagoStatus,
+    null,
+    'No se pudo cargar el estado de Mercado Pago.',
+  )
   const [busy, setBusy] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -68,31 +80,7 @@ export default function PaymentsPage(): React.JSX.Element {
     }
   }, [searchParams, setSearchParams])
 
-  useEffect(() => {
-    if (restaurantId === null) {
-      setLoading(false)
-      return
-    }
-    let cancelled = false
-    setLoading(true)
-    setLoadError(null)
-    getMercadoPagoStatus(restaurantId)
-      .then((s) => {
-        if (!cancelled) setStatus(s)
-      })
-      .catch(() => {
-        if (!cancelled) setLoadError('No se pudo cargar el estado de Mercado Pago.')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [restaurantId])
-
   const handleConnect = useCallback(async (): Promise<void> => {
-    if (restaurantId === null) return
     setBusy(true)
     setActionError(null)
     try {
@@ -105,7 +93,6 @@ export default function PaymentsPage(): React.JSX.Element {
   }, [restaurantId])
 
   async function handleDisconnect(): Promise<void> {
-    if (restaurantId === null) return
     setBusy(true)
     setActionError(null)
     try {
@@ -121,22 +108,8 @@ export default function PaymentsPage(): React.JSX.Element {
     }
   }
 
-  if (restaurantLoading || loading) {
+  if (loading) {
     return <p className="text-sm text-neutral-600 dark:text-neutral-300">Cargando…</p>
-  }
-  if (restaurantError) {
-    return (
-      <div role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-400">
-        {restaurantError}
-      </div>
-    )
-  }
-  if (!restaurant) {
-    return (
-      <p className="text-sm text-neutral-600 dark:text-neutral-300">
-        Creá tu restaurante primero desde “Mi restaurante”.
-      </p>
-    )
   }
 
   const isConnected = status?.connected === true && status.status === 'connected'
