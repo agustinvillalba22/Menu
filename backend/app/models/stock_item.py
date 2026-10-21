@@ -2,12 +2,17 @@ import enum
 import uuid
 from datetime import date
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Date, Enum, ForeignKey, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
+
+if TYPE_CHECKING:
+    from app.models.restaurant import Restaurant
+    from app.models.supplier import Supplier
 
 
 class StockCategory(str, enum.Enum):
@@ -69,11 +74,11 @@ class StockItem(Base):
     )
     last_restocked: Mapped[date | None] = mapped_column(Date, nullable=True)
 
-    restaurant: Mapped["app.models.restaurant.Restaurant"] = relationship(  # type: ignore[name-defined]
+    restaurant: Mapped["Restaurant"] = relationship(
         "Restaurant",
         back_populates="stock_items",
     )
-    supplier: Mapped["app.models.supplier.Supplier | None"] = relationship(  # type: ignore[name-defined]
+    supplier: Mapped["Supplier | None"] = relationship(
         "Supplier",
         back_populates="stock_items",
     )

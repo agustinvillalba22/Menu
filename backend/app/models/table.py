@@ -1,11 +1,15 @@
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
+
+if TYPE_CHECKING:
+    from app.models.restaurant import Restaurant
 
 
 class Table(Base):
@@ -37,7 +41,7 @@ class Table(Base):
         DateTime(timezone=True), nullable=True
     )
 
-    restaurant: Mapped["app.models.restaurant.Restaurant"] = relationship(  # type: ignore[name-defined]
+    restaurant: Mapped["Restaurant"] = relationship(
         "Restaurant",
         back_populates="tables",
     )

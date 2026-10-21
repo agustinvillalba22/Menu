@@ -1,11 +1,15 @@
 import enum
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Enum, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
+
+if TYPE_CHECKING:
+    from app.models.restaurant import Restaurant
 
 
 class FontFamily(str, enum.Enum):
@@ -37,7 +41,7 @@ class MenuStyle(Base):
     primary_color: Mapped[str | None] = mapped_column(String, nullable=True)
     secondary_color: Mapped[str | None] = mapped_column(String, nullable=True)
 
-    restaurant: Mapped["app.models.restaurant.Restaurant"] = relationship(  # type: ignore[name-defined]
+    restaurant: Mapped["Restaurant"] = relationship(
         "Restaurant",
         back_populates="style",
     )

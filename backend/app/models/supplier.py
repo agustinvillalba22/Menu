@@ -1,10 +1,15 @@
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
+
+if TYPE_CHECKING:
+    from app.models.restaurant import Restaurant
+    from app.models.stock_item import StockItem
 
 
 class Supplier(Base):
@@ -33,11 +38,11 @@ class Supplier(Base):
     notes: Mapped[str | None] = mapped_column(String, nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
-    restaurant: Mapped["app.models.restaurant.Restaurant"] = relationship(  # type: ignore[name-defined]
+    restaurant: Mapped["Restaurant"] = relationship(
         "Restaurant",
         back_populates="suppliers",
     )
-    stock_items: Mapped[list["app.models.stock_item.StockItem"]] = relationship(  # type: ignore[name-defined]
+    stock_items: Mapped[list["StockItem"]] = relationship(
         "StockItem",
         back_populates="supplier",
     )

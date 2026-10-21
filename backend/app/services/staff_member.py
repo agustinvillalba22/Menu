@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.staff_member import StaffMember
 from app.schemas.staff_member import StaffMemberCreate, StaffMemberUpdate
+from app.services.crud import apply_patch, get_owned
 
 
 async def create_staff_member(
@@ -42,16 +43,9 @@ async def list_staff_members(
 async def get_staff_member(
     restaurant_id: uuid.UUID, staff_member_id: uuid.UUID, session: AsyncSession
 ) -> StaffMember:
-    result = await session.execute(
-        select(StaffMember).where(
-            StaffMember.id == staff_member_id,
-            StaffMember.restaurant_id == restaurant_id,
-        )
+    return await get_owned(
+        session, StaffMember, restaurant_id, staff_member_id, "staff_member_not_found"
     )
-    member = result.scalar_one_or_none()
-    if member is None:
-        raise HTTPException(status_code=404, detail="staff_member_not_found")
-    return member
 
 
 async def update_staff_member(
@@ -61,8 +55,7 @@ async def update_staff_member(
     session: AsyncSession,
 ) -> StaffMember:
     member = await get_staff_member(restaurant_id, staff_member_id, session)
-    for field, value in data.model_dump(exclude_unset=True).items():
-        setattr(member, field, value)
+    apply_patch(member, data.model_dump(exclude_unset=True))
     try:
         await session.commit()
     except IntegrityError:

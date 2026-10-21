@@ -10,6 +10,7 @@ from app.models.item import Item, ItemTag
 from app.models.menu import Category, Menu, Subcategory
 from app.schemas.item import ItemCreate, ItemUpdate
 from app.services import image_upload
+from app.services.crud import apply_patch
 
 
 async def _get_subcategory(
@@ -109,12 +110,9 @@ async def update_item(
 ) -> Item:
     """Apply a partial update to an Item owned by the restaurant."""
     item = await _get_item(restaurant_id, subcategory_id, item_id, session)
-    for field, value in data.model_dump(exclude_unset=True).items():
-        # name/price/description are NOT NULL columns; an explicit null in the
-        # PATCH body is ignored (no-op) rather than triggering a 500 IntegrityError.
-        if value is None:
-            continue
-        setattr(item, field, value)
+    # name/price/description are NOT NULL columns; an explicit null in the
+    # PATCH body is ignored (no-op) rather than triggering a 500 IntegrityError.
+    apply_patch(item, data.model_dump(exclude_unset=True), skip_none=True)
     await session.commit()
     return await _get_item(restaurant_id, subcategory_id, item_id, session)
 

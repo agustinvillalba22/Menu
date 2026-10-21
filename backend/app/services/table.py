@@ -20,6 +20,7 @@ from app.schemas.table import (
 from app.services.cash_shift import get_open_shift
 from app.services.order import apply_status_change, check_transition
 from app.services.staff_member import get_active_staff_member
+from app.services.crud import apply_patch, get_owned
 
 
 async def create_table(
@@ -51,16 +52,9 @@ async def get_table(
     session: AsyncSession,
     for_update: bool = False,
 ) -> Table:
-    query = select(Table).where(
-        Table.id == table_id, Table.restaurant_id == restaurant_id
+    return await get_owned(
+        session, Table, restaurant_id, table_id, "table_not_found", for_update=for_update
     )
-    if for_update:
-        query = query.with_for_update()
-    result = await session.execute(query)
-    table = result.scalar_one_or_none()
-    if table is None:
-        raise HTTPException(status_code=404, detail="table_not_found")
-    return table
 
 
 async def update_table(
@@ -70,8 +64,7 @@ async def update_table(
     session: AsyncSession,
 ) -> Table:
     table = await get_table(restaurant_id, table_id, session)
-    for field, value in data.model_dump(exclude_unset=True).items():
-        setattr(table, field, value)
+    apply_patch(table, data.model_dump(exclude_unset=True))
     try:
         await session.commit()
     except IntegrityError:

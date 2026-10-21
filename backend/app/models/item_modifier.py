@@ -1,12 +1,16 @@
 import enum
 import uuid
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Enum, ForeignKey, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
+
+if TYPE_CHECKING:
+    from app.models.item import Item
 
 
 class ModifierType(str, enum.Enum):
@@ -36,7 +40,7 @@ class ItemModifier(Base):
         nullable=False,
     )
 
-    item: Mapped["app.models.item.Item"] = relationship(  # type: ignore[name-defined]
+    item: Mapped["Item"] = relationship(
         "Item",
         back_populates="modifiers",
     )

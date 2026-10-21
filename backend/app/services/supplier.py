@@ -1,11 +1,11 @@
 import uuid
 
-from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.supplier import Supplier
 from app.schemas.supplier import SupplierCreate, SupplierUpdate
+from app.services.crud import apply_patch, get_owned
 
 
 async def create_supplier(
@@ -30,15 +30,7 @@ async def list_suppliers(restaurant_id: uuid.UUID, session: AsyncSession) -> lis
 async def get_supplier(
     restaurant_id: uuid.UUID, supplier_id: uuid.UUID, session: AsyncSession
 ) -> Supplier:
-    result = await session.execute(
-        select(Supplier).where(
-            Supplier.id == supplier_id, Supplier.restaurant_id == restaurant_id
-        )
-    )
-    supplier = result.scalar_one_or_none()
-    if supplier is None:
-        raise HTTPException(status_code=404, detail="supplier_not_found")
-    return supplier
+    return await get_owned(session, Supplier, restaurant_id, supplier_id, "supplier_not_found")
 
 
 async def update_supplier(
@@ -48,8 +40,7 @@ async def update_supplier(
     session: AsyncSession,
 ) -> Supplier:
     supplier = await get_supplier(restaurant_id, supplier_id, session)
-    for field, value in data.model_dump(exclude_unset=True).items():
-        setattr(supplier, field, value)
+    apply_patch(supplier, data.model_dump(exclude_unset=True))
     await session.commit()
     await session.refresh(supplier)
     return supplier
