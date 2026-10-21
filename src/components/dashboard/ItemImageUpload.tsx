@@ -112,20 +112,20 @@ export default function ItemImageUpload({
       {displayUrl ? (
         <img src={displayUrl} alt="Imagen del producto" className="h-16 w-16 rounded object-cover" />
       ) : (
-        <div className="flex h-16 w-16 items-center justify-center rounded bg-gray-100 text-gray-400">
+        <div className="flex h-16 w-16 items-center justify-center rounded bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500">
           <ImageOff className="h-6 w-6" aria-hidden="true" />
         </div>
       )}
 
       <div className="flex flex-col gap-1">
         {busyAction === 'upload' ? (
-          <span className="text-xs text-gray-500">Subiendo imagen…</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Subiendo imagen…</span>
         ) : busyAction === 'delete' ? (
-          <span className="text-xs text-gray-500">Quitando imagen…</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Quitando imagen…</span>
         ) : displayUrl ? (
           confirmingDelete ? (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-600">¿Quitar la imagen?</span>
+              <span className="text-xs text-gray-600 dark:text-gray-300">¿Quitar la imagen?</span>
               <button
                 type="button"
                 onClick={handleDelete}
@@ -136,7 +136,7 @@ export default function ItemImageUpload({
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(false)}
-                className="rounded-md border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100"
+                className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 Cancelar
               </button>
@@ -146,14 +146,14 @@ export default function ItemImageUpload({
               <button
                 type="button"
                 onClick={openPicker}
-                className="text-xs text-gray-500 hover:text-gray-900"
+                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
               >
                 Reemplazar
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(true)}
-                className="text-xs font-medium text-red-600 hover:text-red-800"
+                className="text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-400"
               >
                 Quitar
               </button>
@@ -163,14 +163,14 @@ export default function ItemImageUpload({
           <button
             type="button"
             onClick={openPicker}
-            className="text-xs text-gray-500 hover:text-gray-900"
+            className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
           >
             Subir imagen
           </button>
         )}
 
         {error && (
-          <div role="alert" className="text-xs text-red-700">
+          <div role="alert" className="text-xs text-red-700 dark:text-red-400">
             {error}
           </div>
         )}

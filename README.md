@@ -111,6 +111,35 @@ Las imágenes de ítem se suben directo del navegador a R2 vía presigned URL (e
 
 Después de cambiar `backend/.env`, recreá el contenedor (`docker compose up -d backend`) para que tome los valores nuevos.
 
+## Mercado Pago (cobro de pedidos)
+
+Cada restaurante conecta su propia cuenta de Mercado Pago desde el dashboard (Pasarela de pagos) y el dinero va directo a esa cuenta; la plataforma no cobra comisión. Es opcional: si las variables no están completas, la opción de pagar con Mercado Pago no aparece y el resto de la app funciona igual.
+
+1. En [Mercado Pago Developers](https://www.mercadopago.com.ar/developers) creá una aplicación (Checkout Pro). Copiá el **Client ID** y el **Client Secret**.
+2. En la configuración de la aplicación cargá como **Redirect URI** `<PUBLIC_API_URL>/payments/mercadopago/callback`, y en Webhooks la URL `<PUBLIC_API_URL>/webhooks/mercadopago` (evento *Pagos*); copiá la **clave secreta** del webhook.
+3. Generá la clave de cifrado de tokens:
+   ```bash
+   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+   ```
+4. Completá en `backend/.env`:
+   ```
+   MP_CLIENT_ID=...
+   MP_CLIENT_SECRET=...
+   MP_WEBHOOK_SECRET=...
+   MP_TOKEN_ENCRYPTION_KEY=...
+   PUBLIC_API_URL=https://tu-backend-publico
+   FRONTEND_URL=http://localhost:3000
+   ```
+   `PUBLIC_API_URL` tiene que ser accesible desde internet (en local, un túnel tipo ngrok o Cloudflare Tunnel). Para probar usá cuentas de prueba de Mercado Pago (vendedor y comprador).
+5. Corré las migraciones (`docker compose exec backend alembic upgrade head`) y recreá el contenedor del backend para que tome las variables nuevas.
+
+### Logging y cookie de sesión
+
+Variables opcionales en `backend/.env`:
+
+- `LOG_LEVEL` (default `INFO`): nivel de logging del backend. Cada request se loguea en una línea (método, ruta, status, duración y `request_id`) y la respuesta incluye el header `X-Request-ID`.
+- `COOKIE_SAMESITE` (`lax` por defecto, también `strict` o `none`): atributo SameSite de la cookie de sesión. `none` exige `COOKIE_SECURE=true`; si no, el backend no arranca.
+
 ## Tests
 
 **Backend** (pytest, corre contra SQLite in-memory, no necesita Postgres levantado):

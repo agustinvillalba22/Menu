@@ -1,11 +1,12 @@
 import uuid
 from datetime import datetime
 from decimal import Decimal
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_serializer
 
 from app.models.item_modifier import ModifierType
-from app.models.order import OrderStatus, OrderType
+from app.models.order import OrderStatus, OrderType, PaymentMethod, PaymentStatus
 
 
 class OrderItemCreate(BaseModel):
@@ -24,7 +25,13 @@ class OrderCreate(BaseModel):
     customer_name: str = Field(min_length=1, max_length=120)
     order_type: OrderType
     table_or_address: str | None = Field(default=None, max_length=200)
+    # M17: when order_type == 'mesa' and the restaurant has real tables
+    # configured, the client sends the picked table's id instead of free
+    # text — the server stamps table_or_address itself (see create_order).
+    table_id: uuid.UUID | None = None
     notes: str | None = Field(default=None, max_length=500)
+    # M36: omitted/cash = pay at the venue (pre-M36 behavior, untouched).
+    payment_method: PaymentMethod = PaymentMethod.cash
     # max_length caps request size / DB writes for this public, unauthenticated
     # endpoint (M11 review CRIT-01).
     items: list[OrderItemCreate] = Field(min_length=1, max_length=100)
@@ -32,6 +39,8 @@ class OrderCreate(BaseModel):
 
 class OrderStatusUpdate(BaseModel):
     status: OrderStatus
+    # M28: optional attribution; omitted = leave previous value untouched.
+    staff_member_id: uuid.UUID | None = None
 
 
 class OrderItemModifierRead(BaseModel):
@@ -75,10 +84,19 @@ class OrderRead(BaseModel):
     customer_name: str
     order_type: OrderType
     table_or_address: str | None
+    table_id: uuid.UUID | None = None
     notes: str | None
     total: Decimal
     created_at: datetime
     updated_at: datetime
+    cash_shift_id: uuid.UUID | None = None
+    handled_by_id: uuid.UUID | None = None
+    handled_by_name: str | None = None
+    # M36: online-payment state. ``payment_url`` (the Checkout Pro init_point)
+    # is only set by the public POST for mercadopago orders.
+    payment_method: PaymentMethod = PaymentMethod.cash
+    payment_status: PaymentStatus = PaymentStatus.none
+    payment_url: str | None = None
     items: list[OrderItemRead]
     # P7: pre-built ``https://wa.me/...`` URL the customer's checkout UI opens
     # after the order is persisted. Null when the restaurant has no
@@ -87,9 +105,69 @@ class OrderRead(BaseModel):
     # by the public POST endpoint, since only that router has the restaurant
     # at hand to build it. Default null keeps every other caller valid.
     whatsapp_url: str | None = None
+    # M37: per-order guest credential. Returned only by the public POST (set
+    # explicitly by the router). The validation alias points at an attribute
+    # the model does not have, so ``from_attributes`` never leaks the stored
+    # token through the dashboard list/patch/occupancy reads.
+    public_token: str | None = Field(
+        default=None, validation_alias=AliasChoices("public_token_issued")
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
     @field_serializer("total")
     def _total(self, v: Decimal) -> str:
         return f"{v:.2f}"
+
+
+# ---------------------------------------------------------------------------
+# M37 — public "Tu consumo" (token-based, anonymous)
+# ---------------------------------------------------------------------------
+
+_TOKEN_MIN_LENGTH = 20
+_TOKEN_MAX_LENGTH = 64
+_MAX_STATUS_TOKENS = 20
+
+PublicToken = Annotated[
+    str, Field(min_length=_TOKEN_MIN_LENGTH, max_length=_TOKEN_MAX_LENGTH)
+]
+
+
+class PublicOrderStatusRequest(BaseModel):
+    tokens: list[PublicToken] = Field(min_length=1, max_length=_MAX_STATUS_TOKENS)
+
+
+class PublicBillRequest(BaseModel):
+    token: PublicToken
+
+
+class PublicOrderLineRead(BaseModel):
+    name: str
+    quantity: int
+    subtotal: Decimal
+    modifiers: list[str]
+
+    @field_serializer("subtotal")
+    def _subtotal(self, v: Decimal) -> str:
+        return f"{v:.2f}"
+
+
+class PublicOrderStatusRead(BaseModel):
+    token: str
+    status: OrderStatus
+    created_at: datetime
+    payment_method: PaymentMethod
+    payment_status: PaymentStatus
+    total: Decimal
+    table_number: int | None
+    bill_requested: bool
+    items: list[PublicOrderLineRead]
+
+    @field_serializer("total")
+    def _total(self, v: Decimal) -> str:
+        return f"{v:.2f}"
+
+
+class PublicBillRequestRead(BaseModel):
+    bill_requested: bool
+    bill_requested_at: datetime

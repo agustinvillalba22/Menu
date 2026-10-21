@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.item import Item
 from app.models.menu import Category, Subcategory
+from app.models.payment_account import PaymentAccountStatus
 from app.models.restaurant import Restaurant
 from app.schemas.public_menu import (
     PublicBusinessHoursRead,
@@ -15,6 +17,7 @@ from app.schemas.public_menu import (
     PublicRestaurantRead,
     PublicStyleRead,
     PublicSubcategoryRead,
+    PublicTableRead,
     PublicTagRead,
 )
 from app.services.business_hours import compute_is_open_now
@@ -98,6 +101,11 @@ def _build_restaurant(restaurant: Restaurant) -> PublicRestaurantRead:
         ],
         is_open_now=compute_is_open_now(restaurant),
         whatsapp_enabled=bool(restaurant.whatsapp_phone),
+        accepts_mercadopago=(
+            settings.mercadopago_configured
+            and restaurant.payment_account is not None
+            and restaurant.payment_account.status == PaymentAccountStatus.connected
+        ),
     )
 
 
@@ -120,6 +128,7 @@ def _build_response(restaurant: Restaurant) -> PublicMenuResponse:
         promo=(
             PublicPromoRead.model_validate(promo) if promo is not None else None
         ),
+        tables=[PublicTableRead.model_validate(t) for t in restaurant.tables],
         categories=[_build_category(c) for c in categories],
     )
 

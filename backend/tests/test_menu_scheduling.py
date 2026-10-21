@@ -134,9 +134,10 @@ def _flag_on(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 async def test_flag_off_ignores_scheduled_menu(
-    client: AsyncClient, db_session: AsyncSession
+    client: AsyncClient, db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
 ):
-    """Flag off (default): a fully-matching scheduled menu is NOT served."""
+    """Flag off: a fully-matching scheduled menu is NOT served."""
+    monkeypatch.setattr(settings, "MENU_SCHEDULING_ENABLED", False)
     headers = await as_user(client)
     restaurant = await make_restaurant(client, headers)
     rid, qr = restaurant["id"], restaurant["qr_token"]

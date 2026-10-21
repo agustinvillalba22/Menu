@@ -49,10 +49,10 @@ export default function QrCodeDisplay({
 
   return (
     <div className="mt-4">
-      <dt className="font-medium text-gray-500">Código QR</dt>
+      <dt className="font-medium text-gray-500 dark:text-gray-400">Código QR</dt>
       <dd className="mt-2">
         {error ? (
-          <p role="alert" className="text-sm text-red-700">
+          <p role="alert" className="text-sm text-red-700 dark:text-red-400">
             {error}
           </p>
         ) : dataUrl ? (
@@ -62,18 +62,18 @@ export default function QrCodeDisplay({
               alt="Código QR del menú"
               width={QR_SIZE}
               height={QR_SIZE}
-              className="rounded-md border border-gray-200"
+              className="rounded-md border border-gray-200 dark:border-gray-700"
             />
             <button
               type="button"
               onClick={handleDownload}
-              className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+              className="rounded-md bg-gray-900 dark:bg-gray-100 px-4 py-2 text-sm font-medium text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-300"
             >
               Descargar QR
             </button>
           </div>
         ) : (
-          <p className="text-sm text-gray-600">Generando código QR…</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300">Generando código QR…</p>
         )}
       </dd>
     </div>

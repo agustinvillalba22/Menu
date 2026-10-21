@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: menu
+          POSTGRES_PASSWORD: menu
+          POSTGRES_DB: menu_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U menu -d menu_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: postgresql+asyncpg://menu:menu@localhost:5432/menu_ci
+      SECRET_KEY: ci-only-not-a-secret
+      ENVIRONMENT: test
+      R2_ACCOUNT_ID: ci-fake-account
+      R2_ACCESS_KEY_ID: ci-fake-key
+      R2_SECRET_ACCESS_KEY: ci-fake-secret
+      R2_ENDPOINT_URL: https://ci-fake.r2.cloudflarestorage.com
+      R2_BUCKET_NAME: ci-fake-bucket
+      R2_PUBLIC_URL: https://ci-fake.example.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Tests
+        run: pytest -q
+      - name: Migrations smoke (upgrade, downgrade, upgrade)
+        run: |
+          alembic upgrade head
+          alembic downgrade base
+          alembic upgrade head
+      - name: Models match migrations (alembic check)
+        run: alembic check
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx vitest run
+      - run: npm run build

@@ -45,3 +45,33 @@ describe('AppRouter /admin default route', () => {
     expect(await screen.findByText(/cargando/i)).toBeInTheDocument()
   })
 })
+
+describe('AppRouter /dashboard/payments', () => {
+  it('renders the payments page under the dashboard layout', async () => {
+    window.history.pushState({}, '', '/dashboard/payments')
+    const json = (body: unknown) =>
+      Promise.resolve(new Response(JSON.stringify(body), { status: 200 }))
+    vi.mocked(fetch).mockImplementation((input) => {
+      const url = String(input)
+      if (url.endsWith('/payments/mercadopago')) {
+        return json({ configured: true, connected: false, status: null, mp_user_id: null })
+      }
+      if (url.endsWith('/restaurants')) {
+        return json([
+          { id: 'r1', name: 'Boulette', slug: 'boulette', qr_token: 'q', orders_enabled: true, role: 'owner' },
+        ])
+      }
+      return new Promise(() => {})
+    })
+
+    render(
+      <AuthContext.Provider value={superadminAuth}>
+        <AppRouter />
+      </AuthContext.Provider>,
+    )
+
+    expect(
+      await screen.findByRole('heading', { name: /pasarela de pagos/i }),
+    ).toBeInTheDocument()
+  })
+})

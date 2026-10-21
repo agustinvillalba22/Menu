@@ -96,6 +96,30 @@ describe('AdminRestaurantsPage', () => {
     expect(imports[0].url).toBe('http://api.test/restaurants/r1/items/import')
   })
 
+  // M26 RF-08: the import form loads menus from the admin endpoint.
+  it('loads the target menus from /admin/restaurants/{id}/menus and offers the selector', async () => {
+    const m = (id: string, name: string, d: boolean) => ({
+      id, name, is_default: d, start_time: null, end_time: null, weekday_mask: null, categories_count: 0,
+    })
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      const method = (init?.method ?? 'GET').toUpperCase()
+      if (url.endsWith('/admin/restaurants') && method === 'GET') return jsonResponse([boulette])
+      if (url.endsWith('/admin/restaurants/r1/menus') && method === 'GET') {
+        return jsonResponse([m('m1', 'Carta', true), m('m2', 'Brunch', false)])
+      }
+      throw new Error(`No mock route for ${method} ${url}`)
+    })
+
+    render(<AdminRestaurantsPage />)
+
+    await screen.findByText('Boulette')
+    await userEvent.click(screen.getByRole('button', { name: /importar csv/i }))
+
+    expect(await screen.findByRole('combobox', { name: /menú destino/i })).toHaveValue('m1')
+    expect(callsMatching('/admin/restaurants/r1/menus', 'GET')).toHaveLength(1)
+  })
+
   it('shows an error state when the list fails to load', async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: false,

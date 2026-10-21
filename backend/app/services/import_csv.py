@@ -30,7 +30,7 @@ from pydantic import TypeAdapter, ValidationError
 from app.models.item import Item, ItemTag
 from app.models.menu import Category, CategoryType, Subcategory
 from app.schemas.item import ImportResult, ImportRowError, Price
-from app.services.menu import _get_default_menu, list_categories_with_subcategories
+from app.services.menu import _resolve_menu, list_categories_with_subcategories
 
 MAX_FILE_BYTES = 5 * 1024 * 1024
 MAX_ROWS = 2000
@@ -295,33 +295,35 @@ async def import_items_csv(
     content: bytes,
     session,
     create_missing: bool = False,
+    menu_id: uuid.UUID | None = None,
 ) -> ImportResult:
     """Import items from CSV bytes. Additive, single commit at the end.
 
     ``create_missing`` (RF-01, default False) opts into auto-creating
     missing categories/subcategories (RF-04) instead of failing those rows.
+    ``menu_id`` (M26) targets a specific menu of the restaurant; ``None`` keeps
+    the default menu. An unknown/foreign menu is 404 ``menu_not_found`` before
+    any row is processed, regardless of ``create_missing``.
     """
     if len(content) > MAX_FILE_BYTES:
         raise HTTPException(status_code=413, detail="file_too_large")
 
     header_map, rows = _read_rows(_decode(content))
-    categories = await list_categories_with_subcategories(restaurant_id, session)
+    menu = await _resolve_menu(restaurant_id, menu_id, session)
+    categories = await list_categories_with_subcategories(
+        restaurant_id, session, menu.id
+    )
     index = _build_index(categories)
     category_ids = _build_category_ids(categories)
 
-    # Only fetch the Menu (needed as the FK for brand-new Categories) when
-    # create_missing is actually set, to keep the create_missing=False path
-    # byte-for-byte identical to the pre-M12.5 behavior (RNF-01).
-    menu_id: uuid.UUID | None = None
-    if create_missing:
-        menu = await _get_default_menu(restaurant_id, session)
-        menu_id = menu.id
+    # Only needed as the FK for brand-new Categories (create_missing=True).
+    target_menu_id: uuid.UUID | None = menu.id if create_missing else None
 
     imported = 0
     errors: list[ImportRowError] = []
     for offset, row in enumerate(rows, start=1):
         item, reason = _build_item(
-            row, header_map, index, category_ids, menu_id, session, create_missing
+            row, header_map, index, category_ids, target_menu_id, session, create_missing
         )
         if reason is not None:
             errors.append(ImportRowError(row=offset, reason=reason, detail=None))

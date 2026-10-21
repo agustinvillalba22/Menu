@@ -96,8 +96,8 @@ export default function ItemTags({
               onClick={() => handleToggleCurated(tagName)}
               className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-50 ${
                 active
-                  ? 'border-gray-900 bg-gray-900 text-white'
-                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
+                  ? 'border-gray-900 dark:border-gray-100 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900'
+                  : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
             >
               {badge && <span aria-hidden="true">{badge.emoji}</span>}
@@ -111,7 +111,7 @@ export default function ItemTags({
         {tags.map((tag) => (
           <span
             key={tag.id}
-            className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700"
+            className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs text-gray-700 dark:text-gray-300"
           >
             {tag.name}
             <button
@@ -119,7 +119,7 @@ export default function ItemTags({
               onClick={() => handleRemove(tag.id)}
               disabled={busy}
               aria-label={`Eliminar tag ${tag.name}`}
-              className="text-gray-400 hover:text-red-600 disabled:opacity-50"
+              className="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50"
             >
               ×
             </button>
@@ -137,19 +137,19 @@ export default function ItemTags({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Nuevo tag"
-          className="w-32 rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-gray-900 focus:outline-none"
+          className="w-32 rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
         />
         <button
           type="submit"
           disabled={busy}
-          className="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+          className="rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
         >
           Agregar
         </button>
       </form>
 
       {error && (
-        <div role="alert" className="mt-1 text-xs text-red-700">
+        <div role="alert" className="mt-1 text-xs text-red-700 dark:text-red-400">
           {error}
         </div>
       )}

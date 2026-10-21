@@ -24,6 +24,20 @@ class OrderType(str, enum.Enum):
     envio = "envio"
 
 
+class PaymentMethod(str, enum.Enum):
+    cash = "cash"
+    mercadopago = "mercadopago"
+
+
+class PaymentStatus(str, enum.Enum):
+    # `none` = cash orders (nothing to track online).
+    none = "none"
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
+    cancelled = "cancelled"
+
+
 class Order(Base, TimestampMixin):
     __tablename__ = "orders"
 
@@ -57,6 +71,51 @@ class Order(Base, TimestampMixin):
         UUID(as_uuid=True),
         ForeignKey("menus.id", ondelete="SET NULL"),
         nullable=True,
+    )
+    # M17 — set only when order_type == 'mesa' and the guest picked a real
+    # Table (vs. the free-text table_or_address fallback). SET NULL (not
+    # CASCADE): deleting a table must not destroy order history.
+    table_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tables.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    # M28 — set when the order is completed while a cash shift is open. SET
+    # NULL (not CASCADE): shifts are never deleted in practice, but order
+    # history must survive if one is.
+    cash_shift_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("cash_shifts.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    # M28 — who handled the order (attribution only, no auth). The name is a
+    # snapshot so history survives deleting the StaffMember (FK is SET NULL).
+    handled_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("staff_members.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    handled_by_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    # M36 — online payment tracking. Cash orders keep none/cash forever.
+    payment_method: Mapped[PaymentMethod] = mapped_column(
+        Enum(PaymentMethod, native_enum=False),
+        nullable=False,
+        default=PaymentMethod.cash,
+        server_default=PaymentMethod.cash.value,
+    )
+    payment_status: Mapped[PaymentStatus] = mapped_column(
+        Enum(PaymentStatus, native_enum=False),
+        nullable=False,
+        default=PaymentStatus.none,
+        server_default=PaymentStatus.none.value,
+    )
+    mp_preference_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    mp_payment_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    # M37 — unguessable per-order credential the anonymous guest keeps on their
+    # device to read/act on their own order. NULL for pre-M37 orders.
+    public_token: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, unique=True, index=True
     )
 
     # relationships

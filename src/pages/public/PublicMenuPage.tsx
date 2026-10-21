@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { Search, ShoppingBag, ChevronRight, MapPin, Phone, Clock } from 'lucide-react'
+import { useParams, useSearchParams } from 'react-router-dom'
+import { Search, ShoppingBag, ChevronRight, MapPin, Phone, Clock, X } from 'lucide-react'
 import { ApiError } from '../../lib/api'
 import { getPublicMenu } from '../../lib/publicMenu'
 import { getCategoryIcon } from '../../lib/categoryIcons'
+import { resolvePreselectedTable } from '../../lib/tableQr'
 import { formatSchedule } from '../../lib/businessHours'
 import type {
   CategoryIcon,
@@ -18,6 +19,10 @@ import PublicItemModal from '../../components/public/PublicItemModal'
 import PublicCartDrawer from '../../components/public/PublicCartDrawer'
 import PublicCheckoutModal from '../../components/public/PublicCheckoutModal'
 import PublicPromoBanner from '../../components/public/PublicPromoBanner'
+import PaymentReturnBanner from '../../components/public/PaymentReturnBanner'
+import { usePaymentReturn } from '../../components/public/usePaymentReturn'
+import { useTableBill } from '../../components/public/useTableBill'
+import TuConsumoSheet from '../../components/public/TuConsumoSheet'
 
 type LoadState =
   | { status: 'loading' }
@@ -52,17 +57,23 @@ function matchesSearch(item: PublicItem, query: string): boolean {
 
 export default function PublicMenuPage(): React.JSX.Element {
   const { qrToken } = useParams<{ qrToken: string }>()
+  const [searchParams] = useSearchParams()
+  const mesaParam = searchParams.get('mesa')
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [search, setSearch] = useState('')
   const [selectedItem, setSelectedItem] = useState<PublicItem | null>(null)
   const [cartOpen, setCartOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
+  const [consumoOpen, setConsumoOpen] = useState(false)
 
   // Fase 0010: the active promo feeds the cart's displayed totals — the
   // same rule the server recomputes at POST (server authoritative).
   const activePromo = state.status === 'ready' ? state.data.promo : null
   const cart = usePublicCart(qrToken, activePromo)
+  // M36: return from Mercado Pago (?pago=…&order=…). The cart is only emptied
+  // once the payment is confirmed as approved.
+  const paymentReturn = usePaymentReturn(qrToken, cart.clear)
 
   useEffect(() => {
     if (qrToken === undefined) {
@@ -91,6 +102,19 @@ export default function PublicMenuPage(): React.JSX.Element {
       cancelled = true
     }
   }, [qrToken])
+
+  // M35: table preselected by the table QR (?mesa=N) or the session; only ever
+  // a real published table, never the raw query text.
+  const orderingEnabled = state.status === 'ready' && state.data.restaurant.orders_enabled === true
+  const preselectedTable =
+    state.status === 'ready' && orderingEnabled && qrToken !== undefined
+      ? resolvePreselectedTable(qrToken, mesaParam, state.data.tables)
+      : null
+  // M37: "Tu consumo" — the guest's own orders for the locked table.
+  const tableBill = useTableBill(qrToken, preselectedTable?.number ?? null, orderingEnabled)
+  useEffect(() => {
+    if (tableBill.orders.length === 0) setConsumoOpen(false)
+  }, [tableBill.orders.length])
 
   const categories: PublicCategory[] = state.status === 'ready' ? state.data.categories : []
   const visibleCategories = useMemo(
@@ -135,7 +159,9 @@ export default function PublicMenuPage(): React.JSX.Element {
   }
 
   const { restaurant, style } = state.data
-  const orderingEnabled = restaurant.orders_enabled === true
+  // M36: tolerate the flag on the restaurant block or at the top level.
+  const acceptsMercadoPago =
+    (restaurant.accepts_mercadopago ?? state.data.accepts_mercadopago) === true
 
   // P4 — resolve the promo's linked item (if any) so the banner can open
   // its detail modal straight from the categories tree already in memory.
@@ -162,6 +188,12 @@ export default function PublicMenuPage(): React.JSX.Element {
               <h1 className="font-headings text-3xl font-bold uppercase leading-none tracking-tight text-white lg:order-1 lg:shrink-0">
                 {restaurant.name}
               </h1>
+
+              {preselectedTable !== null && (
+                <span className="rounded-full border border-white/50 px-3 py-1 text-xs font-bold text-white lg:order-3">
+                  Mesa {preselectedTable.number}
+                </span>
+              )}
 
               {orderingEnabled && (
                 <button
@@ -212,6 +244,10 @@ export default function PublicMenuPage(): React.JSX.Element {
             />
           </div>
         </header>
+
+        {paymentReturn.state !== null && (
+          <PaymentReturnBanner state={paymentReturn.state} onClose={paymentReturn.dismiss} />
+        )}
 
         {/* P4 — active promo banner (server-resolved; null renders nothing) */}
         {state.data.promo && (
@@ -289,6 +325,39 @@ export default function PublicMenuPage(): React.JSX.Element {
         </main>
       </div>
 
+      {/* M37 — "Tu consumo" floating button + closed-table notice */}
+      {preselectedTable !== null && tableBill.orders.length > 0 && (
+        <div
+          className={`fixed left-1/2 z-30 w-full max-w-xs -translate-x-1/2 px-3 ${
+            cart.count > 0 ? 'bottom-24' : 'bottom-5'
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => setConsumoOpen(true)}
+            aria-label={`Tu consumo, total $${tableBill.total.toFixed(2)}`}
+            className="flex w-full items-center justify-between rounded-2xl border-2 border-primario bg-white px-6 py-3 text-primario shadow-xl transition-all active:scale-[0.98]"
+          >
+            <span className="text-xs font-black uppercase">Tu consumo</span>
+            <span className="font-mono text-sm font-bold">${tableBill.total.toFixed(2)}</span>
+          </button>
+        </div>
+      )}
+      {tableBill.closedNotice && (
+        <div
+          role="status"
+          className="fixed bottom-5 left-1/2 z-40 flex w-full max-w-xs -translate-x-1/2 items-center justify-between gap-2 rounded-2xl bg-primario px-4 py-3 text-sm font-bold text-white shadow-xl"
+        >
+          <span>Mesa cobrada, gracias</span>
+          <button type="button" onClick={tableBill.dismissClosedNotice} aria-label="Cerrar aviso">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+      {consumoOpen && tableBill.orders.length > 0 && (
+        <TuConsumoSheet bill={tableBill} onClose={() => setConsumoOpen(false)} />
+      )}
+
       {/* Floating cart button */}
       {orderingEnabled && cart.count > 0 && (
         <div className="fixed bottom-5 left-1/2 z-30 w-full max-w-xs -translate-x-1/2 px-3">
@@ -348,8 +417,14 @@ export default function PublicMenuPage(): React.JSX.Element {
               // are on `restaurant` — pass the flag down so the checkout can
               // render the "Confirmar por WhatsApp" button iff a phone is set.
               whatsappEnabled={restaurant.whatsapp_enabled === true}
+              tables={state.data.tables}
+              initialTableId={preselectedTable?.id}
+              acceptsMercadoPago={acceptsMercadoPago}
               onClose={() => setCheckoutOpen(false)}
-              onSuccess={() => cart.clear()}
+              onSuccess={() => {
+                cart.clear()
+                void tableBill.refresh()
+              }}
             />
           )}
         </>

@@ -95,7 +95,7 @@ export default function SubcategoryRow({
   }
 
   return (
-    <li className="rounded-md border border-gray-200 bg-white">
+    <li className="rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
       <RowHeader
         inputId={`sub-name-${subcategory.id}`}
         label="Nombre de la subcategoría"
@@ -115,21 +115,21 @@ export default function SubcategoryRow({
         onDelete={handleDelete}
         busy={busy}
         padding="pt-2 pr-3 pb-2 pl-8"
-        nameClassName="text-sm font-medium text-gray-800"
+        nameClassName="text-sm font-medium text-gray-800 dark:text-gray-200"
         deleteConfirmMessage="Se borrará también todo lo que contiene (ítems). ¿Confirmar?"
       />
 
       {error && (
-        <div role="alert" className="px-3 pb-2 text-xs text-red-700">
+        <div role="alert" className="px-3 pb-2 text-xs text-red-700 dark:text-red-400">
           {error}
         </div>
       )}
 
       {expanded && (
-        <div className="border-t border-gray-100 px-3 py-3">
-          {itemsLoading && <p className="text-xs text-gray-500">Cargando ítems…</p>}
+        <div className="border-t border-gray-100 dark:border-gray-800 px-3 py-3">
+          {itemsLoading && <p className="text-xs text-gray-500 dark:text-gray-400">Cargando ítems…</p>}
           {itemsError && (
-            <div role="alert" className="mb-2 text-xs text-red-700">
+            <div role="alert" className="mb-2 text-xs text-red-700 dark:text-red-400">
               {itemsError}
             </div>
           )}

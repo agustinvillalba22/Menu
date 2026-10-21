@@ -102,7 +102,7 @@ export default function ItemRow({
   }
 
   return (
-    <li className="pt-3 pr-3 pb-3 pl-12 rounded-md border border-gray-200">
+    <li className="pt-3 pr-3 pb-3 pl-12 rounded-md border border-gray-200 dark:border-gray-700">
       {editing ? (
         <div className="space-y-2">
           <div>
@@ -114,7 +114,7 @@ export default function ItemRow({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-gray-900 focus:outline-none"
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
             />
           </div>
           <div>
@@ -127,7 +127,7 @@ export default function ItemRow({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Descripción"
-              className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-gray-900 focus:outline-none"
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
             />
           </div>
           <div>
@@ -141,7 +141,7 @@ export default function ItemRow({
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               placeholder="Precio"
-              className="w-32 rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-gray-900 focus:outline-none"
+              className="w-32 rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
             />
           </div>
           <RowActions
@@ -157,13 +157,13 @@ export default function ItemRow({
       ) : (
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-medium text-gray-900">{current.name}</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{current.name}</p>
             {current.description && (
-              <p className="text-xs text-gray-500">{current.description}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{current.description}</p>
             )}
           </div>
           <div className="flex shrink-0 items-center gap-3">
-            <span className="text-sm font-medium text-gray-900">
+            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
               ${parseFloat(current.price).toFixed(2)}
             </span>
             <RowActions
@@ -192,7 +192,7 @@ export default function ItemRow({
           type="button"
           onClick={() => setTagsExpanded((v) => !v)}
           aria-expanded={tagsExpanded}
-          className="text-xs text-gray-500 hover:text-gray-900"
+          className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
         >
           Tags ({current.tags.length}) {tagsExpanded ? '▾' : '▸'}
         </button>
@@ -200,7 +200,7 @@ export default function ItemRow({
           type="button"
           onClick={() => setModifiersExpanded((v) => !v)}
           aria-expanded={modifiersExpanded}
-          className="text-xs text-gray-500 hover:text-gray-900"
+          className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
         >
           Modificadores ({modifiers?.length ?? 0}) {modifiersExpanded ? '▾' : '▸'}
         </button>
@@ -226,13 +226,13 @@ export default function ItemRow({
         />
       )}
       {modifiersExpanded && modifiers === null && (
-        <p className="mt-3 border-t border-gray-100 pt-2 text-xs text-gray-500">
+        <p className="mt-3 border-t border-gray-100 dark:border-gray-800 pt-2 text-xs text-gray-500 dark:text-gray-400">
           Cargando modificadores…
         </p>
       )}
 
       {error && (
-        <div role="alert" className="mt-1 text-xs text-red-700">
+        <div role="alert" className="mt-1 text-xs text-red-700 dark:text-red-400">
           {error}
         </div>
       )}

@@ -5,6 +5,7 @@ import {
   updateAdminUser,
   listAdminRestaurants,
   updateAdminRestaurant,
+  listAdminRestaurantMenus,
 } from '../../lib/admin'
 import { jsonResponse, readCall } from '../helpers'
 
@@ -73,5 +74,20 @@ describe('lib/admin', () => {
     expect(call.url).toBe('http://api.test/admin/restaurants/r1')
     expect(call.method).toBe('PATCH')
     expect(JSON.parse(call.body as string)).toEqual({ is_active: false })
+  })
+
+  // M26 RF-06
+  it('listAdminRestaurantMenus GETs /admin/restaurants/{id}/menus', async () => {
+    const menus = [
+      { id: 'm1', name: 'Principal', is_default: true, start_time: null, end_time: null, weekday_mask: null, categories_count: 2 },
+    ]
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(menus))
+
+    const result = await listAdminRestaurantMenus('r1')
+    expect(result).toEqual(menus)
+
+    const call = readCall(vi.mocked(fetch).mock.calls[0] as [unknown, unknown])
+    expect(call.url).toBe('http://api.test/admin/restaurants/r1/menus')
+    expect(call.method).toBe('GET')
   })
 })

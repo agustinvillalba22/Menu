@@ -109,13 +109,13 @@ export default function CategoryRow({
   }
 
   return (
-    <li className="rounded-xl bg-white shadow-sm">
+    <li className="rounded-xl bg-white dark:bg-gray-900 shadow-sm">
       <RowHeader
         inputId={`cat-name-${category.id}`}
         label="Nombre de la categoría"
         name={name}
         badge={
-          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+          <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400">
             {category.type === 'food' ? 'Comida' : 'Bebida'}
           </span>
         }
@@ -126,7 +126,7 @@ export default function CategoryRow({
         onDraftChange={setDraftName}
         editExtras={
           editing ? (
-            <label className="ml-1 flex items-center gap-1 text-xs text-gray-600">
+            <label className="ml-1 flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300">
               <span className="sr-only">Ícono de la categoría</span>
               <select
                 aria-label="Ícono de la categoría"
@@ -138,7 +138,7 @@ export default function CategoryRow({
                       : (e.target.value as CategoryIcon),
                   )
                 }
-                className="rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-gray-900 focus:outline-none"
+                className="rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
               >
                 <option value={NO_ICON_VALUE}>Sin ícono</option>
                 {ICON_OPTIONS.map((opt) => (
@@ -161,21 +161,21 @@ export default function CategoryRow({
         onDelete={handleDelete}
         busy={busy}
         padding="pt-3 pr-4 pb-3 pl-4"
-        nameClassName="text-sm font-semibold text-gray-900"
+        nameClassName="text-sm font-semibold text-gray-900 dark:text-gray-100"
         deleteConfirmMessage="Se borrará también todo lo que contiene (subcategorías e ítems). ¿Confirmar?"
       />
 
       {error && (
-        <div role="alert" className="px-4 pb-3 text-xs text-red-700">
+        <div role="alert" className="px-4 pb-3 text-xs text-red-700 dark:text-red-400">
           {error}
         </div>
       )}
 
       {expanded && (
-        <div className="border-t border-gray-100 px-4 py-3">
-          {subsLoading && <p className="text-xs text-gray-500">Cargando subcategorías…</p>}
+        <div className="border-t border-gray-100 dark:border-gray-800 px-4 py-3">
+          {subsLoading && <p className="text-xs text-gray-500 dark:text-gray-400">Cargando subcategorías…</p>}
           {subsError && (
-            <div role="alert" className="mb-2 text-xs text-red-700">
+            <div role="alert" className="mb-2 text-xs text-red-700 dark:text-red-400">
               {subsError}
             </div>
           )}
@@ -208,13 +208,13 @@ export default function CategoryRow({
                 value={newSubName}
                 onChange={(e) => setNewSubName(e.target.value)}
                 placeholder="Nueva subcategoría"
-                className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-gray-900 focus:outline-none"
+                className="rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
               />
             </div>
             <button
               type="submit"
               disabled={creatingSub}
-              className="rounded-md bg-gray-900 px-3 py-1 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-60"
+              className="rounded-md bg-gray-900 dark:bg-gray-100 px-3 py-1 text-sm font-medium text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-300 disabled:opacity-60"
             >
               {creatingSub ? 'Agregando…' : 'Agregar subcategoría'}
             </button>

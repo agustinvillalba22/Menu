@@ -10,6 +10,14 @@ from app.models.promo import PromoScope
 from app.models.style import FontFamily
 
 
+class PublicTableRead(BaseModel):
+    id: uuid.UUID
+    number: int
+    capacity: int | None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class PublicTagRead(BaseModel):
     id: uuid.UUID
     name: str
@@ -109,6 +117,9 @@ class PublicRestaurantRead(BaseModel):
     # page-source scrapers; the deep link URL is minted server-side in the
     # POST /orders response and that's the only place the real wa.me URL lives.
     whatsapp_enabled: bool
+    # M36 — true only when the restaurant has a connected Mercado Pago account
+    # AND the server is configured; drives the checkout's payment selector.
+    accepts_mercadopago: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -151,4 +162,7 @@ class PublicMenuResponse(BaseModel):
     # server-side against is_active + the validity window in the
     # restaurant's tz; the client never re-derives it.
     promo: PublicPromoRead | None = None
+    # M17 — the restaurant's configured tables (empty if none set up yet),
+    # so the public checkout can offer a <select> instead of free text.
+    tables: list[PublicTableRead] = []
     categories: list[PublicCategoryRead]

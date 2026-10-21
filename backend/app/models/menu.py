@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import time
 
-from sqlalchemy import Boolean, Enum, ForeignKey, SmallInteger, String, Time
+from sqlalchemy import Boolean, Enum, ForeignKey, Index, SmallInteger, String, Time, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -86,6 +86,17 @@ class Menu(Base):
     # at the service layer (a menu active no days is a configuration bug).
     weekday_mask: Mapped[int | None] = mapped_column(
         SmallInteger, nullable=True
+    )
+
+    # M21 — menu names are unique per restaurant, case-insensitively.
+    # Mirrors migration 0015 (func.lower() indexes work on SQLite and Postgres).
+    __table_args__ = (
+        Index(
+            "ux_menus_restaurant_name_lower",
+            "restaurant_id",
+            func.lower(name),
+            unique=True,
+        ),
     )
 
     # relationships

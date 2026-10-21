@@ -347,18 +347,18 @@ export default function PromosPage(): React.JSX.Element {
   )
 
   if (restaurantLoading) {
-    return <p className="text-sm text-gray-600">Cargando…</p>
+    return <p className="text-sm text-gray-600 dark:text-gray-300">Cargando…</p>
   }
   if (restaurantError !== null || restaurantId === null) {
-    return <p className="text-sm text-red-700">{restaurantError ?? 'Sin restaurante'}</p>
+    return <p className="text-sm text-red-700 dark:text-red-400">{restaurantError ?? 'Sin restaurante'}</p>
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Promos</h1>
-          <p className="text-sm text-gray-600">
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Promos</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-300">
             Banner promocional visible en el menú público mientras esté activo
             y dentro de su vigencia.
           </p>
@@ -367,7 +367,7 @@ export default function PromosPage(): React.JSX.Element {
           <button
             type="button"
             onClick={startCreate}
-            className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+            className="rounded-md bg-gray-900 dark:bg-gray-100 px-4 py-2 text-sm font-medium text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-300"
           >
             Nueva promo
           </button>
@@ -379,7 +379,7 @@ export default function PromosPage(): React.JSX.Element {
         <div
           role="alert"
           aria-live="polite"
-          className="flex items-start justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          className="flex items-start justify-between gap-3 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950 px-4 py-3 text-sm text-amber-900 dark:text-amber-400"
         >
           <div className="flex items-start gap-2">
             <Megaphone className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
@@ -404,16 +404,16 @@ export default function PromosPage(): React.JSX.Element {
             type="button"
             aria-label="Descartar aviso"
             onClick={() => setNoticeDismissed(true)}
-            className="shrink-0 rounded p-1 hover:bg-amber-100"
+            className="shrink-0 rounded p-1 hover:bg-amber-100 dark:hover:bg-amber-950"
           >
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       )}
 
-      {loading && <p className="text-sm text-gray-500">Actualizando…</p>}
+      {loading && <p className="text-sm text-gray-500 dark:text-gray-400">Actualizando…</p>}
       {loadError !== null && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-red-700 dark:text-red-400">
           {loadError}
         </p>
       )}
@@ -422,47 +422,47 @@ export default function PromosPage(): React.JSX.Element {
       {editing !== null && (
         <form
           onSubmit={handleSubmit}
-          className="space-y-4 rounded-xl bg-white p-5 shadow-sm"
+          className="space-y-4 rounded-xl bg-white dark:bg-gray-900 p-5 shadow-sm"
         >
-          <h2 className="text-base font-semibold text-gray-900">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
             {editing === 'new' ? 'Nueva promo' : 'Editar promo'}
           </h2>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-sm">
-              <span className="mb-1 block font-medium text-gray-700">Título *</span>
+              <span className="mb-1 block font-medium text-gray-700 dark:text-gray-300">Título *</span>
               <input
                 required
                 maxLength={120}
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm"
               />
             </label>
 
             <label className="block text-sm">
-              <span className="mb-1 block font-medium text-gray-700">Subtítulo</span>
+              <span className="mb-1 block font-medium text-gray-700 dark:text-gray-300">Subtítulo</span>
               <input
                 maxLength={160}
                 value={form.subtitle}
                 onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm"
               />
             </label>
 
             <label className="block text-sm sm:col-span-2">
-              <span className="mb-1 block font-medium text-gray-700">Descripción</span>
+              <span className="mb-1 block font-medium text-gray-700 dark:text-gray-300">Descripción</span>
               <textarea
                 maxLength={1000}
                 rows={2}
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm"
               />
             </label>
 
             <label className="block text-sm">
-              <span className="mb-1 block font-medium text-gray-700">Descuento (%)</span>
+              <span className="mb-1 block font-medium text-gray-700 dark:text-gray-300">Descuento (%)</span>
               <input
                 type="number"
                 min={0}
@@ -470,18 +470,18 @@ export default function PromosPage(): React.JSX.Element {
                 value={form.discountPct}
                 onChange={(e) => setForm({ ...form, discountPct: e.target.value })}
                 placeholder="Ej: 20"
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm"
               />
             </label>
 
             <label className="block text-sm">
-              <span className="mb-1 block font-medium text-gray-700">Alcance del descuento</span>
+              <span className="mb-1 block font-medium text-gray-700 dark:text-gray-300">Alcance del descuento</span>
               <select
                 value={form.scope}
                 onChange={(e) =>
                   setForm({ ...form, scope: e.target.value as PromoScope })
                 }
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm"
               >
                 <option value="none">Ninguno (solo banner)</option>
                 <option value="item">Un producto</option>
@@ -492,11 +492,11 @@ export default function PromosPage(): React.JSX.Element {
 
             {form.scope === 'item' && (
               <label className="block text-sm">
-                <span className="mb-1 block font-medium text-gray-700">Producto *</span>
+                <span className="mb-1 block font-medium text-gray-700 dark:text-gray-300">Producto *</span>
                 <select
                   value={form.itemId}
                   onChange={(e) => setForm({ ...form, itemId: e.target.value })}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm"
                 >
                   <option value="">Elegí un producto</option>
                   {items.map((item) => (
@@ -510,11 +510,11 @@ export default function PromosPage(): React.JSX.Element {
 
             {form.scope === 'category' && (
               <label className="block text-sm">
-                <span className="mb-1 block font-medium text-gray-700">Categoría *</span>
+                <span className="mb-1 block font-medium text-gray-700 dark:text-gray-300">Categoría *</span>
                 <select
                   value={form.categoryId}
                   onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm"
                 >
                   <option value="">Elegí una categoría</option>
                   {categories.map((category) => (
@@ -527,27 +527,27 @@ export default function PromosPage(): React.JSX.Element {
             )}
 
             <label className="block text-sm">
-              <span className="mb-1 block font-medium text-gray-700">Vigencia desde</span>
+              <span className="mb-1 block font-medium text-gray-700 dark:text-gray-300">Vigencia desde</span>
               <input
                 type="datetime-local"
                 value={form.startsAt}
                 onChange={(e) => setForm({ ...form, startsAt: e.target.value })}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm"
               />
             </label>
 
             <label className="block text-sm">
-              <span className="mb-1 block font-medium text-gray-700">Vigencia hasta</span>
+              <span className="mb-1 block font-medium text-gray-700 dark:text-gray-300">Vigencia hasta</span>
               <input
                 type="datetime-local"
                 value={form.endsAt}
                 onChange={(e) => setForm({ ...form, endsAt: e.target.value })}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm"
               />
             </label>
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-gray-700">
+          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
             <input
               type="checkbox"
               checked={form.isActive}
@@ -560,16 +560,16 @@ export default function PromosPage(): React.JSX.Element {
           {/* Image — only for an existing promo (the R2 URL is per-promo id). */}
           {editing !== 'new' && editingPromo !== null && (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-700">Imagen del banner</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Imagen del banner</p>
               <div className="flex items-center gap-4">
                 {editingPromo.image_url ? (
                   <img
                     src={editingPromo.image_url}
                     alt={`Imagen de ${editingPromo.title}`}
-                    className="h-16 w-28 rounded-md border border-gray-200 object-cover"
+                    className="h-16 w-28 rounded-md border border-gray-200 dark:border-gray-700 object-cover"
                   />
                 ) : (
-                  <div className="flex h-16 w-28 items-center justify-center rounded-md bg-gray-100 text-xs text-gray-400">
+                  <div className="flex h-16 w-28 items-center justify-center rounded-md bg-gray-100 dark:bg-gray-800 text-xs text-gray-400 dark:text-gray-500">
                     Sin imagen
                   </div>
                 )}
@@ -587,20 +587,20 @@ export default function PromosPage(): React.JSX.Element {
                       type="button"
                       onClick={handleDeleteImage}
                       disabled={imageBusy}
-                      className="text-left text-xs font-medium text-red-600 hover:text-red-800"
+                      className="text-left text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-400"
                     >
                       Quitar imagen
                     </button>
                   )}
-                  {imageBusy && <span className="text-xs text-gray-500">Subiendo…</span>}
+                  {imageBusy && <span className="text-xs text-gray-500 dark:text-gray-400">Subiendo…</span>}
                   {imageError !== null && (
-                    <span role="alert" className="text-xs text-red-700">
+                    <span role="alert" className="text-xs text-red-700 dark:text-red-400">
                       {imageError}
                     </span>
                   )}
                 </div>
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Guardá los cambios de texto primero; la imagen se sube aparte y
                 se confirma sola.
               </p>
@@ -608,7 +608,7 @@ export default function PromosPage(): React.JSX.Element {
           )}
 
           {formError !== null && (
-            <p role="alert" className="text-sm text-red-700">
+            <p role="alert" className="text-sm text-red-700 dark:text-red-400">
               {formError}
             </p>
           )}
@@ -617,14 +617,14 @@ export default function PromosPage(): React.JSX.Element {
             <button
               type="submit"
               disabled={saving}
-              className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-60"
+              className="rounded-md bg-gray-900 dark:bg-gray-100 px-4 py-2 text-sm font-medium text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-300 disabled:opacity-60"
             >
               {saving ? 'Guardando…' : 'Guardar'}
             </button>
             <button
               type="button"
               onClick={cancelEdit}
-              className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+              className="rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               Cancelar
             </button>
@@ -635,7 +635,7 @@ export default function PromosPage(): React.JSX.Element {
       {/* — List — */}
       <div className="space-y-3">
         {promos.length === 0 && !loading && (
-          <p className="rounded-xl bg-white p-5 text-sm text-gray-600 shadow-sm">
+          <p className="rounded-xl bg-white dark:bg-gray-900 p-5 text-sm text-gray-600 dark:text-gray-300 shadow-sm">
             Todavía no hay promos. Creá una para mostrarla como banner en tu
             menú público.
           </p>
@@ -643,21 +643,21 @@ export default function PromosPage(): React.JSX.Element {
         {promos.map((promo) => (
           <div
             key={promo.id}
-            className="flex items-center justify-between gap-4 rounded-xl bg-white p-4 shadow-sm"
+            className="flex items-center justify-between gap-4 rounded-xl bg-white dark:bg-gray-900 p-4 shadow-sm"
           >
             <div className="flex min-w-0 items-center gap-3">
               {promo.image_url && (
                 <img
                   src={promo.image_url}
                   alt=""
-                  className="h-10 w-16 shrink-0 rounded-md border border-gray-200 object-cover"
+                  className="h-10 w-16 shrink-0 rounded-md border border-gray-200 dark:border-gray-700 object-cover"
                 />
               )}
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-gray-900">
+                <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
                   {promo.title}
                   {promo.discount_pct !== null && (
-                    <span className="ml-2 font-black text-amber-600">
+                    <span className="ml-2 font-black text-amber-600 dark:text-amber-400">
                       {promo.discount_pct}% OFF
                     </span>
                   )}
@@ -667,14 +667,14 @@ export default function PromosPage(): React.JSX.Element {
                     className={
                       'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ' +
                       (promo.is_active
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-500')
+                        ? 'bg-green-100 dark:bg-green-950 text-green-800 dark:text-green-400'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400')
                     }
                   >
                     {promo.is_active ? 'Activa' : 'Inactiva'}
                   </span>
                   {promo.scope !== 'none' && promo.discount_pct !== null && (
-                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                    <span className="rounded-full bg-amber-100 dark:bg-amber-950 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:text-amber-400">
                       {SCOPE_LABELS[promo.scope]}
                     </span>
                   )}
@@ -685,8 +685,8 @@ export default function PromosPage(): React.JSX.Element {
                       className={
                         'rounded-full px-2 py-0.5 text-[10px] font-bold ' +
                         (promo.days_remaining <= EXPIRY_NOTICE_DAYS
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-amber-100 text-amber-800')
+                          ? 'bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-400'
+                          : 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-400')
                       }
                     >
                       {promo.days_remaining === 0
@@ -702,7 +702,7 @@ export default function PromosPage(): React.JSX.Element {
               <button
                 type="button"
                 onClick={() => void handleToggleActive(promo)}
-                className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
+                className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 {promo.is_active ? 'Pausar' : 'Activar'}
               </button>
@@ -710,7 +710,7 @@ export default function PromosPage(): React.JSX.Element {
                 type="button"
                 aria-label={`Editar ${promo.title}`}
                 onClick={() => startEdit(promo)}
-                className="rounded-md border border-gray-300 p-1.5 text-gray-600 hover:bg-gray-100"
+                className="rounded-md border border-gray-300 dark:border-gray-600 p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 <Pencil className="h-4 w-4" aria-hidden="true" />
               </button>
@@ -718,7 +718,7 @@ export default function PromosPage(): React.JSX.Element {
                 type="button"
                 aria-label={`Eliminar ${promo.title}`}
                 onClick={() => void handleDelete(promo)}
-                className="rounded-md border border-gray-300 p-1.5 text-red-600 hover:bg-red-50"
+                className="rounded-md border border-gray-300 dark:border-gray-600 p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
               >
                 <Trash2 className="h-4 w-4" aria-hidden="true" />
               </button>

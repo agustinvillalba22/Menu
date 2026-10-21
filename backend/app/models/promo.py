@@ -52,6 +52,7 @@ class Promo(Base, TimestampMixin):
         UUID(as_uuid=True),
         ForeignKey("restaurants.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
     title: Mapped[str] = mapped_column(String, nullable=False)
     subtitle: Mapped[str | None] = mapped_column(String, nullable=True)

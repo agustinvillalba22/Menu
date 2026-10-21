@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { listAdminRestaurants, updateAdminRestaurant } from '../../lib/admin'
+import {
+  listAdminRestaurants,
+  listAdminRestaurantMenus,
+  updateAdminRestaurant,
+} from '../../lib/admin'
 import type { AdminRestaurant } from '../../lib/types'
 import Toggle from '../../components/ui/Toggle'
 import CsvImportForm from '../../components/dashboard/CsvImportForm'
@@ -118,7 +122,10 @@ export default function AdminRestaurantsPage(): React.JSX.Element {
                   {importOpenId === r.id && (
                     <tr>
                       <td colSpan={6} className="pb-4">
-                        <CsvImportForm restaurantId={r.id} />
+                        <CsvImportForm
+                          restaurantId={r.id}
+                          loadMenus={() => listAdminRestaurantMenus(r.id)}
+                        />
                       </td>
                     </tr>
                   )}

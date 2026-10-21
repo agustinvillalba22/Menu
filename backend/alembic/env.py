@@ -19,7 +19,13 @@ import app.models.restaurant  # noqa: F401
 import app.models.menu        # noqa: F401
 import app.models.item        # noqa: F401
 import app.models.item_modifier  # noqa: F401
+import app.models.table       # noqa: F401
+import app.models.staff_member  # noqa: F401
+import app.models.cash_shift  # noqa: F401
+import app.models.supplier    # noqa: F401
+import app.models.stock_item  # noqa: F401
 import app.models.order       # noqa: F401
+import app.models.payment_account  # noqa: F401
 import app.models.promo       # noqa: F401
 import app.models.style       # noqa: F401
 
@@ -31,7 +37,9 @@ target_metadata = Base.metadata
 def _get_sync_url() -> str:
     """Convert asyncpg URL to psycopg2 URL for Alembic's sync engine."""
     url = os.environ["DATABASE_URL"]
-    return url.replace("postgresql+asyncpg://", "postgresql://").replace(
+    # Explicit driver: SQLAlchemy 2.1 made bare "postgresql://" default to
+    # psycopg (v3), which is not installed; requirements ship psycopg2-binary.
+    return url.replace("postgresql+asyncpg://", "postgresql+psycopg2://").replace(
         "postgresql+asyncpg+", "postgresql+"
     )
 

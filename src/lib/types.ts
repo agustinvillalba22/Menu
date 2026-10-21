@@ -281,6 +281,8 @@ export interface PublicRestaurant {
   // without a second round trip. Boolean only: the raw phone never leaves the
   // server (the deep link URL is minted server-side in POST /orders).
   whatsapp_enabled: boolean
+  // M36 — true only with a connected Mercado Pago account + server configured.
+  accepts_mercadopago?: boolean
 }
 
 export interface PublicMenuResponse {
@@ -289,7 +291,11 @@ export interface PublicMenuResponse {
   // P4 — the currently-active promo banner, resolved server-side against
   // is_active + the validity window in the restaurant's tz. Null = none.
   promo: PublicPromo | null
+  // M17 — the restaurant's configured tables (empty if none set up yet).
+  tables: Table[]
   categories: PublicCategory[]
+  // M36 — also accepted at the top level of the response (see PublicMenuPage).
+  accepts_mercadopago?: boolean
 }
 
 // --- Promos (P4/P5, Fase 2c/2d) ---------------------------------------------
@@ -427,10 +433,155 @@ export interface LogoUploadResponse {
   expires_in: number
 }
 
+// --- Mesas (M17) -------------------------------------------------------------
+
+export interface Table {
+  id: string
+  number: number
+  capacity: number | null
+  bill_requested_at?: string | null
+}
+
+// M33: estado operativo de una mesa (GET /tables/occupancy).
+export type TableStatus = 'free' | 'occupied' | 'bill'
+
+export interface TableOccupancy {
+  id: string
+  number: number
+  capacity: number | null
+  status: TableStatus
+  total: string
+  first_order_at: string | null
+  bill_requested_at: string | null
+  orders: OrderRead[]
+}
+
+export interface TableCreatePayload {
+  number: number
+  capacity?: number | null
+}
+
+export interface TableUpdatePayload {
+  number?: number
+  capacity?: number | null
+}
+
+// --- Staff (M18) -------------------------------------------------------------
+// Identification-only roster — no relation to auth, no permissions gated by
+// `position`. See .agents/specs/M18_staff_roster.md.
+
+export type StaffPosition = 'mozo' | 'bartender' | 'jefe_cocina' | 'cajero' | 'gerente'
+
+export interface StaffMember {
+  id: string
+  name: string
+  position: StaffPosition
+  pin: string
+  active: boolean
+}
+
+export interface StaffMemberCreatePayload {
+  name: string
+  position: StaffPosition
+  pin: string
+}
+
+export interface StaffMemberUpdatePayload {
+  name?: string
+  position?: StaffPosition
+  pin?: string
+  active?: boolean
+}
+
+// --- Stock + Proveedores (M19) ----------------------------------------------
+// Manually-managed inventory — no link to menu Items/Orders, no
+// auto-decrement. See .agents/specs/M19_stock_suppliers.md.
+
+export interface Supplier {
+  id: string
+  name: string
+  category: string | null
+  contact_person: string | null
+  phone: string | null
+  email: string | null
+  address: string | null
+  delivery_days: string | null
+  payment_terms: string | null
+  notes: string | null
+  active: boolean
+}
+
+export interface SupplierCreatePayload {
+  name: string
+  category?: string | null
+  contact_person?: string | null
+  phone?: string | null
+  email?: string | null
+  address?: string | null
+  delivery_days?: string | null
+  payment_terms?: string | null
+  notes?: string | null
+}
+
+export type SupplierUpdatePayload = Partial<SupplierCreatePayload> & { active?: boolean }
+
+export type StockCategory =
+  | 'carnes_pescados'
+  | 'verduras_frescos'
+  | 'almacen_secos'
+  | 'lacteos'
+  | 'bebidas_licores'
+
+export type StockUnit = 'kg' | 'g' | 'l' | 'unidades' | 'botellas'
+
+export interface StockItem {
+  id: string
+  name: string
+  category: StockCategory
+  unit: StockUnit
+  quantity: string // Decimal as string, same convention as price
+  min_threshold: string
+  cost_per_unit: string | null
+  supplier_id: string | null
+  last_restocked: string | null // YYYY-MM-DD
+}
+
+export interface StockItemCreatePayload {
+  name: string
+  category: StockCategory
+  unit: StockUnit
+  quantity?: string
+  min_threshold?: string
+  cost_per_unit?: string | null
+  supplier_id?: string | null
+  last_restocked?: string | null
+}
+
+export type StockItemUpdatePayload = Partial<StockItemCreatePayload>
+
 // --- Pedidos (M11) ---------------------------------------------------------
 
 export type OrderType = 'mesa' | 'llevar' | 'envio'
 export type OrderStatus = 'pending' | 'accepted' | 'ready' | 'completed' | 'cancelled'
+
+// --- Pagos con Mercado Pago (M36) -------------------------------------------
+
+export type PaymentMethod = 'cash' | 'mercadopago'
+export type PaymentStatus = 'none' | 'pending' | 'approved' | 'rejected' | 'cancelled'
+
+/** Dashboard view of the restaurant's Mercado Pago account — never carries tokens. */
+export interface MercadoPagoStatus {
+  configured: boolean
+  connected: boolean
+  status: 'connected' | 'disconnected' | null
+  mp_user_id: string | null
+}
+
+/** Public polling response for the post-payment return screen. */
+export interface PublicPaymentStatus {
+  payment_status: PaymentStatus
+  status: OrderStatus
+}
 
 export interface OrderItemCreate {
   item_id: string
@@ -443,7 +594,13 @@ export interface OrderCreatePayload {
   customer_name: string
   order_type: OrderType
   table_or_address?: string | null
+  // M17 — when order_type is 'mesa' and the restaurant has real tables
+  // configured, the client sends the picked table's id instead of free text.
+  table_id?: string | null
   notes?: string | null
+  // M36 — omitted for cash (server default); 'mercadopago' only when the menu
+  // reports `accepts_mercadopago`.
+  payment_method?: PaymentMethod
   items: OrderItemCreate[]
 }
 
@@ -475,6 +632,7 @@ export interface OrderRead {
   customer_name: string
   order_type: OrderType
   table_or_address: string | null
+  table_id: string | null
   notes: string | null
   total: string
   created_at: string
@@ -486,6 +644,36 @@ export interface OrderRead {
   // comes from the dashboard side (list/patch), where the URL is irrelevant.
   // The checkout's "Confirmar por WhatsApp" button uses this verbatim.
   whatsapp_url: string | null
+  // M28: who handled the order (snapshot name survives staff deletion) and
+  // the cash shift it was completed in.
+  handled_by_id: string | null
+  handled_by_name: string | null
+  cash_shift_id: string | null
+  // M36: how the order is paid. `payment_url` is the Checkout Pro `init_point`,
+  // only set on the POST /menu/{qr}/orders response for mercadopago orders.
+  payment_method: PaymentMethod
+  payment_status: PaymentStatus
+  payment_url: string | null
+  // M37: per-order guest credential, only set on the public POST response.
+  public_token?: string | null
+}
+
+// M37: "Tu consumo" — anonymous, token-based view of the guest's own orders.
+export interface PublicOrderStatus {
+  token: string
+  status: OrderStatus
+  created_at: string
+  payment_method: PaymentMethod
+  payment_status: PaymentStatus
+  total: string
+  table_number: number | null
+  bill_requested: boolean
+  items: { name: string; quantity: number; subtotal: string; modifiers: string[] }[]
+}
+
+export interface PublicBillRequestRead {
+  bill_requested: true
+  bill_requested_at: string
 }
 
 // --- Panel de administración (M13.2) ---------------------------------------
@@ -507,4 +695,61 @@ export interface AdminRestaurant {
   is_active: boolean
   orders_enabled: boolean
   owner_email: string | null
+}
+
+// --- Turnos de caja (M20) ---------------------------------------------------
+// Amounts are decimal strings, never floats. See .agents/specs/M20_cash_shifts.md.
+
+export interface CashShift {
+  id: string
+  opened_by_name: string
+  opened_at: string
+  opening_amount: string
+  closed_by_name: string | null
+  closed_at: string | null
+  counted_amount: string | null
+  expected_amount: string | null
+  difference: string | null
+  notes: string | null
+  orders_count: number
+}
+
+export interface CashShiftOpenPayload {
+  staff_member_id: string
+  opening_amount: string
+  notes?: string | null
+}
+
+export interface CashShiftClosePayload {
+  staff_member_id: string
+  counted_amount: string
+  notes?: string | null
+}
+
+// --- Multiple menus (M21) --------------------------------------------------
+
+export interface Menu {
+  id: string
+  name: string
+  is_default: boolean
+  start_time: string | null // "HH:MM:SS"
+  end_time: string | null
+  weekday_mask: number | null // bit i = day i (0=Mon..6=Sun); null = every day
+  categories_count: number
+}
+
+export interface MenuCreate {
+  name: string
+  is_default?: boolean
+  start_time?: string | null
+  end_time?: string | null
+  weekday_mask?: number | null
+}
+
+export interface MenuUpdate {
+  name?: string
+  is_default?: boolean
+  start_time?: string | null
+  end_time?: string | null
+  weekday_mask?: number | null
 }

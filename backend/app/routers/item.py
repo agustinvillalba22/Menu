@@ -80,6 +80,7 @@ async def import_csv(
     restaurant_id: uuid.UUID,
     file: UploadFile = File(...),
     create_missing: bool = Form(False),
+    menu_id: uuid.UUID | None = Form(None),
     # M13.1 (RF-07): CSV import is restricted to superadmins only — the
     # owner/editor role in `restaurant_id` no longer grants access, and a
     # superadmin can import into ANY restaurant regardless of role there.
@@ -89,7 +90,9 @@ async def import_csv(
     content = await file.read(MAX_FILE_BYTES + 1)
     if len(content) > MAX_FILE_BYTES:
         raise HTTPException(status_code=413, detail="file_too_large")
-    return await import_items_csv(restaurant_id, content, session, create_missing)
+    return await import_items_csv(
+        restaurant_id, content, session, create_missing, menu_id
+    )
 
 
 @router.get(_PREFIX, response_model=list[ItemRead], status_code=200)

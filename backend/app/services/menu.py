@@ -2,7 +2,8 @@ import uuid
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -12,8 +13,12 @@ from app.models.restaurant import Restaurant
 from app.schemas.menu import (
     CategoryCreate,
     CategoryUpdate,
+    MenuCreate,
+    MenuRead,
+    MenuUpdate,
     SubcategoryCreate,
     SubcategoryUpdate,
+    validate_schedule,
 )
 from app.services.datetime import now_in
 
@@ -118,19 +123,39 @@ def resolve_active_menu(
     return _default_or_first(menus)
 
 
+async def _resolve_menu(
+    restaurant_id: uuid.UUID, menu_id: uuid.UUID | None, session: AsyncSession
+) -> Menu:
+    """The explicit menu of the restaurant, or the default one if ``None``.
+
+    An explicit ``menu_id`` that doesn't belong to ``restaurant_id`` is a
+    404 ``menu_not_found`` (existence is never leaked across restaurants).
+    """
+    if menu_id is None:
+        return await _get_default_menu(restaurant_id, session)
+    return await get_menu_row(restaurant_id, menu_id, session)
+
+
 async def list_categories_with_subcategories(
-    restaurant_id: uuid.UUID, session: AsyncSession
+    restaurant_id: uuid.UUID,
+    session: AsyncSession,
+    menu_id: uuid.UUID | None = None,
 ) -> list[Category]:
-    """Return the default Menu's categories with their subcategories eagerly
-    loaded. Used by the CSV importer to resolve category/subcategory by name
-    in-memory without a query per row."""
-    menu = await _get_default_menu(restaurant_id, session)
+    """Return a Menu's categories with their subcategories eagerly loaded.
+
+    ``menu_id`` defaults to the restaurant's default Menu (used by the CSV
+    importer to resolve category/subcategory by name in-memory)."""
+    menu = await _resolve_menu(restaurant_id, menu_id, session)
     result = await session.execute(
         select(Category)
         .options(selectinload(Category.subcategories))
         .where(Category.menu_id == menu.id)
+        .order_by(Category.name.asc())
     )
-    return list(result.scalars().all())
+    categories = list(result.scalars().all())
+    for category in categories:
+        category.subcategories.sort(key=lambda s: s.name)
+    return categories
 
 
 # ---------------------------------------------------------------------------
@@ -139,10 +164,13 @@ async def list_categories_with_subcategories(
 
 
 async def create_category(
-    restaurant_id: uuid.UUID, data: CategoryCreate, session: AsyncSession
+    restaurant_id: uuid.UUID,
+    data: CategoryCreate,
+    session: AsyncSession,
+    menu_id: uuid.UUID | None = None,
 ) -> Category:
-    """Create a Category on the restaurant's default Menu."""
-    menu = await _get_default_menu(restaurant_id, session)
+    """Create a Category on ``menu_id`` (default: the restaurant's default Menu)."""
+    menu = await _resolve_menu(restaurant_id, menu_id, session)
     category = Category(
         name=data.name,
         type=data.type,
@@ -156,10 +184,12 @@ async def create_category(
 
 
 async def list_categories(
-    restaurant_id: uuid.UUID, session: AsyncSession
+    restaurant_id: uuid.UUID,
+    session: AsyncSession,
+    menu_id: uuid.UUID | None = None,
 ) -> list[Category]:
-    """Return the default Menu's categories ordered alphabetically by name."""
-    menu = await _get_default_menu(restaurant_id, session)
+    """Return a Menu's categories (default Menu if ``menu_id`` is None) by name."""
+    menu = await _resolve_menu(restaurant_id, menu_id, session)
     result = await session.execute(
         select(Category)
         .where(Category.menu_id == menu.id)
@@ -169,16 +199,28 @@ async def list_categories(
 
 
 async def get_category(
-    restaurant_id: uuid.UUID, category_id: uuid.UUID, session: AsyncSession
+    restaurant_id: uuid.UUID,
+    category_id: uuid.UUID,
+    session: AsyncSession,
+    menu_id: uuid.UUID | None = None,
 ) -> Category:
-    """Fetch a Category, ensuring it belongs to the restaurant's default Menu."""
-    menu = await _get_default_menu(restaurant_id, session)
-    result = await session.execute(
-        select(Category).where(
-            Category.id == category_id, Category.menu_id == menu.id
-        )
+    """Fetch a Category, ensuring it belongs to the restaurant (RF-07).
+
+    Membership is checked via ``Category -> Menu.restaurant_id``, so a
+    category of ANY of the restaurant's menus is reachable. When ``menu_id``
+    is given (v2 routes) the menu must belong to the restaurant
+    (``menu_not_found``) and the category to that menu (``category_not_found``).
+    """
+    if menu_id is not None:
+        await get_menu_row(restaurant_id, menu_id, session)
+    stmt = (
+        select(Category)
+        .join(Menu, Category.menu_id == Menu.id)
+        .where(Category.id == category_id, Menu.restaurant_id == restaurant_id)
     )
-    category = result.scalar_one_or_none()
+    if menu_id is not None:
+        stmt = stmt.where(Category.menu_id == menu_id)
+    category = (await session.execute(stmt)).scalar_one_or_none()
     if category is None:
         raise HTTPException(status_code=404, detail="category_not_found")
     return category
@@ -189,9 +231,10 @@ async def update_category(
     category_id: uuid.UUID,
     data: CategoryUpdate,
     session: AsyncSession,
+    menu_id: uuid.UUID | None = None,
 ) -> Category:
     """Apply a partial update to a Category owned by the restaurant."""
-    category = await get_category(restaurant_id, category_id, session)
+    category = await get_category(restaurant_id, category_id, session, menu_id)
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(category, field, value)
     await session.commit()
@@ -200,11 +243,206 @@ async def update_category(
 
 
 async def delete_category(
-    restaurant_id: uuid.UUID, category_id: uuid.UUID, session: AsyncSession
+    restaurant_id: uuid.UUID,
+    category_id: uuid.UUID,
+    session: AsyncSession,
+    menu_id: uuid.UUID | None = None,
 ) -> None:
     """Delete a Category (cascade removes subcategories and items)."""
-    category = await get_category(restaurant_id, category_id, session)
+    category = await get_category(restaurant_id, category_id, session, menu_id)
     await session.delete(category)
+    await session.commit()
+
+
+# ---------------------------------------------------------------------------
+# Menus (M21 — CRUD)
+# ---------------------------------------------------------------------------
+
+
+def _categories_count_expr():
+    """Correlated scalar subquery: categories of the outer ``Menu`` row."""
+    return (
+        select(func.count(Category.id))
+        .where(Category.menu_id == Menu.id)
+        .correlate(Menu)
+        .scalar_subquery()
+    )
+
+
+def _to_read(menu: Menu, categories_count: int) -> MenuRead:
+    return MenuRead(
+        id=menu.id,
+        name=menu.name,
+        is_default=menu.is_default,
+        start_time=menu.start_time,
+        end_time=menu.end_time,
+        weekday_mask=menu.weekday_mask,
+        categories_count=categories_count,
+    )
+
+
+async def get_menu_row(
+    restaurant_id: uuid.UUID, menu_id: uuid.UUID, session: AsyncSession
+) -> Menu:
+    """Fetch a Menu scoped to the restaurant or 404 ``menu_not_found``."""
+    result = await session.execute(
+        select(Menu).where(Menu.id == menu_id, Menu.restaurant_id == restaurant_id)
+    )
+    menu = result.scalar_one_or_none()
+    if menu is None:
+        raise HTTPException(status_code=404, detail="menu_not_found")
+    return menu
+
+
+async def _read_one(
+    restaurant_id: uuid.UUID, menu_id: uuid.UUID, session: AsyncSession
+) -> MenuRead:
+    result = await session.execute(
+        select(Menu, _categories_count_expr()).where(
+            Menu.id == menu_id, Menu.restaurant_id == restaurant_id
+        )
+    )
+    row = result.one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail="menu_not_found")
+    return _to_read(row[0], row[1])
+
+
+def _check_schedule(start, end) -> None:
+    try:
+        validate_schedule(start, end)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+async def _assert_name_free(
+    restaurant_id: uuid.UUID,
+    name: str,
+    session: AsyncSession,
+    exclude_id: uuid.UUID | None = None,
+) -> None:
+    stmt = select(Menu.id).where(
+        Menu.restaurant_id == restaurant_id,
+        func.lower(Menu.name) == name.lower(),
+    )
+    if exclude_id is not None:
+        stmt = stmt.where(Menu.id != exclude_id)
+    if (await session.execute(stmt)).first() is not None:
+        raise HTTPException(status_code=409, detail="menu_name_taken")
+
+
+async def _commit_menu(session: AsyncSession) -> None:
+    """Commit; a lost race on the unique name index maps to 409."""
+    try:
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        raise HTTPException(status_code=409, detail="menu_name_taken") from exc
+
+
+async def _unset_other_defaults(
+    restaurant_id: uuid.UUID, keep_id: uuid.UUID, session: AsyncSession
+) -> None:
+    await session.execute(
+        update(Menu)
+        .where(Menu.restaurant_id == restaurant_id, Menu.id != keep_id)
+        .values(is_default=False)
+    )
+
+
+async def list_menus(restaurant_id: uuid.UUID, session: AsyncSession) -> list[MenuRead]:
+    """All menus of the restaurant ordered by name, with ``categories_count``
+    computed by a single query (correlated subquery, no N+1)."""
+    result = await session.execute(
+        select(Menu, _categories_count_expr())
+        .where(Menu.restaurant_id == restaurant_id)
+        .order_by(Menu.name.asc(), Menu.id.asc())
+    )
+    return [_to_read(menu, count) for menu, count in result.all()]
+
+
+async def get_menu(
+    restaurant_id: uuid.UUID, menu_id: uuid.UUID, session: AsyncSession
+) -> MenuRead:
+    return await _read_one(restaurant_id, menu_id, session)
+
+
+async def create_menu(
+    restaurant_id: uuid.UUID, data: MenuCreate, session: AsyncSession
+) -> MenuRead:
+    """Create a Menu; ``is_default=True`` demotes the previous default in the
+    same transaction. Without it the existing default is never touched."""
+    _check_schedule(data.start_time, data.end_time)
+    await _assert_name_free(restaurant_id, data.name, session)
+    menu = Menu(
+        id=uuid.uuid4(),
+        name=data.name,
+        restaurant_id=restaurant_id,
+        is_default=data.is_default,
+        start_time=data.start_time,
+        end_time=data.end_time,
+        weekday_mask=data.weekday_mask,
+    )
+    session.add(menu)
+    if data.is_default:
+        await session.flush()
+        await _unset_other_defaults(restaurant_id, menu.id, session)
+    await _commit_menu(session)
+    return await _read_one(restaurant_id, menu.id, session)
+
+
+async def update_menu(
+    restaurant_id: uuid.UUID,
+    menu_id: uuid.UUID,
+    data: MenuUpdate,
+    session: AsyncSession,
+) -> MenuRead:
+    """Partial update; ``model_fields_set`` tells "not sent" from explicit null."""
+    menu = await get_menu_row(restaurant_id, menu_id, session)
+    sent = data.model_fields_set
+
+    if "is_default" in sent and data.is_default is False and menu.is_default:
+        raise HTTPException(status_code=409, detail="cannot_unset_default")
+    if "name" in sent and data.name is not None:
+        await _assert_name_free(restaurant_id, data.name, session, exclude_id=menu.id)
+        menu.name = data.name
+
+    start = data.start_time if "start_time" in sent else menu.start_time
+    end = data.end_time if "end_time" in sent else menu.end_time
+    _check_schedule(start, end)
+    menu.start_time, menu.end_time = start, end
+    if "weekday_mask" in sent:
+        menu.weekday_mask = data.weekday_mask
+
+    if data.is_default is True and not menu.is_default:
+        menu.is_default = True
+        await _unset_other_defaults(restaurant_id, menu.id, session)
+    await _commit_menu(session)
+    return await _read_one(restaurant_id, menu.id, session)
+
+
+async def delete_menu(
+    restaurant_id: uuid.UUID, menu_id: uuid.UUID, session: AsyncSession
+) -> None:
+    """Delete a Menu (cascades categories/subcategories/items).
+
+    The last menu cannot be deleted; deleting the default promotes the first
+    remaining menu by name — all in one transaction.
+    """
+    menu = await get_menu_row(restaurant_id, menu_id, session)
+    others = (
+        await session.execute(
+            select(Menu)
+            .where(Menu.restaurant_id == restaurant_id, Menu.id != menu.id)
+            .order_by(Menu.name.asc(), Menu.id.asc())
+            .with_for_update()
+        )
+    ).scalars().all()
+    if not others:
+        raise HTTPException(status_code=409, detail="cannot_delete_last_menu")
+    if menu.is_default:
+        others[0].is_default = True
+    await session.delete(menu)
     await session.commit()
 
 

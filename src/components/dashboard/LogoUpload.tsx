@@ -13,6 +13,9 @@ interface LogoUploadProps {
   logoUrl: string | null
   /** Called when the logo row changes — the page re-fetches `/info` to refresh `is_open_now` etc. */
   onLogoChange: (logoUrl: string | null) => void
+  /** M15 RF-03: the 3 logo endpoints are owner-only on the backend — when
+   * true, upload/replace/quitar are hidden and a note is shown instead. */
+  disabled?: boolean
 }
 
 // Mirror of the backend limits (Fase 0b, same as item images): only these
@@ -35,6 +38,7 @@ export default function LogoUpload({
   restaurantId,
   logoUrl,
   onLogoChange,
+  disabled = false,
 }: LogoUploadProps): React.JSX.Element {
   const [displayUrl, setDisplayUrl] = useState<string | null>(logoUrl)
   const [busyAction, setBusyAction] = useState<'upload' | 'delete' | null>(null)
@@ -117,23 +121,27 @@ export default function LogoUpload({
         <img
           src={displayUrl}
           alt="Logo del restaurant"
-          className="h-20 w-20 rounded-full border border-gray-200 object-cover"
+          className="h-20 w-20 rounded-full border border-gray-200 dark:border-gray-700 object-cover"
         />
       ) : (
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500">
           <ImageOff className="h-7 w-7" aria-hidden="true" />
         </div>
       )}
 
       <div className="flex flex-col gap-1.5 pt-2">
-        {busyAction === 'upload' ? (
-          <span className="text-xs text-gray-500">Subiendo logo…</span>
+        {disabled ? (
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            Solo el administrador del restaurante puede modificar esto.
+          </span>
+        ) : busyAction === 'upload' ? (
+          <span className="text-xs text-gray-500 dark:text-gray-400">Subiendo logo…</span>
         ) : busyAction === 'delete' ? (
-          <span className="text-xs text-gray-500">Quitando logo…</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Quitando logo…</span>
         ) : displayUrl ? (
           confirmingDelete ? (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-600">¿Quitar el logo?</span>
+              <span className="text-xs text-gray-600 dark:text-gray-300">¿Quitar el logo?</span>
               <button
                 type="button"
                 onClick={handleDelete}
@@ -144,7 +152,7 @@ export default function LogoUpload({
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(false)}
-                className="rounded-md border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100"
+                className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 Cancelar
               </button>
@@ -154,14 +162,14 @@ export default function LogoUpload({
               <button
                 type="button"
                 onClick={openPicker}
-                className="text-xs text-gray-500 hover:text-gray-900"
+                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
               >
                 Reemplazar
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(true)}
-                className="text-xs font-medium text-red-600 hover:text-red-800"
+                className="text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-400"
               >
                 Quitar
               </button>
@@ -171,14 +179,14 @@ export default function LogoUpload({
           <button
             type="button"
             onClick={openPicker}
-            className="rounded-md bg-gray-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800"
+            className="rounded-md bg-gray-900 dark:bg-gray-100 px-3 py-1.5 text-xs font-medium text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-300"
           >
             Subir logo
           </button>
         )}
 
         {error && (
-          <div role="alert" className="text-xs text-red-700">
+          <div role="alert" className="text-xs text-red-700 dark:text-red-400">
             {error}
           </div>
         )}

@@ -25,6 +25,7 @@ const order: OrderRead = {
   customer_name: 'Juan Pérez',
   order_type: 'mesa',
   table_or_address: 'Mesa 4',
+  table_id: null,
   notes: null,
   total: '23.00',
   created_at: '2026-07-07T10:00:00Z',
@@ -32,6 +33,12 @@ const order: OrderRead = {
   // P7: the dashboard list/patch side never receives a whatsapp_url (the
   // backend builds it only on POST public /orders) — null is the contract.
   whatsapp_url: null,
+  handled_by_id: null,
+  handled_by_name: null,
+  cash_shift_id: null,
+  payment_method: 'cash',
+  payment_status: 'none',
+  payment_url: null,
   items: [
     {
       id: 'oi1',

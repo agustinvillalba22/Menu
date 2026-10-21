@@ -1,8 +1,17 @@
 import enum
 import uuid
-from datetime import time
+from datetime import datetime, time
 
-from sqlalchemy import Boolean, Enum, ForeignKey, String, Time, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Enum,
+    ForeignKey,
+    String,
+    Time,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -66,6 +75,12 @@ class Restaurant(Base):
         nullable=False,
         default=True,
     )
+    # Created by migration 0001; declared here so models match the DB (M30).
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
 
     # --- Fase 0008 extensions (P3 / P6 / P7) — all nullable + backfilled ---
     # Strings default to "" (not NULL) so partial UPDATEs and existing rows keep
@@ -122,6 +137,40 @@ class Restaurant(Base):
         "Promo",
         back_populates="restaurant",
         cascade="all, delete-orphan",
+    )
+    # M17 — physical tables, ordered by number for the dashboard/public list.
+    tables: Mapped[list["app.models.table.Table"]] = relationship(  # type: ignore[name-defined]
+        "Table",
+        back_populates="restaurant",
+        cascade="all, delete-orphan",
+        order_by="app.models.table.Table.number",
+    )
+    # M18 — operational staff roster, ordered by name.
+    staff_members: Mapped[list["app.models.staff_member.StaffMember"]] = relationship(  # type: ignore[name-defined]
+        "StaffMember",
+        back_populates="restaurant",
+        cascade="all, delete-orphan",
+        order_by="app.models.staff_member.StaffMember.name",
+    )
+    # M19 — suppliers + manually-managed stock, each ordered by name.
+    suppliers: Mapped[list["app.models.supplier.Supplier"]] = relationship(  # type: ignore[name-defined]
+        "Supplier",
+        back_populates="restaurant",
+        cascade="all, delete-orphan",
+        order_by="app.models.supplier.Supplier.name",
+    )
+    stock_items: Mapped[list["app.models.stock_item.StockItem"]] = relationship(  # type: ignore[name-defined]
+        "StockItem",
+        back_populates="restaurant",
+        cascade="all, delete-orphan",
+        order_by="app.models.stock_item.StockItem.name",
+    )
+    # M36 — connected payment account (at most one). Tokens stay encrypted.
+    payment_account: Mapped["app.models.payment_account.PaymentAccount | None"] = relationship(  # type: ignore[name-defined]
+        "PaymentAccount",
+        back_populates="restaurant",
+        cascade="all, delete-orphan",
+        uselist=False,
     )
 
 

@@ -13,6 +13,12 @@ import app.models.restaurant  # noqa: F401
 import app.models.menu  # noqa: F401
 import app.models.item  # noqa: F401
 import app.models.item_modifier  # noqa: F401
+import app.models.table  # noqa: F401
+import app.models.staff_member  # noqa: F401
+import app.models.cash_shift  # noqa: F401
+import app.models.supplier  # noqa: F401
+import app.models.stock_item  # noqa: F401
 import app.models.order  # noqa: F401
+import app.models.payment_account  # noqa: F401
 import app.models.promo  # noqa: F401
 import app.models.style  # noqa: F401

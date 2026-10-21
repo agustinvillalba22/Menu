@@ -1,10 +1,17 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import fs from 'fs';
 import path from 'path';
 import {defineConfig} from 'vite';
 
+// M32: the sidebar shows the real app version from package.json.
+const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8')) as {version: string};
+
 export default defineConfig(() => {
   return {
+    define: {
+      __APP_VERSION__: JSON.stringify(pkg.version),
+    },
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

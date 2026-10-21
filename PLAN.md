@@ -2,6 +2,37 @@
 
 Plan consolidado para los 8 puntos solicitados, con análisis de factibilidad, riesgo, dependencias y orden de ejecución.
 
+---
+
+## Estado de avance (actualizado 2026-09-14, fin de sesión)
+
+### Completado
+- **Fase 0** (0a tz helper, 0b R2 genérico) — committed.
+- **Fase 1** (1a migración 0008, 1b paletas, 1c iconos, 1d P6+P7 info local + WhatsApp) — committed (6 commits sin push a la fecha).
+- **Fase 2 completa — SIN COMMITEAR (el usuario hace los commits/PR):**
+  - **2a**: migración `0009` (menus scheduling, tabla promos, orders.menu_id). Decisión de sesión: **`Menu.type` omitido** (sin consumidor real; agregarlo requiere migración futura si aparece).
+  - **2b**: flag `MENU_SCHEDULING_ENABLED` (default false) + `resolve_active_menu()` (in-memory sobre `restaurant.menus`, soporta ventanas overnight + weekday_mask + tz) en `services/menu.py`; `_get_default_menu` reescrito (is_default + fallback); `GET /menu/{qr}` y `POST /orders` (estampa `menu_id`) lo consumen.
+  - **2c**: P4 promos — CRUD backend (rol editor) + imagen R2 (`promos/{rid}/{pid}/`) + `PublicMenuResponse.promo` (resuelto con `active_promo_for`, newest-wins); frontend: `PublicPromoBanner` (abre modal del item vinculado), `PromosPage` en `/dashboard/promos`.
+  - **2d**: P5 — `days_remaining` server-side, badge "Vence en Nd", aviso in-app (≤3 días, descartable).
+  - **Fase 0010 (desvío del plan, pedido del usuario — el descuento NO era parte del P4 original):** migración `0010` — `promos.scope` (`none|item|category|catalog`, default none) + `promos.category_id` + `order_items.discount_pct` (snapshot). El descuento se aplica server-side en `create_order` sobre el precio efectivo (base+modificadores, clamp 0, Decimal quantize HALF_UP a centavos); `unit_price_snapshot` guarda precio de lista, `discount_pct` el % aplicado. Cliente espeja la regla en `src/lib/promoDiscount.ts` (card/modal/carrito/checkout). Form con selector de alcance + select de categoría condicional.
+- **Infra extra**: `app/models/__init__.py` como registry de mappers, importado desde `core/database.py` (fix de MissingGreenlet con modelos sin importer). `alembic/env.py` importa `app.models.promo`.
+
+### Verificación al cierre
+Backend 317/317 · Frontend 161/161 · `tsc` limpio · Docker: imagen backend reconstruida, migraciones hasta `0010 (head)` aplicadas, backfill `is_default=t` verificado.
+
+### Fase 3 — completada (2026-10-13)
+- **3a/3b/3c** (M21): CRUD de menús, endpoints de categorías con `menu_id` explícito (`/restaurants/{id}/menus/{menu_id}/...`), `MenuEditorPage` con tabs por menú y panel de configuración. Decisión: las rutas legacy `/categories` y `_get_default_menu` **se mantienen** como wrappers del menú por defecto (cero ruptura), en lugar de eliminarse. `get_category` ahora valida pertenencia al restaurant, no al menú default.
+- **Cleanup** (M22): eliminado el mock demo de Boulette (`App.tsx`, `data.ts`, `types.ts` de raíz, `CartDrawer`, `WhatsAppCheckoutModal`, etc.). `/` redirige a `/dashboard` (con sesión) o `/login`.
+- Migraciones nuevas: `0014` (turnos de caja), `0015` (nombre único de menú por restaurant).
+
+### Pendiente — retomar por acá
+- Ideas planteadas en sesión (no planificadas): mostrar badge `-X%` por línea en `OrdersPage` (el campo `discount_pct` ya viene en `OrderItemRead`); activar `MENU_SCHEDULING_ENABLED` por ambiente (el CRUD de menús ya existe, falta decidir cuándo); elegir menú destino en el import CSV (hoy solo importa al menú por defecto).
+- Bug menor conocido: `AppearancePage` y `RestaurantInfoPage` muestran el formulario con valores por defecto un instante antes de cargar (parpadeo); fix propuesto: iniciar `loading` en `true`.
+- Tier 3 sin empezar: pasarela de pagos, i18n, analytics.
+- Recordatorios de entorno: el backend corre horneado en la imagen (sin bind mounts) → `docker compose build backend && docker compose up -d backend` + `alembic upgrade head` tras cada cambio de código/migración; superadmins locales: `owner@test.com` / `password123`.
+
+---
+
 ## Decisiones de arquitectura
 
 - **P2 menús**: auto-switch server-side por horario del restaurant.

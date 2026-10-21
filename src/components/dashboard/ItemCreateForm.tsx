@@ -43,7 +43,7 @@ export default function ItemCreateForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Nombre"
-          className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-gray-900 focus:outline-none"
+          className="rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
         />
       </div>
       <div>
@@ -56,7 +56,7 @@ export default function ItemCreateForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Descripción"
-          className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-gray-900 focus:outline-none"
+          className="rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
         />
       </div>
       <div>
@@ -71,13 +71,13 @@ export default function ItemCreateForm({
           value={price}
           onChange={(e) => setPrice(e.target.value)}
           placeholder="Precio"
-          className="w-24 rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-gray-900 focus:outline-none"
+          className="w-24 rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
         />
       </div>
       <button
         type="submit"
         disabled={submitting}
-        className="rounded-md bg-gray-900 px-3 py-1 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-60"
+        className="rounded-md bg-gray-900 dark:bg-gray-100 px-3 py-1 text-sm font-medium text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-300 disabled:opacity-60"
       >
         {submitting ? 'Agregando…' : 'Agregar ítem'}
       </button>

@@ -29,6 +29,7 @@ const menu: PublicMenuResponse = {
   },
   style: { font_family: 'Playfair Display', primary_color: '#112233', secondary_color: '#445566' },
   promo: null,
+  tables: [],
   categories: [
     {
       id: 'c1',
