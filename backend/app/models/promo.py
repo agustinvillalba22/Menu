@@ -1,12 +1,18 @@
 import enum
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.item import Item
+    from app.models.menu import Category
+    from app.models.restaurant import Restaurant
 
 
 class PromoScope(str, enum.Enum):
@@ -92,16 +98,16 @@ class Promo(Base, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
 
-    restaurant: Mapped["app.models.restaurant.Restaurant"] = relationship(  # type: ignore[name-defined]
+    restaurant: Mapped["Restaurant"] = relationship(
         "Restaurant",
         back_populates="promos",
     )
     # One-directional on purpose: Item/Category have no `promos` backref —
     # the promo form only needs to read the linked rows, they never list
     # their promos.
-    item: Mapped["app.models.item.Item | None"] = relationship(  # type: ignore[name-defined]
+    item: Mapped["Item | None"] = relationship(
         "Item",
     )
-    category: Mapped["app.models.menu.Category | None"] = relationship(  # type: ignore[name-defined]
+    category: Mapped["Category | None"] = relationship(
         "Category",
     )

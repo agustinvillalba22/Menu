@@ -1,11 +1,16 @@
 import uuid
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, Index, Numeric, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
+
+if TYPE_CHECKING:
+    from app.models.item_modifier import ItemModifier
+    from app.models.menu import Subcategory
 
 
 class Item(Base):
@@ -29,7 +34,7 @@ class Item(Base):
         nullable=False,
     )
 
-    subcategory: Mapped["app.models.menu.Subcategory"] = relationship(  # type: ignore[name-defined]
+    subcategory: Mapped["Subcategory"] = relationship(
         "Subcategory",
         back_populates="items",
     )
@@ -38,7 +43,7 @@ class Item(Base):
         back_populates="item",
         cascade="all, delete-orphan",
     )
-    modifiers: Mapped[list["app.models.item_modifier.ItemModifier"]] = relationship(  # type: ignore[name-defined]
+    modifiers: Mapped[list["ItemModifier"]] = relationship(
         "ItemModifier",
         back_populates="item",
         cascade="all, delete-orphan",

@@ -1,6 +1,7 @@
 import enum
 import uuid
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Enum, ForeignKey, Integer, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID
@@ -8,6 +9,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
 from app.models.item_modifier import ModifierType
+
+if TYPE_CHECKING:
+    from app.models.menu import Menu
 
 
 class OrderStatus(str, enum.Enum):
@@ -125,7 +129,7 @@ class Order(Base, TimestampMixin):
     )
     # One-directional: Menu keeps no `orders` backref — orders are read via
     # their own restaurant-scoped queries, never "through" a menu.
-    menu: Mapped["app.models.menu.Menu | None"] = relationship(  # type: ignore[name-defined]
+    menu: Mapped["Menu | None"] = relationship(
         "Menu",
     )
 

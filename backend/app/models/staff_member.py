@@ -1,11 +1,15 @@
 import enum
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, Enum, ForeignKey, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
+
+if TYPE_CHECKING:
+    from app.models.restaurant import Restaurant
 
 
 class StaffPosition(str, enum.Enum):
@@ -47,7 +51,7 @@ class StaffMember(Base):
     pin: Mapped[str] = mapped_column(String(4), nullable=False)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
-    restaurant: Mapped["app.models.restaurant.Restaurant"] = relationship(  # type: ignore[name-defined]
+    restaurant: Mapped["Restaurant"] = relationship(
         "Restaurant",
         back_populates="staff_members",
     )

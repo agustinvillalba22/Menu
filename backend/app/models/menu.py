@@ -1,12 +1,17 @@
 import enum
 import uuid
 from datetime import time
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, Enum, ForeignKey, Index, SmallInteger, String, Time, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
+
+if TYPE_CHECKING:
+    from app.models.item import Item
+    from app.models.restaurant import Restaurant
 
 
 class CategoryType(str, enum.Enum):
@@ -99,7 +104,7 @@ class Menu(Base):
         ),
     )
 
-    restaurant: Mapped["app.models.restaurant.Restaurant"] = relationship(  # type: ignore[name-defined]
+    restaurant: Mapped["Restaurant"] = relationship(
         "Restaurant",
         back_populates="menus",
     )
@@ -161,7 +166,7 @@ class Subcategory(Base):
     )
 
     category: Mapped["Category"] = relationship("Category", back_populates="subcategories")
-    items: Mapped[list["app.models.item.Item"]] = relationship(  # type: ignore[name-defined]
+    items: Mapped[list["Item"]] = relationship(
         "Item",
         back_populates="subcategory",
         cascade="all, delete-orphan",

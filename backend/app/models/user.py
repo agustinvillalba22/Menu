@@ -1,10 +1,14 @@
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy import String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.restaurant import UserRestaurantRole
 
 
 class User(Base, TimestampMixin):
@@ -26,7 +30,7 @@ class User(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     is_superadmin: Mapped[bool] = mapped_column(default=False, nullable=False)
 
-    restaurant_roles: Mapped[list["UserRestaurantRole"]] = relationship(  # type: ignore[name-defined]
+    restaurant_roles: Mapped[list["UserRestaurantRole"]] = relationship(
         "UserRestaurantRole",
         back_populates="user",
         lazy="selectin",

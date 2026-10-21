@@ -1,6 +1,7 @@
 import enum
 import uuid
 from datetime import datetime, time
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
@@ -16,6 +17,17 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
+
+if TYPE_CHECKING:
+    from app.models.menu import Menu
+    from app.models.payment_account import PaymentAccount
+    from app.models.promo import Promo
+    from app.models.staff_member import StaffMember
+    from app.models.stock_item import StockItem
+    from app.models.style import MenuStyle
+    from app.models.supplier import Supplier
+    from app.models.table import Table
+    from app.models.user import User
 
 
 class RestaurantRole(str, enum.Enum):
@@ -108,7 +120,7 @@ class Restaurant(Base):
         default=RestaurantPlan.free,
     )
 
-    menus: Mapped[list["app.models.menu.Menu"]] = relationship(  # type: ignore[name-defined]
+    menus: Mapped[list["Menu"]] = relationship(
         "Menu",
         back_populates="restaurant",
         cascade="all, delete-orphan",
@@ -118,7 +130,7 @@ class Restaurant(Base):
         back_populates="restaurant",
         cascade="all, delete-orphan",
     )
-    style: Mapped["app.models.style.MenuStyle | None"] = relationship(  # type: ignore[name-defined]
+    style: Mapped["MenuStyle | None"] = relationship(
         "MenuStyle",
         back_populates="restaurant",
         cascade="all, delete-orphan",
@@ -132,40 +144,40 @@ class Restaurant(Base):
     )
     # Promotional banners. Cascade with the restaurant;
     # the public service picks the active one at read time.
-    promos: Mapped[list["app.models.promo.Promo"]] = relationship(  # type: ignore[name-defined]
+    promos: Mapped[list["Promo"]] = relationship(
         "Promo",
         back_populates="restaurant",
         cascade="all, delete-orphan",
     )
     # Physical tables, ordered by number for the dashboard/public list.
-    tables: Mapped[list["app.models.table.Table"]] = relationship(  # type: ignore[name-defined]
+    tables: Mapped[list["Table"]] = relationship(
         "Table",
         back_populates="restaurant",
         cascade="all, delete-orphan",
         order_by="app.models.table.Table.number",
     )
     # Operational staff roster, ordered by name.
-    staff_members: Mapped[list["app.models.staff_member.StaffMember"]] = relationship(  # type: ignore[name-defined]
+    staff_members: Mapped[list["StaffMember"]] = relationship(
         "StaffMember",
         back_populates="restaurant",
         cascade="all, delete-orphan",
         order_by="app.models.staff_member.StaffMember.name",
     )
     # Suppliers + manually-managed stock, each ordered by name.
-    suppliers: Mapped[list["app.models.supplier.Supplier"]] = relationship(  # type: ignore[name-defined]
+    suppliers: Mapped[list["Supplier"]] = relationship(
         "Supplier",
         back_populates="restaurant",
         cascade="all, delete-orphan",
         order_by="app.models.supplier.Supplier.name",
     )
-    stock_items: Mapped[list["app.models.stock_item.StockItem"]] = relationship(  # type: ignore[name-defined]
+    stock_items: Mapped[list["StockItem"]] = relationship(
         "StockItem",
         back_populates="restaurant",
         cascade="all, delete-orphan",
         order_by="app.models.stock_item.StockItem.name",
     )
     # Connected payment account (at most one). Tokens stay encrypted.
-    payment_account: Mapped["app.models.payment_account.PaymentAccount | None"] = relationship(  # type: ignore[name-defined]
+    payment_account: Mapped["PaymentAccount | None"] = relationship(
         "PaymentAccount",
         back_populates="restaurant",
         cascade="all, delete-orphan",
