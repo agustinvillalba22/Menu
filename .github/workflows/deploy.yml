@@ -1,0 +1,183 @@
+name: Deploy
+
+# Despliega a la VM de OCI solo cuando CI terminó en verde sobre un push a main,
+# o manualmente (workflow_dispatch). Con `tag` no construye: despliega ese tag
+# existente (rollback). Los PR nunca disparan build ni deploy.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag existente a desplegar (rollback). Vacío = construir y desplegar HEAD de main."
+        required: false
+        type: string
+      skip_migrations:
+        description: "Omitir alembic upgrade head (usar en rollbacks)"
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  API_URL: https://api.gurmeapp.com
+  APP_URL: https://app.gurmeapp.com
+
+jobs:
+  build:
+    name: Build imágenes (arm64)
+    # Solo CI verde sobre un push a main (nunca PR/fork), o dispatch desde main sin tag.
+    if: >-
+      (github.event_name == 'workflow_run'
+        && github.event.workflow_run.conclusion == 'success'
+        && github.event.workflow_run.event == 'push')
+      || (github.event_name == 'workflow_dispatch'
+        && github.ref == 'refs/heads/main'
+        && inputs.tag == '')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - name: Resolver SHA y tag
+        id: meta
+        env:
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          DISPATCH_SHA: ${{ github.sha }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          sha="${RUN_SHA:-$DISPATCH_SHA}"
+          if ! [[ "$sha" =~ ^[0-9a-f]{40}$ ]]; then echo "SHA inválido" >&2; exit 1; fi
+          {
+            echo "sha=$sha"
+            echo "tag=sha-${sha:0:7}"
+            echo "owner=${OWNER,,}"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.meta.outputs.sha }}
+
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build y push menu-backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          platforms: linux/arm64
+          push: true
+          tags: ghcr.io/${{ steps.meta.outputs.owner }}/menu-backend:${{ steps.meta.outputs.tag }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+
+      - name: Build y push menu-web
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.web
+          platforms: linux/arm64
+          push: true
+          build-args: |
+            VITE_API_URL=${{ env.API_URL }}
+          tags: ghcr.io/${{ steps.meta.outputs.owner }}/menu-web:${{ steps.meta.outputs.tag }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max
+
+  deploy:
+    name: Deploy a producción
+    needs: build
+    # Corre si build tuvo éxito o fue omitido (rollback con tag), y se cumple el mismo gate.
+    if: >-
+      !cancelled()
+      && (needs.build.result == 'success' || needs.build.result == 'skipped')
+      && (
+        (github.event_name == 'workflow_run'
+          && github.event.workflow_run.conclusion == 'success'
+          && github.event.workflow_run.event == 'push')
+        || (github.event_name == 'workflow_dispatch'
+          && github.ref == 'refs/heads/main')
+      )
+    runs-on: ubuntu-24.04
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - name: Resolver tag
+        id: tag
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          BUILD_TAG: ${{ needs.build.outputs.tag }}
+          SKIP_MIGRATIONS: ${{ inputs.skip_migrations }}
+        run: |
+          tag="${INPUT_TAG:-$BUILD_TAG}"
+          if ! [[ "$tag" =~ ^sha-[0-9a-f]{7,40}$ || "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag inválido o ausente" >&2
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          flags=""
+          if [ "$SKIP_MIGRATIONS" = "true" ]; then flags="--skip-migrations"; fi
+          echo "flags=$flags" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Configurar SSH
+        env:
+          SSH_KEY: ${{ secrets.OCI_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.OCI_SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Copiar compose y scripts
+        # No toca .env ni release.env (no están en la lista).
+        env:
+          OCI_HOST: ${{ secrets.OCI_HOST }}
+          OCI_USER: ${{ secrets.OCI_SSH_USER }}
+        run: |
+          scp -i ~/.ssh/deploy_key -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -p \
+            docker-compose.prod.yml deploy/*.sh "${OCI_USER}@${OCI_HOST}:/opt/menu/"
+
+      - name: Ejecutar deploy.sh
+        env:
+          OCI_HOST: ${{ secrets.OCI_HOST }}
+          OCI_USER: ${{ secrets.OCI_SSH_USER }}
+          TAG: ${{ steps.tag.outputs.tag }}
+          FLAGS: ${{ steps.tag.outputs.flags }}
+        run: |
+          # TAG ya fue validado contra regex; FLAGS es vacío o --skip-migrations.
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "${OCI_USER}@${OCI_HOST}" \
+            "chmod +x /opt/menu/*.sh && /opt/menu/deploy.sh '${TAG}' ${FLAGS}"
+
+      - name: Smoke test
+        run: |
+          body="$(curl -fsS --retry 5 --retry-delay 5 "$API_URL/health")"
+          [ "$body" = '{"status":"ok"}' ] || { echo "health inesperado" >&2; exit 1; }
+          code="$(curl -sS --retry 5 --retry-delay 5 -o /dev/null -w '%{http_code}' "$APP_URL/")"
+          [ "$code" = "200" ] || { echo "app devolvió $code" >&2; exit 1; }

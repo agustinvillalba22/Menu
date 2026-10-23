@@ -6,6 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+!deploy/.env.prod.example
+release.env
 .agents
 .claude
 
