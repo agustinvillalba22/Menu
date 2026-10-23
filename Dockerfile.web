@@ -1,0 +1,29 @@
+# Imagen del frontend: SPA estática de Vite servida por Caddy.
+# Build:  docker buildx build --platform linux/arm64 -f Dockerfile.web \
+#           --build-arg VITE_API_URL=https://api.gurmeapp.com .
+
+# ---- Etapa de build (corre en la arquitectura del builder, sin emulación) ----
+FROM --platform=$BUILDPLATFORM node:22-alpine AS build
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+
+# VITE_API_URL se resuelve en build time (no hay config en runtime).
+ARG VITE_API_URL
+RUN if [ -z "$VITE_API_URL" ]; then \
+      echo "ERROR: falta --build-arg VITE_API_URL (ej. https://api.gurmeapp.com)" >&2; \
+      exit 1; \
+    fi
+ENV VITE_API_URL=$VITE_API_URL
+
+RUN npm run build
+
+# ---- Imagen final: solo Caddy + estáticos ----
+FROM caddy:2-alpine
+
+COPY --from=build /app/dist /srv/app
+COPY deploy/Caddyfile /etc/caddy/Caddyfile

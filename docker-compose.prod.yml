@@ -1,0 +1,82 @@
+# Stack de producción (VM única). Independiente de docker-compose.yml (dev).
+# Uso (en /opt/menu):
+#   docker compose -f docker-compose.prod.yml --env-file .env --env-file release.env up -d
+# .env = secretos; release.env = IMAGE_TAG vigente (lo escribe deploy.sh).
+name: menu
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?definir POSTGRES_USER en .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?definir POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: ${POSTGRES_DB:?definir POSTGRES_DB en .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    mem_limit: 1g
+    logging: *default-logging
+
+  backend:
+    image: ghcr.io/${GHCR_OWNER:?definir GHCR_OWNER en .env}/menu-backend:${IMAGE_TAG:?definir IMAGE_TAG (release.env)}
+    restart: unless-stopped
+    env_file: .env
+    expose:
+      - "8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    command:
+      - uvicorn
+      - main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --workers
+      - "2"
+      - --no-access-log
+      - --proxy-headers
+      - --forwarded-allow-ips=*
+    mem_limit: 1g
+    logging: *default-logging
+
+  web:
+    image: ghcr.io/${GHCR_OWNER:?definir GHCR_OWNER en .env}/menu-web:${IMAGE_TAG:?definir IMAGE_TAG (release.env)}
+    restart: unless-stopped
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:?definir ACME_EMAIL en .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    mem_limit: 256m
+    logging: *default-logging
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
