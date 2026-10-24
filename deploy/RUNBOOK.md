@@ -217,7 +217,7 @@ Quién: el usuario.
 4. **Lifecycle rule** en el bucket: Resources → Lifecycle Policy Rules → Create → acción *Delete*, objetos con antigüedad > 30 días (el script además borra remotos con `rclone delete --min-age 30d`).
 5. El free tier incluye 10 GB de Object Storage Standard; mantener el tamaño total de dumps por debajo (la alerta del Budget avisa si se excede).
 
-Verificación: con las variables del `.env` cargadas, `rclone lsd ocibackup:` (remoto temporal por variables de entorno `RCLONE_CONFIG_OCIBACKUP_*`) lista `menu-backups`; la política de lifecycle figura como activa. La verificación completa se hace en el paso 15 con el primer backup.
+Verificación: con las variables del `.env` cargadas, `rclone lsf ocibackup:menu-backups` (remoto temporal por variables de entorno `RCLONE_CONFIG_OCIBACKUP_*`, incluyendo `RCLONE_CONFIG_OCIBACKUP_LIST_VERSION=1`: sin esa variable OCI responde 403 SignatureDoesNotMatch al listar) termina sin error. No uses `rclone lsd ocibackup:`: el usuario IAM no tiene permiso para listar los buckets del tenancy y puede no mostrar `menu-backups`; la política de lifecycle figura como activa. La verificación completa se hace en el paso 15 con el primer backup.
 
 ## 13. Primer deploy
 
@@ -252,7 +252,7 @@ Quién: el usuario.
    ```bash
    ./backup.sh
    ```
-2. Confirmar el objeto en el bucket (consola de OCI o `rclone ls`) y el archivo local en `/opt/menu/backups/` (permisos `600`).
+2. Confirmar el objeto en el bucket (consola de OCI o `RCLONE_CONFIG_OCIBACKUP_LIST_VERSION=1 rclone lsf ocibackup:menu-backups`, con las demás variables `RCLONE_CONFIG_OCIBACKUP_*` cargadas) y el archivo local en `/opt/menu/backups/` (permisos `600`).
 3. Probar la restauración **sin tocar producción**:
    ```bash
    ./restore.sh /opt/menu/backups/<archivo>.dump --verify

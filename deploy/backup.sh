@@ -86,6 +86,8 @@ if [ "$remote_name" = "ocibackup" ]; then
   export RCLONE_CONFIG_OCIBACKUP_ACCESS_KEY_ID RCLONE_CONFIG_OCIBACKUP_SECRET_ACCESS_KEY RCLONE_CONFIG_OCIBACKUP_ENDPOINT
   export RCLONE_CONFIG_OCIBACKUP_REGION=sa-saopaulo-1
   export RCLONE_CONFIG_OCIBACKUP_NO_CHECK_BUCKET=true
+  # OCI rechaza ListObjectsV2 con provider=Other (403 SignatureDoesNotMatch): listar con v1.
+  export RCLONE_CONFIG_OCIBACKUP_LIST_VERSION=1
 fi
 
 rclone copy "$out" "$remote"
