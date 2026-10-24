@@ -87,6 +87,7 @@ jobs:
           platforms: linux/arm64
           push: true
           tags: ghcr.io/${{ steps.meta.outputs.owner }}/menu-backend:${{ steps.meta.outputs.tag }}
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           cache-from: type=gha,scope=backend
           cache-to: type=gha,scope=backend,mode=max
 
@@ -100,6 +101,7 @@ jobs:
           build-args: |
             VITE_API_URL=${{ env.API_URL }}
           tags: ghcr.io/${{ steps.meta.outputs.owner }}/menu-web:${{ steps.meta.outputs.tag }}
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           cache-from: type=gha,scope=web
           cache-to: type=gha,scope=web,mode=max
 
